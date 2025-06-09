@@ -57,8 +57,8 @@ function AppSidebar({ menuItems, category, footer }: SidebarProps) {
   }, {} as Record<string, MenuItem[]>);
 
   return (
-    <Sidebar side="left" className="h-[calc(100vh-3rem)] mt-[4rem] border-r-0">
-      <SidebarContent className="overflow-hidden pt-6">
+    <Sidebar side="left" className="h-[calc(100vh-3rem)] mt-[4rem] border-r border-sidebar-border bg-sidebar">
+      <SidebarContent className="overflow-hidden pt-6 bg-sidebar">
         {Object.entries(sections).map(([section, items], index) => (
           <div key={index} className="mb-4">
             {category}
@@ -67,7 +67,7 @@ function AppSidebar({ menuItems, category, footer }: SidebarProps) {
       </SidebarContent>
 
       <SidebarFooter
-        className={`transition-all duration-200 ease-in-out overflow-hidden ${
+        className={`transition-all duration-200 ease-in-out overflow-hidden bg-sidebar ${
           open ? 'items-start' : 'items-center'
         }`}
       >
@@ -104,7 +104,7 @@ function Nav({ children }: NavProps) {
   const { open } = useSidebar();
   
   return (
-    <div className="flex top-0 w-full min-h-[4rem] z-20 items-center fixed bg-background/80 backdrop-blur-sm border-b">
+    <div className="flex top-0 w-full min-h-[4rem] z-20 items-center fixed bg-sidebar border-b border-sidebar-border">
       {children}
     </div>
   );
@@ -211,7 +211,7 @@ export default function SidebarLayout({
             <TooltipProvider delayDuration={300} skipDelayDuration={0}>
               <AppSidebar menuItems={menuItems} category={category} footer={footer} />
               <div className="flex flex-col flex-1 overflow-hidden">
-                <main className="flex-1 overflow-y-auto p-0 sm:p-8 bg-background rounded-tl-[20px] z-[3]">
+                <main className="flex-1 overflow-y-auto p-0 sm:p-8 bg-background rounded-tl-[20px] z-[3] border-l border-sidebar-border">
                   <div className="main-body w-full h-full">{children}</div>
                 </main>
               </div>
