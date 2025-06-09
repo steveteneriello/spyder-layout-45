@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import {
@@ -56,7 +57,7 @@ function AppSidebar({ menuItems, category, footer }: SidebarProps) {
   }, {} as Record<string, MenuItem[]>);
 
   return (
-    <Sidebar side="left" className="h-[calc(100vh-4rem)] mt-[4rem] !bg-black border-r border-gray-700">
+    <Sidebar side="left" className="h-[calc(100vh-4rem)] mt-[4rem] !bg-black">
       <SidebarContent className="overflow-hidden pt-6 !bg-black">
         {Object.entries(sections).map(([section, items], index) => (
           <div key={index} className="mb-4">
@@ -103,7 +104,7 @@ function Nav({ children }: NavProps) {
   const { open } = useSidebar();
   
   return (
-    <div className="flex top-0 w-full min-h-[4rem] z-20 items-center fixed !bg-black border-b border-gray-700 text-white">
+    <div className="flex top-0 w-full min-h-[4rem] z-20 items-center fixed !bg-black text-white">
       {children}
     </div>
   );
@@ -210,7 +211,9 @@ export default function SidebarLayout({
             <TooltipProvider delayDuration={300} skipDelayDuration={0}>
               <AppSidebar menuItems={menuItems} category={category} footer={footer} />
               <div className="flex flex-col flex-1 overflow-hidden">
-                <main className="flex-1 overflow-y-auto p-0 sm:p-8 bg-white rounded-tl-[20px] z-[3] border-l border-gray-700">
+                <main className="flex-1 overflow-y-auto p-0 sm:p-8 bg-white rounded-tl-[20px] z-[3] relative">
+                  {/* Fill the curved corner with black */}
+                  <div className="absolute top-0 left-0 w-[20px] h-[20px] bg-black"></div>
                   <div className="main-body w-full h-full">{children}</div>
                 </main>
               </div>
