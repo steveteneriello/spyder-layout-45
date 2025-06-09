@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import {
@@ -211,11 +210,6 @@ export default function SidebarLayout({
             <TooltipProvider delayDuration={300} skipDelayDuration={0}>
               <AppSidebar menuItems={menuItems} category={category} footer={footer} />
               <div className="flex flex-col flex-1 overflow-hidden relative">
-                {/* Create the curved corner effect */}
-                <div className="absolute top-0 left-0 w-[20px] h-[20px] z-[4]">
-                  <div className="w-full h-full bg-black"></div>
-                  <div className="absolute top-0 left-0 w-[20px] h-[20px] bg-white rounded-bl-[20px]"></div>
-                </div>
                 <main className="flex-1 overflow-y-auto p-0 sm:p-8 bg-white rounded-tl-[20px] z-[3] relative">
                   <div className="main-body w-full h-full">{children}</div>
                 </main>
