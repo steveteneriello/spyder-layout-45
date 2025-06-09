@@ -212,8 +212,8 @@ export default function SidebarLayout({
               <AppSidebar menuItems={menuItems} category={category} footer={footer} />
               <div className="flex flex-col flex-1 overflow-hidden">
                 <main className="flex-1 overflow-y-auto p-0 sm:p-8 bg-white rounded-tl-[20px] z-[3] relative">
-                  {/* Create curved transition effect */}
-                  <div className="absolute top-0 left-0 w-[20px] h-[20px] bg-black rounded-br-[20px]"></div>
+                  {/* Create inverted curved transition effect */}
+                  <div className="absolute top-[-20px] left-0 w-[20px] h-[20px] bg-white rounded-bl-[20px]"></div>
                   <div className="main-body w-full h-full">{children}</div>
                 </main>
               </div>
