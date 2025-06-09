@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import {
@@ -57,8 +56,8 @@ function AppSidebar({ menuItems, category, footer }: SidebarProps) {
   }, {} as Record<string, MenuItem[]>);
 
   return (
-    <Sidebar side="left" className="h-[calc(100vh-3rem)] mt-[4rem] border-r border-sidebar-border bg-sidebar">
-      <SidebarContent className="overflow-hidden pt-6 bg-sidebar">
+    <Sidebar side="left" className="h-[calc(100vh-4rem)] mt-[4rem] !bg-black border-r border-gray-700">
+      <SidebarContent className="overflow-hidden pt-6 !bg-black">
         {Object.entries(sections).map(([section, items], index) => (
           <div key={index} className="mb-4">
             {category}
@@ -67,7 +66,7 @@ function AppSidebar({ menuItems, category, footer }: SidebarProps) {
       </SidebarContent>
 
       <SidebarFooter
-        className={`transition-all duration-200 ease-in-out overflow-hidden bg-sidebar ${
+        className={`transition-all duration-200 ease-in-out overflow-hidden !bg-black ${
           open ? 'items-start' : 'items-center'
         }`}
       >
@@ -79,12 +78,12 @@ function AppSidebar({ menuItems, category, footer }: SidebarProps) {
               }`}
             >
               <div
-                className="group p-2 rounded transition-all duration-200 ease-in-out bg-sidebar-accent text-sidebar-foreground hover:text-sidebar-foreground hover:opacity-75 cursor-pointer"
+                className="group p-2 rounded transition-all duration-200 ease-in-out bg-gray-800 text-white hover:text-white hover:opacity-75 cursor-pointer"
                 onClick={toggleSidebar}
               >
                 <ChevronRight
                   size={15}
-                  className={`transition-all duration-200 ease-in-out ${
+                  className={`transition-all duration-200 ease-in-out text-white ${
                     open ? 'rotate-180' : 'rotate-0'
                   }`}
                 />
@@ -104,7 +103,7 @@ function Nav({ children }: NavProps) {
   const { open } = useSidebar();
   
   return (
-    <div className="flex top-0 w-full min-h-[4rem] z-20 items-center fixed bg-sidebar border-b border-sidebar-border">
+    <div className="flex top-0 w-full min-h-[4rem] z-20 items-center fixed !bg-black border-b border-gray-700 text-white">
       {children}
     </div>
   );
@@ -195,7 +194,7 @@ export default function SidebarLayout({
     <div
       ref={btnRef}
       className={cn(
-        'dark sidebar-layout flex flex-col h-screen w-full bg-sidebar',
+        'sidebar-layout flex flex-col h-screen w-full',
         'mouse-cursor-gradient-tracking',
         isActive && 'active',
         isPulsing && 'pulse-effect'
@@ -211,7 +210,7 @@ export default function SidebarLayout({
             <TooltipProvider delayDuration={300} skipDelayDuration={0}>
               <AppSidebar menuItems={menuItems} category={category} footer={footer} />
               <div className="flex flex-col flex-1 overflow-hidden">
-                <main className="flex-1 overflow-y-auto p-0 sm:p-8 bg-background rounded-tl-[20px] z-[3] border-l border-sidebar-border">
+                <main className="flex-1 overflow-y-auto p-0 sm:p-8 bg-white rounded-tl-[20px] z-[3] border-l border-gray-700">
                   <div className="main-body w-full h-full">{children}</div>
                 </main>
               </div>
