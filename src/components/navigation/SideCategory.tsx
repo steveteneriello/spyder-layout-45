@@ -78,7 +78,7 @@ export function SideCategory({ section, items }: SideCategoryProps) {
               })}
             </SidebarMenu>
           </SidebarGroupContent>
-        </SidebarGroup>
+        </CollapsibleContent>
       </SidebarGroup>
     </Collapsible>
   );
