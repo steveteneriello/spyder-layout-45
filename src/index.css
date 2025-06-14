@@ -46,15 +46,15 @@
     --sidebar-border: 0 0% 30%;
     --sidebar-ring: 217.2 91.2% 59.8%;
 
-    /* Campaign page specific background - Clean Light Slate */
-    --campaign-page-background: 248 250 252; /* #f8fafc - slate-50 */
-    --campaign-secondary-background: 241 245 249; /* #f1f5f9 - slate-100 */
+    /* Campaign page specific background - Pure White Minimal */
+    --campaign-page-background: 0 0% 100%; /* #ffffff - white */
+    --campaign-secondary-background: 210 20% 98%; /* #f9fafb - gray-50 */
     --campaign-card-background: 0 0% 100%; /* #ffffff - white */
-    --campaign-primary-text: 15 23 42; /* #0f172a - slate-900 */
-    --campaign-secondary-text: 71 85 105; /* #475569 - slate-600 */
-    --campaign-border: 226 232 240; /* #e2e8f0 - slate-200 */
-    --campaign-accent: 100 116 139; /* #64748b - slate-500 */
-    --campaign-button-blue: 59 130 246; /* #3b82f6 - blue-500 */
+    --campaign-primary-text: 217 19% 9%; /* #111827 - gray-900 */
+    --campaign-secondary-text: 220 9% 46%; /* #6b7280 - gray-500 */
+    --campaign-border: 220 13% 91%; /* #e5e7eb - gray-200 */
+    --campaign-accent: 220 9% 68%; /* #9ca3af - gray-400 */
+    --campaign-button-blue: 217 91% 60%; /* #3b82f6 - blue-500 */
   }
 
   .dark {
@@ -95,15 +95,15 @@
     --sidebar-border: 0 0% 30%;
     --sidebar-ring: 217.2 91.2% 59.8%;
 
-    /* Campaign page specific background - Dark Slate */
-    --campaign-page-background: 15 23 42; /* #0f172a - slate-900 */
-    --campaign-secondary-background: 30 41 59; /* #1e293b - slate-800 */
-    --campaign-card-background: 51 65 85; /* #334155 - slate-700 */
-    --campaign-primary-text: 248 250 252; /* #f8fafc - slate-50 */
-    --campaign-secondary-text: 203 213 225; /* #cbd5e1 - slate-300 */
-    --campaign-border: 71 85 105; /* #475569 - slate-600 */
-    --campaign-accent: 100 116 139; /* #64748b - slate-500 */
-    --campaign-button-blue: 59 130 246; /* #3b82f6 - blue-500 */
+    /* Campaign page specific background - Pure Black */
+    --campaign-page-background: 0 0% 0%; /* #000000 - black */
+    --campaign-secondary-background: 0 0% 7%; /* #111111 - very dark gray */
+    --campaign-card-background: 0 0% 10%; /* #1a1a1a - dark gray */
+    --campaign-primary-text: 0 0% 100%; /* #ffffff - white */
+    --campaign-secondary-text: 0 0% 64%; /* #a3a3a3 - light gray */
+    --campaign-border: 0 0% 25%; /* #404040 - medium gray */
+    --campaign-accent: 217 91% 60%; /* #3b82f6 - blue-500 */
+    --campaign-button-blue: 217 91% 60%; /* #3b82f6 - blue-500 */
   }
 }
 
