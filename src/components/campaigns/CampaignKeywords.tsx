@@ -24,12 +24,11 @@ interface CampaignKeywordsProps {
 export function CampaignKeywords({ campaignId }: CampaignKeywordsProps) {
   const { keywords, negativeKeywords, addKeyword, removeKeyword, loading } = useCampaignKeywords(campaignId);
   const [newKeyword, setNewKeyword] = useState('');
-  const [matchType, setMatchType] = useState('broad');
   const [keywordType, setKeywordType] = useState<'positive' | 'negative'>('positive');
 
   const handleAddKeyword = () => {
     if (newKeyword.trim()) {
-      addKeyword(newKeyword.trim(), matchType, keywordType);
+      addKeyword(newKeyword.trim(), 'broad', keywordType);
       setNewKeyword('');
     }
   };
@@ -49,7 +48,6 @@ export function CampaignKeywords({ campaignId }: CampaignKeywordsProps) {
       <TableHeader>
         <TableRow>
           <TableHead>Keyword</TableHead>
-          <TableHead>Match Type</TableHead>
           {type === 'positive' && (
             <>
               <TableHead>Impressions</TableHead>
@@ -66,9 +64,6 @@ export function CampaignKeywords({ campaignId }: CampaignKeywordsProps) {
         {data.map((item) => (
           <TableRow key={item.id}>
             <TableCell className="font-medium">{item.keyword}</TableCell>
-            <TableCell>
-              <Badge variant="outline">{item.match_type}</Badge>
-            </TableCell>
             {type === 'positive' && item.stats && (
               <>
                 <TableCell>
@@ -107,7 +102,7 @@ export function CampaignKeywords({ campaignId }: CampaignKeywordsProps) {
         ))}
         {data.length === 0 && (
           <TableRow>
-            <TableCell colSpan={type === 'positive' ? 8 : 3} className="text-center py-8 text-muted-foreground">
+            <TableCell colSpan={type === 'positive' ? 7 : 2} className="text-center py-8 text-muted-foreground">
               No {type} keywords found
             </TableCell>
           </TableRow>
@@ -136,18 +131,6 @@ export function CampaignKeywords({ campaignId }: CampaignKeywordsProps) {
                 onChange={(e) => setNewKeyword(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleAddKeyword()}
               />
-            </div>
-            <div className="w-32">
-              <Select value={matchType} onValueChange={setMatchType}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="broad">Broad</SelectItem>
-                  <SelectItem value="phrase">Phrase</SelectItem>
-                  <SelectItem value="exact">Exact</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
             <div className="w-32">
               <Select value={keywordType} onValueChange={(value) => setKeywordType(value as 'positive' | 'negative')}>
