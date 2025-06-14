@@ -1,4 +1,3 @@
-
 // Enhanced dark mode dashboard with bulk operations and queue management
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -465,35 +464,35 @@ export default function OxylabsSchedulerDashboard() {
   // Utility functions
   const getStatusBadge = (schedule: OxylabsSchedule) => {
     if (!schedule.active) {
-      return { color: 'bg-gray-800 text-gray-300 border-gray-700', text: 'Inactive' };
+      return { color: 'bg-[#161B22] text-[#7D8590] border-[#30363D]', text: 'Inactive' };
     }
     if (schedule.management_status === 'unmanaged') {
-      return { color: 'bg-yellow-900 text-yellow-300 border-yellow-800', text: 'Unmanaged' };
+      return { color: 'bg-[#1C1611] text-[#D29922] border-[#D29922]', text: 'Unmanaged' };
     }
     const successRate = schedule.stats?.job_result_outcomes?.find((o: any) => o.status === 'done')?.ratio || 0;
     if (successRate < 0.5) {
-      return { color: 'bg-red-900 text-red-300 border-red-800', text: 'Poor Performance' };
+      return { color: 'bg-[#1C0F0F] text-[#F85149] border-[#F85149]', text: 'Poor Performance' };
     }
-    return { color: 'bg-green-900 text-green-300 border-green-800', text: 'Healthy' };
+    return { color: 'bg-[#1A4E2F] text-[#3FB950] border-[#2EA043]', text: 'Healthy' };
   };
 
   const getOperationStatusIcon = (status: string) => {
     switch (status) {
-      case 'pending': return <Clock className="w-4 h-4 text-yellow-400" />;
-      case 'processing': return <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />;
-      case 'completed': return <CheckCircle2 className="w-4 h-4 text-green-400" />;
-      case 'failed': return <XCircle className="w-4 h-4 text-red-400" />;
-      default: return <Clock className="w-4 h-4 text-gray-400" />;
+      case 'pending': return <Clock className="w-4 h-4 text-[#D29922]" />;
+      case 'processing': return <Loader2 className="w-4 h-4 text-[#388BFD] animate-spin" />;
+      case 'completed': return <CheckCircle2 className="w-4 h-4 text-[#3FB950]" />;
+      case 'failed': return <XCircle className="w-4 h-4 text-[#F85149]" />;
+      default: return <Clock className="w-4 h-4 text-[#7D8590]" />;
     }
   };
 
   const getOperationStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-900 text-yellow-300 border-yellow-700';
-      case 'processing': return 'bg-blue-900 text-blue-300 border-blue-700';
-      case 'completed': return 'bg-green-900 text-green-300 border-green-700';
-      case 'failed': return 'bg-red-900 text-red-300 border-red-700';
-      default: return 'bg-gray-900 text-gray-300 border-gray-700';
+      case 'pending': return 'bg-[#1F2937] text-[#D29922] border-[#D29922]';
+      case 'processing': return 'bg-[#1E293B] text-[#388BFD] border-[#388BFD]';
+      case 'completed': return 'bg-[#1A4E2F] text-[#3FB950] border-[#2EA043]';
+      case 'failed': return 'bg-[#1C0F0F] text-[#F85149] border-[#F85149]';
+      default: return 'bg-[#161B22] text-[#7D8590] border-[#30363D]';
     }
   };
 
@@ -510,17 +509,17 @@ export default function OxylabsSchedulerDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100">
+    <div className="min-h-screen bg-[#0E1117] text-[#F0F6FC]">
       {/* Notifications */}
       <div className="fixed top-4 right-4 z-50 space-y-2">
         {notifications.map(notification => (
           <div
             key={notification.id}
             className={`px-4 py-3 rounded-lg shadow-lg transition-all border ${
-              notification.type === 'success' ? 'bg-green-900 border-green-700 text-green-100' :
-              notification.type === 'error' ? 'bg-red-900 border-red-700 text-red-100' :
-              notification.type === 'warning' ? 'bg-yellow-900 border-yellow-700 text-yellow-100' :
-              'bg-blue-900 border-blue-700 text-blue-100'
+              notification.type === 'success' ? 'bg-[#0D1B0D] border-[#2EA043] text-[#3FB950]' :
+              notification.type === 'error' ? 'bg-[#1C0F0F] border-[#F85149] text-[#F85149]' :
+              notification.type === 'warning' ? 'bg-[#1C1611] border-[#D29922] text-[#D29922]' :
+              'bg-[#1E293B] border-[#388BFD] text-[#388BFD]'
             }`}
           >
             {notification.message}
@@ -529,17 +528,17 @@ export default function OxylabsSchedulerDashboard() {
       </div>
 
       {/* Header */}
-      <div className="bg-gray-800 border-b border-gray-700">
+      <div className="bg-[#161B22] border-b border-[#30363D]">
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-white">Oxylabs Scheduler</h1>
-              <p className="text-sm text-gray-400 mt-1">Manage scheduled scraping operations</p>
+              <h1 className="text-2xl font-bold text-[#F0F6FC]">Oxylabs Scheduler</h1>
+              <p className="text-sm text-[#7D8590] mt-1">Manage scheduled scraping operations</p>
             </div>
             <div className="flex items-center gap-3">
               <button
                 onClick={mapUnmanaged}
-                className="px-4 py-2 bg-blue-900 text-blue-100 rounded-lg hover:bg-blue-800 transition-colors flex items-center gap-2 border border-blue-700"
+                className="px-4 py-2 bg-[#388BFD] hover:bg-[#1F6FEB] text-white rounded-lg transition-colors flex items-center gap-2 border border-[#388BFD]"
                 disabled={queueStats.total === 0}
               >
                 <Settings className="w-4 h-4" />
@@ -548,7 +547,7 @@ export default function OxylabsSchedulerDashboard() {
               <button
                 onClick={syncSchedules}
                 disabled={isSyncing}
-                className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors flex items-center gap-2 disabled:opacity-50"
+                className="px-4 py-2 bg-[#21262D] border border-[#30363D] text-[#F0F6FC] rounded-lg hover:bg-[#30363D] transition-colors flex items-center gap-2 disabled:opacity-50"
               >
                 <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
                 Sync
@@ -561,56 +560,56 @@ export default function OxylabsSchedulerDashboard() {
       {/* Stats Cards */}
       <div className="px-6 py-6">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+          <div className="bg-[#161B22] rounded-lg p-4 border border-[#30363D]">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-400">Total Schedules</p>
-                <p className="text-2xl font-bold text-white mt-1">{schedules.length}</p>
+                <p className="text-sm text-[#7D8590]">Total Schedules</p>
+                <p className="text-2xl font-bold text-[#F0F6FC] mt-1">{schedules.length}</p>
               </div>
-              <Calendar className="w-8 h-8 text-gray-500" />
+              <Calendar className="w-8 h-8 text-[#656D76]" />
             </div>
           </div>
           
-          <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+          <div className="bg-[#161B22] rounded-lg p-4 border border-[#30363D]">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-400">Queue Status</p>
+                <p className="text-sm text-[#7D8590]">Queue Status</p>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="text-lg font-bold text-yellow-400">{queueStats.pending}</span>
-                  <span className="text-sm text-gray-400">pending</span>
+                  <span className="text-lg font-bold text-[#D29922]">{queueStats.pending}</span>
+                  <span className="text-sm text-[#7D8590]">pending</span>
                 </div>
               </div>
-              <Clock className="w-8 h-8 text-yellow-500" />
+              <Clock className="w-8 h-8 text-[#D29922]" />
             </div>
           </div>
           
-          <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+          <div className="bg-[#161B22] rounded-lg p-4 border border-[#30363D]">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-400">Processing</p>
-                <p className="text-2xl font-bold text-blue-400 mt-1">{queueStats.processing}</p>
+                <p className="text-sm text-[#7D8590]">Processing</p>
+                <p className="text-2xl font-bold text-[#388BFD] mt-1">{queueStats.processing}</p>
               </div>
-              <Loader2 className="w-8 h-8 text-blue-500" />
+              <Loader2 className="w-8 h-8 text-[#388BFD]" />
             </div>
           </div>
           
-          <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+          <div className="bg-[#161B22] rounded-lg p-4 border border-[#30363D]">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-400">Completed</p>
-                <p className="text-2xl font-bold text-green-400 mt-1">{queueStats.completed}</p>
+                <p className="text-sm text-[#7D8590]">Completed</p>
+                <p className="text-2xl font-bold text-[#3FB950] mt-1">{queueStats.completed}</p>
               </div>
-              <CheckCircle2 className="w-8 h-8 text-green-500" />
+              <CheckCircle2 className="w-8 h-8 text-[#3FB950]" />
             </div>
           </div>
           
-          <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+          <div className="bg-[#161B22] rounded-lg p-4 border border-[#30363D]">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-400">Failed</p>
-                <p className="text-2xl font-bold text-red-400 mt-1">{queueStats.failed}</p>
+                <p className="text-sm text-[#7D8590]">Failed</p>
+                <p className="text-2xl font-bold text-[#F85149] mt-1">{queueStats.failed}</p>
               </div>
-              <XCircle className="w-8 h-8 text-red-500" />
+              <XCircle className="w-8 h-8 text-[#F85149]" />
             </div>
           </div>
         </div>
@@ -618,7 +617,7 @@ export default function OxylabsSchedulerDashboard() {
 
       {/* Tabs */}
       <div className="px-6">
-        <div className="border-b border-gray-700">
+        <div className="border-b border-[#30363D]">
           <nav className="flex space-x-8">
             {[
               { id: 'schedules', label: 'Schedules', count: schedules.length },
@@ -630,13 +629,13 @@ export default function OxylabsSchedulerDashboard() {
                 onClick={() => setActiveTab(tab.id as any)}
                 className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
                   activeTab === tab.id
-                    ? 'border-blue-500 text-blue-400'
-                    : 'border-transparent text-gray-400 hover:text-gray-300'
+                    ? 'border-[#388BFD] text-[#388BFD]'
+                    : 'border-transparent text-[#7D8590] hover:text-[#F0F6FC]'
                 }`}
               >
                 {tab.label}
                 {tab.count > 0 && (
-                  <span className="ml-2 bg-gray-700 text-gray-300 py-1 px-2 rounded-full text-xs">
+                  <span className="ml-2 bg-[#21262D] text-[#7D8590] py-1 px-2 rounded-full text-xs">
                     {tab.count}
                   </span>
                 )}
@@ -651,17 +650,17 @@ export default function OxylabsSchedulerDashboard() {
         {activeTab === 'schedules' && (
           <>
             {/* Controls */}
-            <div className="bg-gray-800 rounded-lg p-4 border border-gray-700 mb-6">
+            <div className="bg-[#161B22] rounded-lg p-4 border border-[#30363D] mb-6">
               <div className="flex flex-col sm:flex-row gap-4">
                 {/* Search */}
                 <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#7D8590]" />
                   <input
                     type="text"
                     placeholder="Search schedules..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                    className="w-full pl-10 pr-4 py-2 bg-[#0E1117] border border-[#30363D] rounded-lg text-[#F0F6FC] placeholder-[#656D76] focus:outline-none focus:border-[#388BFD]"
                   />
                 </div>
                 
@@ -669,7 +668,7 @@ export default function OxylabsSchedulerDashboard() {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value as any)}
-                  className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                  className="px-4 py-2 bg-[#0E1117] border border-[#30363D] rounded-lg text-[#F0F6FC] focus:outline-none focus:border-[#388BFD]"
                 >
                   <option value="all">All Schedules</option>
                   <option value="active">Active Only</option>
@@ -681,7 +680,7 @@ export default function OxylabsSchedulerDashboard() {
                 <select
                   value={itemsPerPage}
                   onChange={(e) => setItemsPerPage(Number(e.target.value))}
-                  className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                  className="px-4 py-2 bg-[#0E1117] border border-[#30363D] rounded-lg text-[#F0F6FC] focus:outline-none focus:border-[#388BFD]"
                 >
                   <option value={10}>10 per page</option>
                   <option value={25}>25 per page</option>
@@ -692,16 +691,16 @@ export default function OxylabsSchedulerDashboard() {
 
               {/* Bulk Actions */}
               {selectedSchedules.size > 0 && (
-                <div className="mt-4 pt-4 border-t border-gray-700">
+                <div className="mt-4 pt-4 border-t border-[#30363D]">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-400">
+                    <span className="text-sm text-[#7D8590]">
                       {selectedSchedules.size} schedule{selectedSchedules.size !== 1 ? 's' : ''} selected
                     </span>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={bulkActivate}
                         disabled={isProcessingBulk}
-                        className="px-3 py-1 bg-green-900 text-green-100 rounded border border-green-700 hover:bg-green-800 transition-colors text-sm disabled:opacity-50"
+                        className="px-3 py-1 bg-[#1A4E2F] text-[#3FB950] rounded border border-[#2EA043] hover:bg-[#2EA043] hover:text-white transition-colors text-sm disabled:opacity-50"
                       >
                         <Play className="w-3 h-3 inline mr-1" />
                         Activate
@@ -709,7 +708,7 @@ export default function OxylabsSchedulerDashboard() {
                       <button
                         onClick={bulkDeactivate}
                         disabled={isProcessingBulk}
-                        className="px-3 py-1 bg-yellow-900 text-yellow-100 rounded border border-yellow-700 hover:bg-yellow-800 transition-colors text-sm disabled:opacity-50"
+                        className="px-3 py-1 bg-[#1F2937] text-[#D29922] rounded border border-[#D29922] hover:bg-[#D29922] hover:text-white transition-colors text-sm disabled:opacity-50"
                       >
                         <Pause className="w-3 h-3 inline mr-1" />
                         Deactivate
@@ -717,14 +716,14 @@ export default function OxylabsSchedulerDashboard() {
                       <button
                         onClick={bulkDelete}
                         disabled={isProcessingBulk}
-                        className="px-3 py-1 bg-red-900 text-red-100 rounded border border-red-700 hover:bg-red-800 transition-colors text-sm disabled:opacity-50"
+                        className="px-3 py-1 bg-[#1C0F0F] text-[#F85149] rounded border border-[#F85149] hover:bg-[#F85149] hover:text-white transition-colors text-sm disabled:opacity-50"
                       >
                         <Trash2 className="w-3 h-3 inline mr-1" />
                         Delete
                       </button>
                       <button
                         onClick={() => setSelectedSchedules(new Set())}
-                        className="px-3 py-1 bg-gray-700 text-gray-300 rounded border border-gray-600 hover:bg-gray-600 transition-colors text-sm"
+                        className="px-3 py-1 bg-[#21262D] text-[#7D8590] rounded border border-[#30363D] hover:bg-[#30363D] transition-colors text-sm"
                       >
                         Clear
                       </button>
@@ -735,15 +734,15 @@ export default function OxylabsSchedulerDashboard() {
             </div>
 
             {/* Schedules Table */}
-            <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+            <div className="bg-[#161B22] rounded-lg border border-[#30363D] overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-750 border-b border-gray-700">
+                  <thead className="bg-[#21262D] border-b border-[#30363D]">
                     <tr>
                       <th className="px-4 py-3 text-left">
                         <button
                           onClick={toggleSelectAll}
-                          className="flex items-center text-gray-400 hover:text-white"
+                          className="flex items-center text-[#7D8590] hover:text-[#F0F6FC]"
                         >
                           {isAllSelected ? (
                             <CheckSquare className="w-4 h-4" />
@@ -754,34 +753,34 @@ export default function OxylabsSchedulerDashboard() {
                           )}
                         </button>
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-[#7D8590] uppercase tracking-wider">
                         Schedule
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-[#7D8590] uppercase tracking-wider">
                         Status
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-[#7D8590] uppercase tracking-wider">
                         Next Run
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-[#7D8590] uppercase tracking-wider">
                         Performance
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-[#7D8590] uppercase tracking-wider">
                         Actions
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-700">
+                  <tbody className="divide-y divide-[#21262D]">
                     {isLoading ? (
                       <tr>
-                        <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
+                        <td colSpan={6} className="px-4 py-8 text-center text-[#7D8590]">
                           <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
                           Loading schedules...
                         </td>
                       </tr>
                     ) : paginatedSchedules.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
+                        <td colSpan={6} className="px-4 py-8 text-center text-[#7D8590]">
                           No schedules found
                         </td>
                       </tr>
@@ -794,15 +793,15 @@ export default function OxylabsSchedulerDashboard() {
                         return (
                           <tr 
                             key={schedule.oxylabs_schedule_id} 
-                            className={`hover:bg-gray-750 transition-colors ${isSelected ? 'bg-gray-750' : ''}`}
+                            className={`hover:bg-[#21262D] transition-colors ${isSelected ? 'bg-[#21262D]' : ''}`}
                           >
                             <td className="px-4 py-4">
                               <button
                                 onClick={() => toggleSelectSchedule(schedule.oxylabs_schedule_id)}
-                                className="text-gray-400 hover:text-white"
+                                className="text-[#7D8590] hover:text-[#F0F6FC]"
                               >
                                 {isSelected ? (
-                                  <CheckSquare className="w-4 h-4 text-blue-400" />
+                                  <CheckSquare className="w-4 h-4 text-[#388BFD]" />
                                 ) : (
                                   <Square className="w-4 h-4" />
                                 )}
@@ -811,13 +810,13 @@ export default function OxylabsSchedulerDashboard() {
                             
                             <td className="px-4 py-4">
                               <div>
-                                <div className="font-medium text-white">
+                                <div className="font-medium text-[#F0F6FC]">
                                   {schedule.job_name || 'Unnamed Schedule'}
                                 </div>
-                                <div className="text-sm text-gray-400">
+                                <div className="text-sm text-[#7D8590]">
                                   ID: {schedule.oxylabs_schedule_id}
                                 </div>
-                                <div className="text-xs text-gray-500">
+                                <div className="text-xs text-[#656D76]">
                                   {schedule.cron_expression}
                                 </div>
                               </div>
@@ -830,37 +829,37 @@ export default function OxylabsSchedulerDashboard() {
                             </td>
                             
                             <td className="px-4 py-4">
-                              <div className="text-sm text-gray-300">
+                              <div className="text-sm text-[#F0F6FC]">
                                 {schedule.next_run_at ? (
                                   <>
                                     <div>{formatRelativeTime(schedule.next_run_at)}</div>
-                                    <div className="text-xs text-gray-500">
+                                    <div className="text-xs text-[#656D76]">
                                       {new Date(schedule.next_run_at).toLocaleDateString()}
                                     </div>
                                   </>
                                 ) : (
-                                  <span className="text-gray-500">Not scheduled</span>
+                                  <span className="text-[#656D76]">Not scheduled</span>
                                 )}
                               </div>
                             </td>
                             
                             <td className="px-4 py-4">
                               <div className="flex items-center gap-2">
-                                <div className="flex-1 bg-gray-700 rounded-full h-2">
+                                <div className="flex-1 bg-[#21262D] rounded-full h-2">
                                   <div
                                     className={`h-2 rounded-full ${
-                                      successRate > 0.8 ? 'bg-green-500' :
-                                      successRate > 0.5 ? 'bg-yellow-500' :
-                                      'bg-red-500'
+                                      successRate > 0.8 ? 'bg-[#3FB950]' :
+                                      successRate > 0.5 ? 'bg-[#D29922]' :
+                                      'bg-[#F85149]'
                                     }`}
                                     style={{ width: `${successRate * 100}%` }}
                                   />
                                 </div>
-                                <span className="text-xs text-gray-400 w-8">
+                                <span className="text-xs text-[#7D8590] w-8">
                                   {(successRate * 100).toFixed(0)}%
                                 </span>
                               </div>
-                              <div className="text-xs text-gray-500 mt-1">
+                              <div className="text-xs text-[#656D76] mt-1">
                                 {schedule.items_count || 0} items
                               </div>
                             </td>
@@ -871,8 +870,8 @@ export default function OxylabsSchedulerDashboard() {
                                   onClick={() => toggleScheduleState(schedule.oxylabs_schedule_id, schedule.active)}
                                   className={`p-1 rounded transition-colors ${
                                     schedule.active 
-                                      ? 'text-gray-400 hover:text-yellow-400' 
-                                      : 'text-gray-400 hover:text-green-400'
+                                      ? 'text-[#7D8590] hover:text-[#D29922]' 
+                                      : 'text-[#7D8590] hover:text-[#3FB950]'
                                   }`}
                                   title={schedule.active ? 'Deactivate' : 'Activate'}
                                 >
@@ -881,13 +880,13 @@ export default function OxylabsSchedulerDashboard() {
                                 
                                 <button
                                   onClick={() => deleteSchedule(schedule.oxylabs_schedule_id, schedule.job_name || 'Unnamed')}
-                                  className="p-1 text-gray-400 hover:text-red-400 transition-colors"
+                                  className="p-1 text-[#7D8590] hover:text-[#F85149] transition-colors"
                                   title="Delete"
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </button>
                                 
-                                <button className="p-1 text-gray-400 hover:text-gray-300 transition-colors">
+                                <button className="p-1 text-[#7D8590] hover:text-[#F0F6FC] transition-colors">
                                   <MoreHorizontal className="w-4 h-4" />
                                 </button>
                               </div>
@@ -902,28 +901,28 @@ export default function OxylabsSchedulerDashboard() {
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="bg-gray-750 px-4 py-3 border-t border-gray-700">
+                <div className="bg-[#21262D] px-4 py-3 border-t border-[#30363D]">
                   <div className="flex items-center justify-between">
-                    <div className="text-sm text-gray-400">
+                    <div className="text-sm text-[#7D8590]">
                       Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredSchedules.length)} of {filteredSchedules.length} schedules
                     </div>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                         disabled={currentPage === 1}
-                        className="p-2 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="p-2 text-[#7D8590] hover:text-[#F0F6FC] disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <ChevronLeft className="w-4 h-4" />
                       </button>
                       
-                      <span className="text-sm text-gray-400">
+                      <span className="text-sm text-[#7D8590]">
                         Page {currentPage} of {totalPages}
                       </span>
                       
                       <button
                         onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                         disabled={currentPage === totalPages}
-                        className="p-2 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="p-2 text-[#7D8590] hover:text-[#F0F6FC] disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <ChevronRight className="w-4 h-4" />
                       </button>
@@ -936,25 +935,25 @@ export default function OxylabsSchedulerDashboard() {
         )}
 
         {activeTab === 'queue' && (
-          <div className="bg-gray-800 rounded-lg border border-gray-700">
-            <div className="p-4 border-b border-gray-700">
-              <h3 className="text-lg font-medium text-white">Operation Queue</h3>
-              <p className="text-sm text-gray-400">Current and pending operations</p>
+          <div className="bg-[#161B22] rounded-lg border border-[#30363D]">
+            <div className="p-4 border-b border-[#30363D]">
+              <h3 className="text-lg font-medium text-[#F0F6FC]">Operation Queue</h3>
+              <p className="text-sm text-[#7D8590]">Current and pending operations</p>
             </div>
             
-            <div className="divide-y divide-gray-700">
+            <div className="divide-y divide-[#21262D]">
               {operations
                 .filter(op => ['pending', 'processing'].includes(op.status))
                 .slice(0, 20)
                 .map(operation => (
-                <div key={operation.id} className="p-4 flex items-center justify-between hover:bg-gray-750">
+                <div key={operation.id} className="p-4 flex items-center justify-between hover:bg-[#21262D]">
                   <div className="flex items-center gap-3">
                     {getOperationStatusIcon(operation.status)}
                     <div>
-                      <div className="text-sm font-medium text-white">
+                      <div className="text-sm font-medium text-[#F0F6FC]">
                         {operation.operation_type.charAt(0).toUpperCase() + operation.operation_type.slice(1)} Schedule
                       </div>
-                      <div className="text-xs text-gray-400">
+                      <div className="text-xs text-[#7D8590]">
                         ID: {operation.oxylabs_schedule_id}
                       </div>
                       <div className={`text-xs px-2 py-1 rounded mt-1 border ${getOperationStatusColor(operation.status)}`}>
@@ -964,14 +963,14 @@ export default function OxylabsSchedulerDashboard() {
                   </div>
                   
                   <div className="text-right">
-                    <div className="text-sm text-gray-300">
+                    <div className="text-sm text-[#F0F6FC]">
                       {operation.status === 'processing' ? 'Processing...' : 'Waiting in queue'}
                     </div>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-[#656D76]">
                       {formatRelativeTime(operation.requested_at)}
                     </div>
                     {operation.retry_count > 0 && (
-                      <div className="text-xs text-yellow-400">
+                      <div className="text-xs text-[#D29922]">
                         Retry #{operation.retry_count}
                       </div>
                     )}
@@ -980,10 +979,10 @@ export default function OxylabsSchedulerDashboard() {
               ))}
               
               {operations.filter(op => ['pending', 'processing'].includes(op.status)).length === 0 && (
-                <div className="p-8 text-center text-gray-400">
+                <div className="p-8 text-center text-[#7D8590]">
                   <Clock className="w-8 h-8 mx-auto mb-2 opacity-50" />
                   <p>No pending operations</p>
-                  <p className="text-xs text-gray-500 mt-1">Operations will appear here when queued</p>
+                  <p className="text-xs text-[#656D76] mt-1">Operations will appear here when queued</p>
                 </div>
               )}
             </div>
@@ -991,13 +990,13 @@ export default function OxylabsSchedulerDashboard() {
         )}
 
         {activeTab === 'history' && (
-          <div className="bg-gray-800 rounded-lg border border-gray-700">
-            <div className="p-4 border-b border-gray-700">
-              <h3 className="text-lg font-medium text-white">Operation History</h3>
-              <p className="text-sm text-gray-400">Recent completed and failed operations</p>
+          <div className="bg-[#161B22] rounded-lg border border-[#30363D]">
+            <div className="p-4 border-b border-[#30363D]">
+              <h3 className="text-lg font-medium text-[#F0F6FC]">Operation History</h3>
+              <p className="text-sm text-[#7D8590]">Recent completed and failed operations</p>
             </div>
             
-            <div className="divide-y divide-gray-700">
+            <div className="divide-y divide-[#21262D]">
               {operations
                 .filter(op => ['completed', 'failed'].includes(op.status))
                 .slice(0, 20)
@@ -1006,14 +1005,14 @@ export default function OxylabsSchedulerDashboard() {
                   <div className="flex items-center gap-3">
                     {getOperationStatusIcon(operation.status)}
                     <div>
-                      <div className="text-sm font-medium text-white">
+                      <div className="text-sm font-medium text-[#F0F6FC]">
                         {operation.operation_type.charAt(0).toUpperCase() + operation.operation_type.slice(1)} Schedule
                       </div>
-                      <div className="text-xs text-gray-400">
+                      <div className="text-xs text-[#7D8590]">
                         ID: {operation.oxylabs_schedule_id}
                       </div>
                       {operation.last_error && (
-                        <div className="text-xs text-red-400 mt-1">
+                        <div className="text-xs text-[#F85149] mt-1">
                           Error: {operation.last_error}
                         </div>
                       )}
@@ -1021,8 +1020,8 @@ export default function OxylabsSchedulerDashboard() {
                   </div>
                   
                   <div className="text-right">
-                    <div className="text-sm text-gray-300">{operation.status_description}</div>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-sm text-[#F0F6FC]">{operation.status_description}</div>
+                    <div className="text-xs text-[#656D76]">
                       {operation.completed_at ? formatRelativeTime(operation.completed_at) : formatRelativeTime(operation.requested_at)}
                     </div>
                   </div>
@@ -1030,7 +1029,7 @@ export default function OxylabsSchedulerDashboard() {
               ))}
               
               {operations.filter(op => ['completed', 'failed'].includes(op.status)).length === 0 && (
-                <div className="p-8 text-center text-gray-400">
+                <div className="p-8 text-center text-[#7D8590]">
                   <History className="w-8 h-8 mx-auto mb-2 opacity-50" />
                   <p>No operation history</p>
                 </div>
