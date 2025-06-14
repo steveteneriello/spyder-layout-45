@@ -15,6 +15,8 @@ export function useCampaignKeywords(campaignId: string) {
 
   const fetchKeywords = async () => {
     try {
+      console.log('Fetching keywords for campaign:', campaignId);
+      
       // Fetch positive keywords with stats
       const { data: keywordData, error: keywordError } = await supabase
         .from('campaign_manager_keywords')
@@ -27,6 +29,7 @@ export function useCampaignKeywords(campaignId: string) {
       if (keywordError) {
         console.error('Error fetching keywords:', keywordError);
       } else {
+        console.log('Fetched keywords:', keywordData);
         // Process keywords to include latest stats
         const processedKeywords = (keywordData || []).map(keyword => ({
           ...keyword,
@@ -44,6 +47,7 @@ export function useCampaignKeywords(campaignId: string) {
       if (negativeError) {
         console.error('Error fetching negative keywords:', negativeError);
       } else {
+        console.log('Fetched negative keywords:', negativeData);
         setNegativeKeywords(negativeData || []);
       }
     } catch (error) {
@@ -55,30 +59,38 @@ export function useCampaignKeywords(campaignId: string) {
 
   const addKeyword = async (keyword: string, matchType: string, type: 'positive' | 'negative') => {
     try {
+      console.log('Adding keyword:', { keyword, matchType, type, campaignId });
+      
       const table = type === 'positive' ? 'campaign_manager_keywords' : 'campaign_manager_negative_keywords';
       
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from(table)
         .insert({
           campaign_id: campaignId,
-          keyword,
+          keyword: keyword.trim(),
           match_type: matchType
-        });
+        })
+        .select();
 
       if (error) {
         console.error(`Error adding ${type} keyword:`, error);
-        return;
+        throw error;
       }
 
-      // Refresh keywords
-      fetchKeywords();
+      console.log(`Successfully added ${type} keyword:`, data);
+      
+      // Refresh keywords to show the new addition
+      await fetchKeywords();
     } catch (error) {
       console.error(`Error adding ${type} keyword:`, error);
+      throw error;
     }
   };
 
   const removeKeyword = async (keywordId: string, type: 'positive' | 'negative') => {
     try {
+      console.log('Removing keyword:', { keywordId, type });
+      
       const table = type === 'positive' ? 'campaign_manager_keywords' : 'campaign_manager_negative_keywords';
       
       const { error } = await supabase
@@ -88,13 +100,16 @@ export function useCampaignKeywords(campaignId: string) {
 
       if (error) {
         console.error(`Error removing ${type} keyword:`, error);
-        return;
+        throw error;
       }
 
+      console.log(`Successfully removed ${type} keyword`);
+      
       // Refresh keywords
-      fetchKeywords();
+      await fetchKeywords();
     } catch (error) {
       console.error(`Error removing ${type} keyword:`, error);
+      throw error;
     }
   };
 

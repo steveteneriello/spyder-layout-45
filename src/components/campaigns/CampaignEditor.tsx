@@ -4,17 +4,31 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CampaignKeywords } from './CampaignKeywords';
 import { CampaignDetails } from './CampaignDetails';
+import { useCampaignDetails } from '@/hooks/useCampaignDetails';
 
 interface CampaignEditorProps {
   campaignId: string;
 }
 
 export function CampaignEditor({ campaignId }: CampaignEditorProps) {
+  const { campaign, loading } = useCampaignDetails(campaignId);
+
+  if (loading) {
+    return <div className="text-center py-8">Loading campaign...</div>;
+  }
+
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Campaign Editor</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            Campaign Editor
+            {campaign && (
+              <span className="text-muted-foreground font-normal">
+                - {campaign.name}
+              </span>
+            )}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="keywords" className="w-full">

@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/table';
 import { Plus, Trash2, TrendingUp, DollarSign, Eye } from 'lucide-react';
 import { useCampaignKeywords } from '@/hooks/useCampaignKeywords';
+import { toast } from 'sonner';
 
 interface CampaignKeywordsProps {
   campaignId: string;
@@ -25,11 +26,34 @@ export function CampaignKeywords({ campaignId }: CampaignKeywordsProps) {
   const { keywords, negativeKeywords, addKeyword, removeKeyword, loading } = useCampaignKeywords(campaignId);
   const [newKeyword, setNewKeyword] = useState('');
   const [keywordType, setKeywordType] = useState<'positive' | 'negative'>('positive');
+  const [isAdding, setIsAdding] = useState(false);
 
-  const handleAddKeyword = () => {
-    if (newKeyword.trim()) {
-      addKeyword(newKeyword.trim(), 'broad', keywordType);
+  const handleAddKeyword = async () => {
+    if (!newKeyword.trim()) {
+      toast.error('Please enter a keyword');
+      return;
+    }
+
+    setIsAdding(true);
+    try {
+      await addKeyword(newKeyword.trim(), 'broad', keywordType);
       setNewKeyword('');
+      toast.success(`${keywordType} keyword added successfully`);
+    } catch (error) {
+      console.error('Error adding keyword:', error);
+      toast.error(`Failed to add ${keywordType} keyword`);
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
+  const handleRemoveKeyword = async (keywordId: string, type: 'positive' | 'negative') => {
+    try {
+      await removeKeyword(keywordId, type);
+      toast.success(`${type} keyword removed successfully`);
+    } catch (error) {
+      console.error('Error removing keyword:', error);
+      toast.error(`Failed to remove ${type} keyword`);
     }
   };
 
@@ -92,7 +116,7 @@ export function CampaignKeywords({ campaignId }: CampaignKeywordsProps) {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => removeKeyword(item.id, type)}
+                onClick={() => handleRemoveKeyword(item.id, type)}
                 className="h-8 w-8 p-0"
               >
                 <Trash2 className="h-3 w-3" />
@@ -129,7 +153,8 @@ export function CampaignKeywords({ campaignId }: CampaignKeywordsProps) {
                 placeholder="Enter keyword"
                 value={newKeyword}
                 onChange={(e) => setNewKeyword(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleAddKeyword()}
+                onKeyPress={(e) => e.key === 'Enter' && !isAdding && handleAddKeyword()}
+                disabled={isAdding}
               />
             </div>
             <div className="w-32">
@@ -143,9 +168,12 @@ export function CampaignKeywords({ campaignId }: CampaignKeywordsProps) {
                 </SelectContent>
               </Select>
             </div>
-            <Button onClick={handleAddKeyword} disabled={!newKeyword.trim()}>
+            <Button 
+              onClick={handleAddKeyword} 
+              disabled={!newKeyword.trim() || isAdding}
+            >
               <Plus className="h-4 w-4 mr-2" />
-              Add
+              {isAdding ? 'Adding...' : 'Add'}
             </Button>
           </div>
         </CardContent>
