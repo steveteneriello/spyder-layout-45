@@ -460,6 +460,54 @@ export type Database = {
         }
         Relationships: []
       }
+      scrapi_api_credentials: {
+        Row: {
+          api_provider: string
+          concurrent_request_limit: number | null
+          created_at: string | null
+          credential_name: string
+          credentials: Json
+          daily_request_limit: number | null
+          id: string
+          is_active: boolean | null
+          last_reset_date: string | null
+          monthly_request_limit: number | null
+          requests_this_month: number | null
+          requests_today: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          api_provider: string
+          concurrent_request_limit?: number | null
+          created_at?: string | null
+          credential_name: string
+          credentials: Json
+          daily_request_limit?: number | null
+          id?: string
+          is_active?: boolean | null
+          last_reset_date?: string | null
+          monthly_request_limit?: number | null
+          requests_this_month?: number | null
+          requests_today?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          api_provider?: string
+          concurrent_request_limit?: number | null
+          created_at?: string | null
+          credential_name?: string
+          credentials?: Json
+          daily_request_limit?: number | null
+          id?: string
+          is_active?: boolean | null
+          last_reset_date?: string | null
+          monthly_request_limit?: number | null
+          requests_this_month?: number | null
+          requests_today?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       scrapi_api_keys: {
         Row: {
           created_at: string
@@ -759,33 +807,174 @@ export type Database = {
           },
         ]
       }
+      scrapi_job_batches: {
+        Row: {
+          batch_number: number
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          job_id: string
+          oxylabs_batch_id: string | null
+          schedule_id: string | null
+          status: string | null
+          submitted_at: string | null
+          total_queries: number
+          updated_at: string | null
+        }
+        Insert: {
+          batch_number: number
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          job_id: string
+          oxylabs_batch_id?: string | null
+          schedule_id?: string | null
+          status?: string | null
+          submitted_at?: string | null
+          total_queries: number
+          updated_at?: string | null
+        }
+        Update: {
+          batch_number?: number
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          job_id?: string
+          oxylabs_batch_id?: string | null
+          schedule_id?: string | null
+          status?: string | null
+          submitted_at?: string | null
+          total_queries?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scrapi_job_batches_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "scrapi_active_jobs_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scrapi_job_batches_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "scrapi_job_performance_metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scrapi_job_batches_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "scrapi_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scrapi_job_batches_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "scrapi_job_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scrapi_job_keywords: {
+        Row: {
+          created_at: string | null
+          custom_parameters: Json | null
+          id: string
+          is_active: boolean | null
+          job_id: string
+          keyword: string
+          location: string | null
+          location_lat: number | null
+          location_lng: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          custom_parameters?: Json | null
+          id?: string
+          is_active?: boolean | null
+          job_id: string
+          keyword: string
+          location?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          custom_parameters?: Json | null
+          id?: string
+          is_active?: boolean | null
+          job_id?: string
+          keyword?: string
+          location?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scrapi_job_keywords_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "scrapi_active_jobs_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scrapi_job_keywords_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "scrapi_job_performance_metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scrapi_job_keywords_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "scrapi_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scrapi_job_logs: {
         Row: {
           batch_id: string | null
           created_at: string
           details: Json | null
+          error_code: string | null
           id: string
           level: string
+          log_level: string | null
+          log_type: string | null
           message: string
           query_id: string | null
+          stack_trace: string | null
         }
         Insert: {
           batch_id?: string | null
           created_at?: string
           details?: Json | null
+          error_code?: string | null
           id?: string
           level: string
+          log_level?: string | null
+          log_type?: string | null
           message: string
           query_id?: string | null
+          stack_trace?: string | null
         }
         Update: {
           batch_id?: string | null
           created_at?: string
           details?: Json | null
+          error_code?: string | null
           id?: string
           level?: string
+          log_level?: string | null
+          log_type?: string | null
           message?: string
           query_id?: string | null
+          stack_trace?: string | null
         }
         Relationships: [
           {
@@ -800,6 +989,438 @@ export type Database = {
             columns: ["query_id"]
             isOneToOne: false
             referencedRelation: "scrapi_search_queries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scrapi_job_queue: {
+        Row: {
+          batch_id: string
+          completed_at: string | null
+          id: string
+          job_id: string
+          keyword_id: string
+          last_error: string | null
+          last_error_at: string | null
+          location: string | null
+          oxylabs_callback_url: string | null
+          oxylabs_job_id: string | null
+          priority: number | null
+          query_text: string
+          queued_at: string | null
+          retry_count: number | null
+          status: string | null
+          submitted_at: string | null
+        }
+        Insert: {
+          batch_id: string
+          completed_at?: string | null
+          id?: string
+          job_id: string
+          keyword_id: string
+          last_error?: string | null
+          last_error_at?: string | null
+          location?: string | null
+          oxylabs_callback_url?: string | null
+          oxylabs_job_id?: string | null
+          priority?: number | null
+          query_text: string
+          queued_at?: string | null
+          retry_count?: number | null
+          status?: string | null
+          submitted_at?: string | null
+        }
+        Update: {
+          batch_id?: string
+          completed_at?: string | null
+          id?: string
+          job_id?: string
+          keyword_id?: string
+          last_error?: string | null
+          last_error_at?: string | null
+          location?: string | null
+          oxylabs_callback_url?: string | null
+          oxylabs_job_id?: string | null
+          priority?: number | null
+          query_text?: string
+          queued_at?: string | null
+          retry_count?: number | null
+          status?: string | null
+          submitted_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scrapi_job_queue_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "scrapi_job_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scrapi_job_queue_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "scrapi_oxylabs_batch_info"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "scrapi_job_queue_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "scrapi_active_jobs_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scrapi_job_queue_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "scrapi_job_performance_metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scrapi_job_queue_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "scrapi_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scrapi_job_queue_keyword_id_fkey"
+            columns: ["keyword_id"]
+            isOneToOne: false
+            referencedRelation: "scrapi_job_keywords"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scrapi_job_results: {
+        Row: {
+          ads_count: number | null
+          created_at: string | null
+          gcs_result_path: string | null
+          gcs_screenshot_path: string | null
+          id: string
+          job_id: string
+          organic_count: number | null
+          oxylabs_content_type: string | null
+          oxylabs_job_status: string | null
+          oxylabs_status_code: number | null
+          processing_time_ms: number | null
+          queue_id: string
+          raw_response_sample: Json | null
+          result_size_bytes: number | null
+          total_results: number | null
+        }
+        Insert: {
+          ads_count?: number | null
+          created_at?: string | null
+          gcs_result_path?: string | null
+          gcs_screenshot_path?: string | null
+          id?: string
+          job_id: string
+          organic_count?: number | null
+          oxylabs_content_type?: string | null
+          oxylabs_job_status?: string | null
+          oxylabs_status_code?: number | null
+          processing_time_ms?: number | null
+          queue_id: string
+          raw_response_sample?: Json | null
+          result_size_bytes?: number | null
+          total_results?: number | null
+        }
+        Update: {
+          ads_count?: number | null
+          created_at?: string | null
+          gcs_result_path?: string | null
+          gcs_screenshot_path?: string | null
+          id?: string
+          job_id?: string
+          organic_count?: number | null
+          oxylabs_content_type?: string | null
+          oxylabs_job_status?: string | null
+          oxylabs_status_code?: number | null
+          processing_time_ms?: number | null
+          queue_id?: string
+          raw_response_sample?: Json | null
+          result_size_bytes?: number | null
+          total_results?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scrapi_job_results_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "scrapi_active_jobs_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scrapi_job_results_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "scrapi_job_performance_metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scrapi_job_results_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "scrapi_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scrapi_job_results_queue_id_fkey"
+            columns: ["queue_id"]
+            isOneToOne: false
+            referencedRelation: "scrapi_job_queue"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scrapi_job_schedules: {
+        Row: {
+          created_at: string | null
+          cron_expression: string
+          end_date: string | null
+          id: string
+          is_active: boolean | null
+          job_id: string
+          last_run_at: string | null
+          next_run_at: string | null
+          schedule_name: string
+          start_date: string | null
+          timezone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          cron_expression: string
+          end_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          job_id: string
+          last_run_at?: string | null
+          next_run_at?: string | null
+          schedule_name: string
+          start_date?: string | null
+          timezone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          cron_expression?: string
+          end_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          job_id?: string
+          last_run_at?: string | null
+          next_run_at?: string | null
+          schedule_name?: string
+          start_date?: string | null
+          timezone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scrapi_job_schedules_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "scrapi_active_jobs_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scrapi_job_schedules_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "scrapi_job_performance_metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scrapi_job_schedules_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "scrapi_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scrapi_jobs: {
+        Row: {
+          capture_screenshot: boolean | null
+          created_at: string | null
+          created_by: string | null
+          custom_parser_config: Json | null
+          description: string | null
+          device_type: string | null
+          domain: string | null
+          gcs_bucket_name: string | null
+          gcs_path_prefix: string | null
+          geo_location: string | null
+          id: string
+          is_active: boolean | null
+          job_type: string
+          language_code: string | null
+          max_retries: number | null
+          name: string
+          oxylabs_parameters: Json | null
+          parse_content: boolean | null
+          priority: number | null
+          retry_delay_seconds: number | null
+          screenshot_format: string | null
+          source: string
+          timeout_seconds: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          capture_screenshot?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          custom_parser_config?: Json | null
+          description?: string | null
+          device_type?: string | null
+          domain?: string | null
+          gcs_bucket_name?: string | null
+          gcs_path_prefix?: string | null
+          geo_location?: string | null
+          id?: string
+          is_active?: boolean | null
+          job_type: string
+          language_code?: string | null
+          max_retries?: number | null
+          name: string
+          oxylabs_parameters?: Json | null
+          parse_content?: boolean | null
+          priority?: number | null
+          retry_delay_seconds?: number | null
+          screenshot_format?: string | null
+          source?: string
+          timeout_seconds?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          capture_screenshot?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          custom_parser_config?: Json | null
+          description?: string | null
+          device_type?: string | null
+          domain?: string | null
+          gcs_bucket_name?: string | null
+          gcs_path_prefix?: string | null
+          geo_location?: string | null
+          id?: string
+          is_active?: boolean | null
+          job_type?: string
+          language_code?: string | null
+          max_retries?: number | null
+          name?: string
+          oxylabs_parameters?: Json | null
+          parse_content?: boolean | null
+          priority?: number | null
+          retry_delay_seconds?: number | null
+          screenshot_format?: string | null
+          source?: string
+          timeout_seconds?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      scrapi_oxylabs_runs: {
+        Row: {
+          created_at: string | null
+          id: string
+          jobs: Json | null
+          oxylabs_schedule_id: string
+          run_id: number
+          success_rate: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          jobs?: Json | null
+          oxylabs_schedule_id: string
+          run_id: number
+          success_rate?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          jobs?: Json | null
+          oxylabs_schedule_id?: string
+          run_id?: number
+          success_rate?: number | null
+        }
+        Relationships: []
+      }
+      scrapi_oxylabs_schedules: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          cron_expression: string | null
+          end_time: string | null
+          id: string
+          items_count: number | null
+          job_id: string | null
+          last_synced_at: string | null
+          next_run_at: string | null
+          oxylabs_schedule_id: string
+          schedule_id: string | null
+          stats: Json | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          cron_expression?: string | null
+          end_time?: string | null
+          id?: string
+          items_count?: number | null
+          job_id?: string | null
+          last_synced_at?: string | null
+          next_run_at?: string | null
+          oxylabs_schedule_id: string
+          schedule_id?: string | null
+          stats?: Json | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          cron_expression?: string | null
+          end_time?: string | null
+          id?: string
+          items_count?: number | null
+          job_id?: string | null
+          last_synced_at?: string | null
+          next_run_at?: string | null
+          oxylabs_schedule_id?: string
+          schedule_id?: string | null
+          stats?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scrapi_oxylabs_schedules_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "scrapi_active_jobs_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scrapi_oxylabs_schedules_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "scrapi_job_performance_metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scrapi_oxylabs_schedules_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "scrapi_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scrapi_oxylabs_schedules_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "scrapi_job_schedules"
             referencedColumns: ["id"]
           },
         ]
@@ -2639,6 +3260,65 @@ export type Database = {
       }
     }
     Views: {
+      scrapi_active_jobs_summary: {
+        Row: {
+          active_batches: number | null
+          id: string | null
+          job_type: string | null
+          keyword_count: number | null
+          last_batch_created: string | null
+          name: string | null
+          pending_queries: number | null
+          schedule_count: number | null
+        }
+        Relationships: []
+      }
+      scrapi_job_performance_metrics: {
+        Row: {
+          avg_processing_time_ms: number | null
+          failed_queries_24h: number | null
+          id: string | null
+          last_result_at: string | null
+          name: string | null
+          total_ads_found: number | null
+          total_results_24h: number | null
+        }
+        Relationships: []
+      }
+      scrapi_oxylabs_batch_info: {
+        Row: {
+          batch_id: string | null
+          batch_status: string | null
+          completed_at: string | null
+          completed_queries: number | null
+          failed_queries: number | null
+          job_name: string | null
+          oxylabs_batch_id: string | null
+          oxylabs_job_ids: string[] | null
+          oxylabs_jobs_mapped: number | null
+          submitted_at: string | null
+          submitted_queries: number | null
+          total_queries: number | null
+        }
+        Relationships: []
+      }
+      scrapi_oxylabs_schedule_overview: {
+        Row: {
+          active: boolean | null
+          cron_expression: string | null
+          end_time: string | null
+          id: string | null
+          job_name: string | null
+          last_synced_at: string | null
+          management_status: string | null
+          next_run_at: string | null
+          oxylabs_schedule_id: string | null
+          schedule_name: string | null
+          success_rate: number | null
+          total_jobs: string | null
+        }
+        Relationships: []
+      }
       v_missing_advertisers_audit: {
         Row: {
           audit_timestamp: string | null
@@ -2731,6 +3411,51 @@ export type Database = {
       schedule_next_facebook_ads_job: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      scrapi_calculate_next_run: {
+        Args: {
+          p_cron_expression: string
+          p_timezone?: string
+          p_after_timestamp?: string
+        }
+        Returns: string
+      }
+      scrapi_check_oxylabs_usage: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          total_schedules: number
+          active_schedules: number
+          unmanaged_schedules: number
+          total_jobs_24h: number
+          avg_success_rate: number
+        }[]
+      }
+      scrapi_create_job_batch: {
+        Args: { p_job_id: string; p_schedule_id?: string }
+        Returns: string
+      }
+      scrapi_create_job_with_keywords: {
+        Args: {
+          p_job_name: string
+          p_job_type: string
+          p_keywords: string[]
+          p_locations?: string[]
+          p_schedule_cron?: string
+        }
+        Returns: string
+      }
+      scrapi_get_job_status: {
+        Args: { p_job_id: string }
+        Returns: {
+          job_name: string
+          total_keywords: number
+          active_batches: number
+          pending_queries: number
+          completed_queries: number
+          failed_queries: number
+          last_run: string
+          next_run: string
+        }[]
       }
       sync_facebook_advertising_businesses: {
         Args: Record<PropertyKey, never>

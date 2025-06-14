@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import Index from "./pages/Index";
 import Campaigns from "./pages/Campaigns";
+import SchedulerDashboard from "./pages/SchedulerDashboard";
 import Theme from "./pages/Theme";
 import NotFound from "./pages/NotFound";
 
@@ -23,6 +24,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/campaigns" element={<Campaigns />} />
+            <Route path="/scheduler" element={<SchedulerDashboard />} />
             <Route path="/theme" element={<Theme />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
