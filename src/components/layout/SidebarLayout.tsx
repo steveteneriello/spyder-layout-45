@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import {
@@ -194,7 +195,7 @@ export default function SidebarLayout({
     <div
       ref={btnRef}
       className={cn(
-        'sidebar-layout flex flex-col h-screen w-full',
+        'sidebar-layout flex flex-col h-screen w-full bg-background',
         'mouse-cursor-gradient-tracking',
         isActive && 'active',
         isPulsing && 'pulse-effect'
@@ -203,14 +204,14 @@ export default function SidebarLayout({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      <div className={cn('', className)}>
+      <div className={cn('h-full w-full', className)}>
         <SidebarProvider>
           <Nav>{nav}</Nav>
-          <div className="flex flex-1 mt-16 w-full">
+          <div className="flex flex-1 mt-16 w-full h-[calc(100vh-4rem)]">
             <TooltipProvider delayDuration={300} skipDelayDuration={0}>
               <AppSidebar menuItems={menuItems} category={category} footer={footer} />
-              <div className="flex flex-col flex-1 overflow-hidden relative">
-                <main className="flex-1 overflow-y-auto p-0 sm:p-8 bg-white rounded-tl-[20px] z-[3] relative">
+              <div className="flex flex-col flex-1 overflow-hidden relative h-full">
+                <main className="flex-1 overflow-y-auto p-0 campaign-page-bg h-full">
                   <div className="main-body w-full h-full">{children}</div>
                 </main>
               </div>
