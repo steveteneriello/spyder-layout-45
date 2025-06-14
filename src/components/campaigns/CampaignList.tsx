@@ -68,7 +68,7 @@ export function CampaignList({
 
   if (loading) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-4 bg-neutral-800 p-6 rounded-lg">
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-semibold text-neutral-50">Campaigns</h2>
           <div className="flex gap-2">
@@ -100,7 +100,7 @@ export function CampaignList({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 bg-neutral-800 p-6 rounded-lg">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-semibold text-neutral-50">Campaigns</h2>
         <div className="flex gap-2">
