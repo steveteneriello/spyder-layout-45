@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import {
   RefreshCw,
@@ -22,6 +23,7 @@ import {
 } from 'lucide-react';
 import SidebarLayout from '@/components/layout/SidebarLayout';
 import { SideCategory } from '@/components/navigation/SideCategory';
+import { ScheduleManagementTable } from '@/components/scheduler/ScheduleManagementTable';
 
 // Types
 interface OxylabsSchedule {
@@ -131,6 +133,14 @@ class OxylabsSchedulerAPI {
     return this.makeRequest(`/schedule/${scheduleId}`);
   }
 
+  async getScheduleRuns(scheduleId: string) {
+    return this.makeRequest(`/schedule/${scheduleId}/runs`);
+  }
+
+  async getScheduleJobs(scheduleId: string) {
+    return this.makeRequest(`/schedule/${scheduleId}/jobs`);
+  }
+
   async setScheduleState(scheduleId: string, active: boolean) {
     return this.makeRequest(`/schedule/${scheduleId}/state`, {
       method: 'PUT',
@@ -155,6 +165,8 @@ function OxylabsSchedulerDashboard() {
   const [schedules, setSchedules] = useState<OxylabsSchedule[]>([]);
   const [selectedSchedule, setSelectedSchedule] = useState<OxylabsSchedule | null>(null);
   const [scheduleDetails, setScheduleDetails] = useState<any>(null);
+  const [scheduleRuns, setScheduleRuns] = useState<any[]>([]);
+  const [scheduleJobs, setScheduleJobs] = useState<any[]>([]);
   const [stats, setStats] = useState<DashboardStats>({
     total_schedules: 0,
     active_schedules: 0,
@@ -279,8 +291,31 @@ function OxylabsSchedulerDashboard() {
     try {
       const details = await api.getSchedule(scheduleId);
       setScheduleDetails(details);
+      addNotification('info', `Loaded details for schedule ${scheduleId}`);
     } catch (error) {
       addNotification('error', `Failed to load schedule details: ${error.message}`);
+    }
+  };
+
+  // Load schedule runs
+  const loadScheduleRuns = async (scheduleId: string) => {
+    try {
+      const runs = await api.getScheduleRuns(scheduleId);
+      setScheduleRuns(runs.results || []);
+      addNotification('info', `Loaded ${runs.results?.length || 0} runs for schedule ${scheduleId}`);
+    } catch (error) {
+      addNotification('error', `Failed to load schedule runs: ${error.message}`);
+    }
+  };
+
+  // Load schedule jobs
+  const loadScheduleJobs = async (scheduleId: string) => {
+    try {
+      const jobs = await api.getScheduleJobs(scheduleId);
+      setScheduleJobs(jobs.results || []);
+      addNotification('info', `Loaded ${jobs.results?.length || 0} jobs for schedule ${scheduleId}`);
+    } catch (error) {
+      addNotification('error', `Failed to load schedule jobs: ${error.message}`);
     }
   };
 
@@ -304,39 +339,6 @@ function OxylabsSchedulerDashboard() {
     
     return matchesSearch && matchesFilter;
   });
-
-  const parseCronExpression = (cron: string) => {
-    const parts = cron.split(' ');
-    if (parts.length !== 5) return cron;
-    
-    const [minute, hour, dayOfMonth, month, dayOfWeek] = parts;
-    
-    if (dayOfMonth === '*' && month === '*' && dayOfWeek === '*') {
-      return `Daily at ${hour}:${minute.padStart(2, '0')}`;
-    } else if (dayOfWeek !== '*') {
-      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-      return `Weekly on ${days[parseInt(dayOfWeek)]} at ${hour}:${minute.padStart(2, '0')}`;
-    }
-    return cron;
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString();
-  };
-
-  const getStatusBadge = (schedule: OxylabsSchedule) => {
-    if (!schedule.active) {
-      return { color: 'bg-gray-100 text-gray-700', icon: Pause, text: 'Inactive' };
-    }
-    if (schedule.management_status === 'unmanaged') {
-      return { color: 'bg-yellow-100 text-yellow-700', icon: AlertCircle, text: 'Unmanaged' };
-    }
-    const successRate = schedule.stats?.job_result_outcomes?.find(o => o.status === 'done')?.ratio || 0;
-    if (successRate < 0.5) {
-      return { color: 'bg-red-100 text-red-700', icon: TrendingDown, text: 'Poor Performance' };
-    }
-    return { color: 'bg-green-100 text-green-700', icon: CheckCircle, text: 'Healthy' };
-  };
 
   useEffect(() => {
     logAPI('Component mounted, loading dashboard...');
@@ -432,8 +434,6 @@ function OxylabsSchedulerDashboard() {
         </div>
       </div>
 
-      
-      
       {/* Stats Cards */}
       <div className="px-6 py-6">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -489,7 +489,7 @@ function OxylabsSchedulerDashboard() {
         </div>
       </div>
 
-      {/* Filters and remaining content */}
+      {/* Filters */}
       <div className="px-6 pb-4">
         <div className="campaign-card-bg rounded-lg p-4 campaign-border border">
           <div className="flex items-center gap-4">
@@ -521,70 +521,16 @@ function OxylabsSchedulerDashboard() {
         </div>
       </div>
 
-      {/* Simple table showing current state */}
+      {/* Schedule Management Table */}
       <div className="px-6 pb-6">
-        <div className="campaign-card-bg rounded-lg campaign-border border overflow-hidden">
-          <table className="w-full">
-            <thead className="campaign-secondary-bg campaign-border border-b">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium campaign-secondary-text uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium campaign-secondary-text uppercase tracking-wider">
-                  Message
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y campaign-border">
-              {isLoading ? (
-                <tr>
-                  <td colSpan={2} className="px-4 py-8 text-center campaign-secondary-text">
-                    <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
-                    Loading schedules...
-                  </td>
-                </tr>
-              ) : filteredSchedules.length === 0 ? (
-                <tr>
-                  <td className="px-4 py-4">
-                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
-                      <AlertCircle className="w-3 h-3" />
-                      No Data
-                    </span>
-                  </td>
-                  <td className="px-4 py-4 campaign-primary-text">
-                    No schedules found. The API might not be responding or the edge function may not be deployed.
-                  </td>
-                </tr>
-              ) : (
-                filteredSchedules.map((schedule) => {
-                  const status = getStatusBadge(schedule);
-                  const StatusIcon = status.icon;
-                  
-                  return (
-                    <tr key={schedule.id} className="hover:campaign-secondary-bg">
-                      <td className="px-4 py-4">
-                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${status.color}`}>
-                          <StatusIcon className="w-3 h-3" />
-                          {status.text}
-                        </span>
-                      </td>
-                      <td className="px-4 py-4">
-                        <div>
-                          <div className="font-medium campaign-primary-text">
-                            {schedule.job_name || 'Unnamed Schedule'}
-                          </div>
-                          <div className="text-sm campaign-secondary-text">
-                            ID: {schedule.oxylabs_schedule_id}
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+        <ScheduleManagementTable
+          schedules={filteredSchedules}
+          loading={isLoading}
+          onToggleSchedule={toggleScheduleState}
+          onViewRuns={loadScheduleRuns}
+          onViewDetails={loadScheduleDetails}
+          onViewJobs={loadScheduleJobs}
+        />
       </div>
     </div>
   );
