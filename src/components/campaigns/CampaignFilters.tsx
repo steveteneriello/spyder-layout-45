@@ -36,16 +36,16 @@ export function CampaignFilters({
             placeholder="Search campaigns..."
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-10"
+            className="pl-10 bg-background border-border text-foreground placeholder:text-muted-foreground"
           />
         </div>
         
         <Select value={statusFilter} onValueChange={onStatusFilterChange}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-[180px] bg-background border-border text-foreground">
             <Filter className="h-4 w-4 mr-2" />
             <SelectValue placeholder="Filter by status" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-popover border-border">
             <SelectItem value="all">All Campaigns</SelectItem>
             <SelectItem value="active">Active Only</SelectItem>
             <SelectItem value="inactive">Inactive Only</SelectItem>
@@ -53,10 +53,10 @@ export function CampaignFilters({
         </Select>
 
         <Select value={categoryFilter} onValueChange={onCategoryFilterChange}>
-          <SelectTrigger className="w-[200px]">
+          <SelectTrigger className="w-[200px] bg-background border-border text-foreground">
             <SelectValue placeholder="Filter by category" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-popover border-border">
             <SelectItem value="all">All Categories</SelectItem>
             {categories.map((category) => (
               <SelectItem key={category.id} value={category.id}>
@@ -68,24 +68,24 @@ export function CampaignFilters({
       </div>
 
       <div className="flex items-center gap-2">
-        <Badge variant="outline" className="text-sm">
+        <Badge variant="outline" className="text-sm border-border bg-background">
           {totalResults} campaign{totalResults !== 1 ? 's' : ''} found
         </Badge>
         
         {searchTerm && (
-          <Badge variant="secondary" className="text-sm">
+          <Badge variant="secondary" className="text-sm bg-secondary text-secondary-foreground">
             Search: "{searchTerm}"
           </Badge>
         )}
         
         {statusFilter !== 'all' && (
-          <Badge variant="secondary" className="text-sm">
+          <Badge variant="secondary" className="text-sm bg-secondary text-secondary-foreground">
             Status: {statusFilter}
           </Badge>
         )}
         
         {categoryFilter !== 'all' && (
-          <Badge variant="secondary" className="text-sm">
+          <Badge variant="secondary" className="text-sm bg-secondary text-secondary-foreground">
             Category: {categories.find(c => c.id === categoryFilter)?.name}
           </Badge>
         )}

@@ -64,7 +64,7 @@ export function CampaignList({
       {/* Add Campaign Button */}
       {onAddCampaign && (
         <div className="flex justify-between items-center">
-          <h2 className="text-xl font-semibold">Your Campaigns</h2>
+          <h2 className="text-xl font-semibold text-foreground">Your Campaigns</h2>
           <Button onClick={onAddCampaign} className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
             Add New Campaign
@@ -80,11 +80,11 @@ export function CampaignList({
           return (
             <Card 
               key={campaign.id} 
-              className={`cursor-pointer transition-all hover:shadow-md border ${
+              className={`cursor-pointer transition-all hover:shadow-md dark:hover:shadow-lg border bg-card ${
                 selectedCampaignId === campaign.id 
-                  ? 'ring-2 ring-primary border-primary' 
+                  ? 'ring-2 ring-primary border-primary shadow-md' 
                   : 'border-border hover:border-primary/50'
-              } bg-card`}
+              }`}
               onClick={() => onSelectCampaign(campaign.id)}
             >
               <CardHeader className="pb-3">
@@ -116,7 +116,7 @@ export function CampaignList({
 
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm">
-                    <Badge variant="outline" className="text-xs">
+                    <Badge variant="outline" className="text-xs border-border bg-background">
                       {campaign.campaign_type === 'advertiser' ? 'Advertiser' : 'Market'}
                     </Badge>
                     {campaign.category && (
@@ -155,7 +155,7 @@ export function CampaignList({
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="w-full mt-3"
+                  className="w-full mt-3 border-border hover:bg-accent hover:text-accent-foreground"
                   onClick={(e) => {
                     e.stopPropagation();
                     if (onEditCampaign) {
@@ -175,7 +175,7 @@ export function CampaignList({
         {campaigns.length === 0 && (
           <div className="col-span-full text-center py-12 text-muted-foreground">
             <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <h3 className="text-lg font-medium mb-2">No campaigns found</h3>
+            <h3 className="text-lg font-medium mb-2 text-foreground">No campaigns found</h3>
             <p className="mb-4">Create your first campaign to get started.</p>
             {onAddCampaign && (
               <Button onClick={onAddCampaign} className="flex items-center gap-2 mx-auto">

@@ -110,7 +110,7 @@ export function CampaignDesigner() {
           <PaginationItem>
             <PaginationPrevious 
               onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
-              className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+              className={`${currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'} hover:bg-accent hover:text-accent-foreground`}
             />
           </PaginationItem>
           
@@ -128,7 +128,7 @@ export function CampaignDesigner() {
                 <PaginationLink
                   onClick={() => handlePageChange(page)}
                   isActive={currentPage === page}
-                  className="cursor-pointer"
+                  className="cursor-pointer hover:bg-accent hover:text-accent-foreground"
                 >
                   {page}
                 </PaginationLink>
@@ -139,7 +139,7 @@ export function CampaignDesigner() {
           <PaginationItem>
             <PaginationNext 
               onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
-              className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+              className={`${currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'} hover:bg-accent hover:text-accent-foreground`}
             />
           </PaginationItem>
         </PaginationContent>
@@ -154,17 +154,23 @@ export function CampaignDesigner() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 bg-background text-foreground">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Campaign Manager</h1>
+        <h1 className="text-3xl font-bold text-foreground">Campaign Manager</h1>
       </div>
 
       <CampaignDashboard />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList>
-          <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
-          <TabsTrigger value="editor" disabled={!selectedCampaignId}>
+        <TabsList className="bg-muted border-border">
+          <TabsTrigger value="campaigns" className="text-foreground data-[state=active]:bg-background data-[state=active]:text-foreground">
+            Campaigns
+          </TabsTrigger>
+          <TabsTrigger 
+            value="editor" 
+            disabled={!selectedCampaignId}
+            className="text-foreground data-[state=active]:bg-background data-[state=active]:text-foreground disabled:text-muted-foreground"
+          >
             Campaign Editor
           </TabsTrigger>
         </TabsList>
