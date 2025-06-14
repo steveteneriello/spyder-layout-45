@@ -3309,20 +3309,54 @@ export type Database = {
       scrapi_active_oxylabs_schedules: {
         Row: {
           active: boolean | null
+          created_at: string | null
           cron_expression: string | null
           deleted_at: string | null
           end_time: string | null
           id: string | null
+          items_count: number | null
+          job_id: string | null
           job_name: string | null
           last_synced_at: string | null
           management_status: string | null
           next_run_at: string | null
           oxylabs_schedule_id: string | null
+          schedule_id: string | null
           schedule_name: string | null
+          stats: Json | null
           success_rate: number | null
           total_jobs: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "scrapi_oxylabs_schedules_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "scrapi_active_jobs_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scrapi_oxylabs_schedules_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "scrapi_job_performance_metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scrapi_oxylabs_schedules_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "scrapi_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scrapi_oxylabs_schedules_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "scrapi_job_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       scrapi_job_performance_metrics: {
         Row: {
@@ -3356,20 +3390,54 @@ export type Database = {
       scrapi_oxylabs_schedule_overview: {
         Row: {
           active: boolean | null
+          created_at: string | null
           cron_expression: string | null
           deleted_at: string | null
           end_time: string | null
           id: string | null
+          items_count: number | null
+          job_id: string | null
           job_name: string | null
           last_synced_at: string | null
           management_status: string | null
           next_run_at: string | null
           oxylabs_schedule_id: string | null
+          schedule_id: string | null
           schedule_name: string | null
+          stats: Json | null
           success_rate: number | null
           total_jobs: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "scrapi_oxylabs_schedules_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "scrapi_active_jobs_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scrapi_oxylabs_schedules_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "scrapi_job_performance_metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scrapi_oxylabs_schedules_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "scrapi_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scrapi_oxylabs_schedules_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "scrapi_job_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       v_missing_advertisers_audit: {
         Row: {
