@@ -217,15 +217,32 @@ function OxylabsSchedulerDashboard() {
     try {
       logAPI('Loading dashboard...');
       const data = await api.getDashboard();
-      setSchedules(data.schedules || []);
+      
+      // Transform the data to match our interface
+      const transformedSchedules = (data.schedules || []).map((schedule: any) => ({
+        id: schedule.id,
+        oxylabs_schedule_id: schedule.oxylabs_schedule_id,
+        active: schedule.active || false,
+        cron_expression: schedule.cron_expression || '',
+        next_run_at: schedule.next_run_at || '',
+        end_time: schedule.end_time || '',
+        job_name: schedule.job_name,
+        schedule_name: schedule.schedule_name,
+        items_count: schedule.items_count || 0,
+        stats: schedule.stats || { total_job_count: 0, job_result_outcomes: [] },
+        management_status: schedule.management_status || 'unmanaged',
+        last_synced_at: schedule.last_synced_at || ''
+      }));
+      
+      setSchedules(transformedSchedules);
       
       // Calculate stats
-      const totalSchedules = data.schedules?.length || 0;
-      const activeSchedules = data.schedules?.filter((s: OxylabsSchedule) => s.active).length || 0;
-      const unmanagedSchedules = data.schedules?.filter((s: OxylabsSchedule) => s.management_status === 'unmanaged').length || 0;
+      const totalSchedules = transformedSchedules.length;
+      const activeSchedules = transformedSchedules.filter((s: any) => s.active).length;
+      const unmanagedSchedules = transformedSchedules.filter((s: any) => s.management_status === 'unmanaged').length;
       const totalJobs24h = data.recent_runs?.length || 0;
-      const avgSuccessRate = totalSchedules > 0 ? data.schedules.reduce((acc: number, s: OxylabsSchedule) => {
-        const successOutcome = s.stats?.job_result_outcomes?.find(o => o.status === 'done');
+      const avgSuccessRate = totalSchedules > 0 ? transformedSchedules.reduce((acc: number, s: any) => {
+        const successOutcome = s.stats?.job_result_outcomes?.find((o: any) => o.status === 'done');
         return acc + (successOutcome?.ratio || 0);
       }, 0) / totalSchedules : 0;
 
