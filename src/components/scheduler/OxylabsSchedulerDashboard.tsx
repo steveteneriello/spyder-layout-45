@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   RefreshCw, Play, Pause, Trash2, CheckSquare, Square, 
-  ChevronLeft, ChevronRight, Search, Filter, AlertTriangle,
+  ChevronLeft, ChevronRight, Search,
   Clock, CheckCircle2, XCircle, Loader2, MoreHorizontal,
   Settings, Eye, History, Activity, Calendar
 } from 'lucide-react';
@@ -56,8 +56,13 @@ class OxylabsSchedulerAPI {
     };
   }
 
-  async getDashboard() {
-    const response = await fetch(`${this.baseUrl}/dashboard`, {
+  async getDashboard(limit = 100, offset = 0) {
+    const params = new URLSearchParams({ 
+      limit: limit.toString(), 
+      offset: offset.toString() 
+    });
+    
+    const response = await fetch(`${this.baseUrl}/dashboard?${params}`, {
       method: 'GET',
       headers: this.headers
     });
@@ -113,6 +118,7 @@ class OxylabsSchedulerAPI {
 export default function OxylabsSchedulerDashboard() {
   // State
   const [schedules, setSchedules] = useState<OxylabsSchedule[]>([]);
+  const [totalSchedules, setTotalSchedules] = useState(0);
   const [operations, setOperations] = useState<ScheduleOperation[]>([]);
   const [queueStats, setQueueStats] = useState<QueueStats>({
     pending: 0,
@@ -122,7 +128,12 @@ export default function OxylabsSchedulerDashboard() {
     total: 0
   });
 
-  // Selection and pagination
+  // Pagination for API calls
+  const [apiPage, setApiPage] = useState(0);
+  const [apiLimit] = useState(100);
+  const [hasMoreData, setHasMoreData] = useState(true);
+
+  // Selection and pagination for display
   const [selectedSchedules, setSelectedSchedules] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(25);
@@ -131,6 +142,7 @@ export default function OxylabsSchedulerDashboard() {
 
   // UI state
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isProcessingBulk, setIsProcessingBulk] = useState(false);
   const [activeTab, setActiveTab] = useState<'schedules' | 'queue' | 'history'>('schedules');
@@ -152,17 +164,25 @@ export default function OxylabsSchedulerDashboard() {
     }, 5000);
   }, []);
 
-  // Data loading
-  const loadDashboard = useCallback(async () => {
-    setIsLoading(true);
+  // Load initial data
+  const loadDashboard = useCallback(async (reset = false) => {
+    if (reset) {
+      setIsLoading(true);
+      setSchedules([]);
+      setApiPage(0);
+      setHasMoreData(true);
+    } else {
+      setIsLoadingMore(true);
+    }
+
     try {
+      const offset = reset ? 0 : apiPage * apiLimit;
       const [dashboardData, operationsData] = await Promise.all([
-        api.getDashboard(),
+        api.getDashboard(apiLimit, offset),
         api.getOperations(100)
       ]);
 
       console.log('Dashboard response:', dashboardData);
-      console.log('Operations response:', operationsData);
 
       if (dashboardData.success) {
         const transformedSchedules = (dashboardData.schedules || []).map((schedule: any) => ({
@@ -179,7 +199,19 @@ export default function OxylabsSchedulerDashboard() {
           management_status: schedule.management_status || 'unmanaged',
           last_synced_at: schedule.last_synced_at || ''
         }));
-        setSchedules(transformedSchedules);
+
+        if (reset) {
+          setSchedules(transformedSchedules);
+        } else {
+          setSchedules(prev => [...prev, ...transformedSchedules]);
+        }
+        
+        setTotalSchedules(dashboardData.total_count || 0);
+        setHasMoreData(transformedSchedules.length === apiLimit);
+        
+        if (!reset) {
+          setApiPage(prev => prev + 1);
+        }
       } else {
         console.error('Dashboard API error:', dashboardData.error);
         addNotification('error', dashboardData.error || 'Failed to load dashboard data');
@@ -190,25 +222,31 @@ export default function OxylabsSchedulerDashboard() {
         setQueueStats(operationsData.queue_stats || {
           pending: 0, processing: 0, completed: 0, failed: 0, total: 0
         });
-      } else {
-        console.error('Operations API error:', operationsData.error);
       }
     } catch (error) {
       console.error('Dashboard load error:', error);
       addNotification('error', 'Failed to load dashboard data');
     } finally {
       setIsLoading(false);
+      setIsLoadingMore(false);
     }
-  }, [api, addNotification]);
+  }, [api, addNotification, apiPage, apiLimit]);
 
-  // Auto-refresh
+  // Load more data
+  const loadMoreData = useCallback(() => {
+    if (!isLoadingMore && hasMoreData) {
+      loadDashboard(false);
+    }
+  }, [loadDashboard, isLoadingMore, hasMoreData]);
+
+  // Initial load and auto-refresh
   useEffect(() => {
-    loadDashboard();
-    const interval = setInterval(loadDashboard, 30000); // Refresh every 30 seconds
+    loadDashboard(true);
+    const interval = setInterval(() => loadDashboard(true), 30000);
     return () => clearInterval(interval);
-  }, [loadDashboard]);
+  }, []);
 
-  // Filtering and pagination - moved after state definitions
+  // Filtering and pagination for display
   const filteredSchedules = schedules.filter(schedule => {
     const matchesSearch = !searchTerm || 
       schedule.job_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -248,6 +286,7 @@ export default function OxylabsSchedulerDashboard() {
     setSelectedSchedules(newSelected);
   };
 
+  // Bulk operations
   const bulkActivate = async () => {
     if (selectedSchedules.size === 0) return;
     
@@ -274,7 +313,7 @@ export default function OxylabsSchedulerDashboard() {
       addNotification('error', `Failed to queue ${errorCount} schedules`);
     }
     
-    setTimeout(loadDashboard, 1000);
+    setTimeout(() => loadDashboard(true), 1000);
   };
 
   const bulkDeactivate = async () => {
@@ -303,7 +342,7 @@ export default function OxylabsSchedulerDashboard() {
       addNotification('error', `Failed to queue ${errorCount} schedules`);
     }
     
-    setTimeout(loadDashboard, 1000);
+    setTimeout(() => loadDashboard(true), 1000);
   };
 
   const bulkDelete = async () => {
@@ -336,7 +375,7 @@ export default function OxylabsSchedulerDashboard() {
       addNotification('error', `Failed to queue ${errorCount} schedules`);
     }
     
-    setTimeout(loadDashboard, 1000);
+    setTimeout(() => loadDashboard(true), 1000);
   };
 
   // Individual operations
@@ -344,7 +383,7 @@ export default function OxylabsSchedulerDashboard() {
     try {
       await api.queueScheduleStateChange(scheduleId, !currentState);
       addNotification('success', `Schedule ${currentState ? 'deactivation' : 'activation'} queued`);
-      setTimeout(loadDashboard, 1000);
+      setTimeout(() => loadDashboard(true), 1000);
     } catch (error) {
       addNotification('error', 'Failed to queue operation');
     }
@@ -356,7 +395,7 @@ export default function OxylabsSchedulerDashboard() {
     try {
       await api.queueScheduleDelete(scheduleId);
       addNotification('success', 'Schedule deletion queued');
-      setTimeout(loadDashboard, 1000);
+      setTimeout(() => loadDashboard(true), 1000);
     } catch (error) {
       addNotification('error', 'Failed to queue deletion');
     }
@@ -369,7 +408,7 @@ export default function OxylabsSchedulerDashboard() {
       const result = await api.syncSchedules();
       if (result.success) {
         addNotification('success', result.message || `Synced ${result.synced || 0} schedules`);
-        await loadDashboard();
+        await loadDashboard(true);
       } else {
         addNotification('error', result.error || 'Failed to sync schedules');
       }
@@ -385,7 +424,7 @@ export default function OxylabsSchedulerDashboard() {
       const result = await api.mapUnmanaged();
       const mapped = result.mappings?.filter((m: any) => m.success).length || 0;
       addNotification('success', `Mapped ${mapped} unmanaged schedules`);
-      await loadDashboard();
+      await loadDashboard(true);
     } catch (error) {
       addNotification('error', 'Failed to map unmanaged schedules');
     }
@@ -485,7 +524,8 @@ export default function OxylabsSchedulerDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-400">Total Schedules</p>
-                <p className="text-2xl font-bold text-white mt-1">{schedules.length}</p>
+                <p className="text-2xl font-bold text-white mt-1">{totalSchedules}</p>
+                <p className="text-xs text-gray-500">Loaded: {schedules.length}</p>
               </div>
               <Calendar className="w-8 h-8 text-gray-500" />
             </div>
@@ -650,6 +690,26 @@ export default function OxylabsSchedulerDashboard() {
                       </button>
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* Load More Button */}
+              {hasMoreData && (
+                <div className="mt-4 pt-4 border-t border-gray-700 text-center">
+                  <button
+                    onClick={loadMoreData}
+                    disabled={isLoadingMore}
+                    className="px-4 py-2 bg-blue-900 text-blue-100 rounded-lg hover:bg-blue-800 transition-colors disabled:opacity-50"
+                  >
+                    {isLoadingMore ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin inline mr-2" />
+                        Loading More...
+                      </>
+                    ) : (
+                      `Load More (${totalSchedules - schedules.length} remaining)`
+                    )}
+                  </button>
                 </div>
               )}
             </div>
@@ -820,12 +880,17 @@ export default function OxylabsSchedulerDashboard() {
                 </table>
               </div>
 
-              {/* Pagination */}
+              {/* Pagination for display */}
               {totalPages > 1 && (
                 <div className="bg-gray-750 px-4 py-3 border-t border-gray-700">
                   <div className="flex items-center justify-between">
                     <div className="text-sm text-gray-400">
-                      Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredSchedules.length)} of {filteredSchedules.length} schedules
+                      Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredSchedules.length)} of {filteredSchedules.length} filtered schedules
+                      {filteredSchedules.length !== totalSchedules && (
+                        <span className="ml-2 text-yellow-400">
+                          ({totalSchedules - schedules.length} more available - click "Load More")
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
                       <button
