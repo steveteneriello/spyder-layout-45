@@ -16,7 +16,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 222.2 47.4% 11.2%;
+    --primary: 217 91% 60%; /* Changed to blue */
     --primary-foreground: 210 40% 98%;
 
     --secondary: 210 40% 96.1%;
@@ -43,7 +43,7 @@
     --sidebar-primary-foreground: 0 0% 0%;
     --sidebar-accent: 0 0% 10%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 0 0% 30%;
+    --sidebar-border: 0 0% 0%; /* Remove border by making it transparent/same as background */
     --sidebar-ring: 217.2 91.2% 59.8%;
 
     /* Campaign page specific background - Pure White Minimal */
@@ -67,7 +67,7 @@
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 210 40% 98%;
+    --primary: 217 91% 60%; /* Changed to blue */
     --primary-foreground: 222.2 47.4% 11.2%;
 
     --secondary: 217.2 32.6% 17.5%;
@@ -92,7 +92,7 @@
     --sidebar-primary-foreground: 0 0% 0%;
     --sidebar-accent: 0 0% 10%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 0 0% 30%;
+    --sidebar-border: 0 0% 0%; /* Remove border by making it transparent/same as background */
     --sidebar-ring: 217.2 91.2% 59.8%;
 
     /* Campaign page specific background - Pure Black */
@@ -122,6 +122,7 @@
   .sidebar-layout [data-sidebar] {
     background-color: hsl(0 0% 0%) !important;
     color: hsl(0 0% 100%) !important;
+    border: none !important; /* Remove all borders */
   }
   
   .sidebar-layout [data-sidebar] * {
@@ -134,6 +135,12 @@
   
   .sidebar-layout .text-sidebar-foreground {
     color: hsl(0 0% 100%) !important;
+  }
+
+  /* Remove sidebar borders */
+  .sidebar-layout [data-sidebar] {
+    border-right: none !important;
+    border-left: none !important;
   }
 
   /* Campaign page background */
