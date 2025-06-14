@@ -301,7 +301,7 @@ export default function OxylabsSchedulerDashboard() {
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="schedules" className="space-y-4" onValueChange={setActiveTab}>
+        <Tabs defaultValue="schedules" className="space-y-4" onValueChange={(value) => setActiveTab(value as 'schedules' | 'operations')}>
           <TabsList>
             <TabsTrigger value="schedules" className="data-[state=active]:text-primary">Schedules</TabsTrigger>
             <TabsTrigger value="operations" className="data-[state=active]:text-primary">Operations</TabsTrigger>
