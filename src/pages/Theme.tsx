@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { Sun, Moon, Palette, TrendingUp, Users, DollarSign, ShoppingCart, Activity, AlertCircle, CheckCircle, Clock, Star, Mail, Phone, MapPin, Calendar, Search, Filter, MoreHorizontal, Edit, Trash2, Eye, Download, Upload, Plus, Minus, Settings, Home, User, Bell, Heart, Share2, MessageSquare, ThumbsUp, PlayCircle, PauseCircle, RotateCcw, ArrowRight, Timer, Target, Flag } from 'lucide-react';
 
 // Sample data for charts
@@ -59,13 +60,7 @@ const ComponentId = ({ id }: { id: string }) => (
 );
 
 export default function Theme() {
-  const [isDark, setIsDark] = useState(false);
   const [accentColor, setAccentColor] = useState('blue');
-
-  const handleThemeToggle = () => {
-    setIsDark(!isDark);
-    document.documentElement.classList.toggle('dark');
-  };
 
   const accentColors = {
     blue: { 
@@ -120,7 +115,7 @@ export default function Theme() {
   };
 
   return (
-    <div className={`min-h-screen bg-background text-foreground ${isDark ? 'dark' : ''}`}>
+    <div className="min-h-screen bg-background text-foreground">
       <div className="container mx-auto p-6 space-y-8">
         {/* Header */}
         <div className="flex justify-between items-center">
@@ -131,11 +126,7 @@ export default function Theme() {
             </p>
           </div>
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Sun className="h-4 w-4" />
-              <Switch checked={isDark} onCheckedChange={handleThemeToggle} />
-              <Moon className="h-4 w-4" />
-            </div>
+            <ThemeToggle />
           </div>
         </div>
 
