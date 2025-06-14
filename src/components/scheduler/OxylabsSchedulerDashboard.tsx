@@ -130,14 +130,52 @@ export default function OxylabsSchedulerDashboard() {
   };
 
   const handleDeleteSchedule = async (scheduleId: string) => {
+    console.log('=== DELETE OPERATION START ===');
+    console.log('Schedule ID to delete:', scheduleId);
+    console.log('API Base URL:', API_BASE_URL);
+    console.log('Current timestamp:', new Date().toISOString());
+    console.log('User agent:', navigator.userAgent);
+    console.log('Connection type:', (navigator as any).connection?.effectiveType || 'unknown');
+    
     try {
-      console.log('Deleting schedule:', scheduleId);
+      const deleteUrl = `${API_BASE_URL}/schedule/${scheduleId}`;
+      console.log('Full delete URL:', deleteUrl);
       
-      // Use AbortController for timeout
+      // Test basic connectivity first
+      console.log('Testing basic connectivity...');
+      try {
+        const healthCheck = await fetch(`${API_BASE_URL}/dashboard?limit=1&offset=0`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtybXdwaHFobHpzY251eHd4dmt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxMzExMjUsImV4cCI6MjA2NDcwNzEyNX0.k5fDJWwqMdqd9XQgWuDGwcJbwUuL8U-mF7NhiJxY4eU`,
+          },
+          signal: AbortSignal.timeout(5000)
+        });
+        console.log('Health check response status:', healthCheck.status);
+        console.log('Health check successful, proceeding with delete...');
+      } catch (healthError) {
+        console.error('Health check failed:', healthError);
+        throw new Error(`Service connectivity test failed: ${healthError instanceof Error ? healthError.message : 'Unknown error'}`);
+      }
+
+      // Use AbortController for timeout with detailed logging
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      const timeoutId = setTimeout(() => {
+        console.log('DELETE request timed out after 30 seconds');
+        controller.abort();
+      }, 30000);
       
-      const response = await fetch(`${API_BASE_URL}/schedule/${scheduleId}`, {
+      console.log('Creating DELETE request...');
+      console.log('Request headers will be:', {
+        'Authorization': 'Bearer [REDACTED]',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      });
+      
+      const requestStartTime = Date.now();
+      console.log('Sending DELETE request at:', new Date(requestStartTime).toISOString());
+      
+      const response = await fetch(deleteUrl, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtybXdwaHFobHpzY251eHd4dmt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxMzExMjUsImV4cCI6MjA2NDcwNzEyNX0.k5fDJWwqMdqd9XQgWuDGwcJbwUuL8U-mF7NhiJxY4eU`,
@@ -148,27 +186,58 @@ export default function OxylabsSchedulerDashboard() {
       });
 
       clearTimeout(timeoutId);
+      const requestEndTime = Date.now();
+      const requestDuration = requestEndTime - requestStartTime;
       
-      console.log('Delete response status:', response.status);
-      console.log('Delete response headers:', Object.fromEntries(response.headers.entries()));
+      console.log('DELETE request completed');
+      console.log('Request duration:', requestDuration, 'ms');
+      console.log('Response received at:', new Date(requestEndTime).toISOString());
+      console.log('Response status:', response.status);
+      console.log('Response statusText:', response.statusText);
+      console.log('Response ok:', response.ok);
+      console.log('Response type:', response.type);
+      console.log('Response url:', response.url);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
         let errorMessage = 'Failed to delete schedule';
+        let errorDetails = '';
+        
         try {
           const errorData = await response.json();
+          console.log('Error response JSON:', errorData);
           errorMessage = errorData.error || errorMessage;
+          errorDetails = JSON.stringify(errorData);
         } catch (parseError) {
-          console.error('Failed to parse error response:', parseError);
-          const responseText = await response.text();
-          console.error('Raw error response:', responseText);
-          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+          console.error('Failed to parse error response as JSON:', parseError);
+          try {
+            const responseText = await response.text();
+            console.log('Error response text:', responseText);
+            errorDetails = responseText;
+            errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+          } catch (textError) {
+            console.error('Failed to read error response as text:', textError);
+            errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+          }
         }
+        
+        console.log('Final error message:', errorMessage);
+        console.log('Error details:', errorDetails);
         throw new Error(errorMessage);
       }
 
-      const result = await response.json();
-      console.log('Delete schedule result:', result);
+      let result;
+      try {
+        result = await response.json();
+        console.log('Success response JSON:', result);
+      } catch (jsonError) {
+        console.error('Failed to parse success response as JSON:', jsonError);
+        const responseText = await response.text();
+        console.log('Success response text:', responseText);
+        result = { success: true, message: 'Schedule deleted' };
+      }
 
+      console.log('Delete operation successful, refreshing data...');
       // Refresh the data after deletion
       await fetchData();
       
@@ -176,21 +245,41 @@ export default function OxylabsSchedulerDashboard() {
         title: 'Schedule Deletion Queued',
         description: 'The schedule has been queued for deletion and will be removed shortly.',
       });
-    } catch (error) {
-      console.error('Error deleting schedule:', error);
       
-      // Provide more specific error messages
-      let errorMessage = 'Failed to delete schedule';
-      if (error instanceof Error && error.name === 'AbortError') {
-        errorMessage = 'Request timed out. Please try again.';
-      } else if (error instanceof TypeError && error.message === 'Failed to fetch') {
-        errorMessage = 'Network error: Unable to connect to the server. The service may be temporarily unavailable.';
-      } else if (error instanceof Error) {
-        errorMessage = error.message;
+      console.log('=== DELETE OPERATION COMPLETED SUCCESSFULLY ===');
+    } catch (error) {
+      console.error('=== DELETE OPERATION FAILED ===');
+      console.error('Error type:', error?.constructor?.name);
+      console.error('Error message:', error instanceof Error ? error.message : String(error));
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+      
+      if (error instanceof Error) {
+        console.log('Error properties:', Object.getOwnPropertyNames(error));
+        console.log('Error name:', error.name);
+        console.log('Error cause:', (error as any).cause);
       }
       
+      // Provide more specific error messages with debugging info
+      let errorMessage = 'Failed to delete schedule';
+      if (error instanceof Error && error.name === 'AbortError') {
+        errorMessage = 'Request timed out after 30 seconds. The server may be overloaded.';
+        console.log('Request was aborted due to timeout');
+      } else if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        errorMessage = 'Network error: Unable to connect to the server. This could be due to:\n' +
+                     '• Network connectivity issues\n' +
+                     '• Server temporarily unavailable\n' +
+                     '• CORS policy blocking the request\n' +
+                     '• DNS resolution problems';
+        console.log('Failed to fetch - network level error');
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+        console.log('Custom error message:', error.message);
+      }
+      
+      console.log('Displaying error to user:', errorMessage);
+      
       toast({
-        title: 'Error',
+        title: 'Delete Error',
         description: errorMessage,
         variant: 'destructive',
       });
