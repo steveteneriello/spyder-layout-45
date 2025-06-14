@@ -4,7 +4,7 @@ import SidebarLayout from '@/components/layout/SidebarLayout';
 import { CompanySelector } from '@/components/navigation/CompanySelector';
 import { ProfileDropdown } from '@/components/navigation/ProfileDropdown';
 import { SideCategory } from '@/components/navigation/SideCategory';
-import { ThemeToggle } from '@/components/navigation/ThemeToggle';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { CampaignDesigner } from '@/components/campaigns/CampaignDesigner';
 
 // Mock data
