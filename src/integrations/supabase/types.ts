@@ -9,15 +9,95 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_advertisers: {
+        Row: {
+          advertiser_name: string | null
+          created_at: string
+          id: string
+        }
+        Insert: {
+          advertiser_name?: string | null
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          advertiser_name?: string | null
+          created_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      admin_markets: {
+        Row: {
+          created_at: string
+          id: number
+          market: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          market?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          market?: string | null
+        }
+        Relationships: []
+      }
+      campaign_manager_campaign_status: {
+        Row: {
+          active: boolean
+          campaign_id: string | null
+          created_at: string
+          id: string
+          last_updated: string | null
+        }
+        Insert: {
+          active?: boolean
+          campaign_id?: string | null
+          created_at?: string
+          id?: string
+          last_updated?: string | null
+        }
+        Update: {
+          active?: boolean
+          campaign_id?: string | null
+          created_at?: string
+          id?: string
+          last_updated?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_manager_campaign_status_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_manager_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_campaign_status_campaign"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_manager_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_manager_campaigns: {
         Row: {
+          advertiser_id: string | null
           budget: number | null
+          campaign_type:
+            | Database["public"]["Enums"]["campaign_type_enum"]
+            | null
           category_id: string | null
           created_at: string | null
           description: string | null
           end_date: string | null
           id: string
           is_active: boolean | null
+          market_id: number | null
           name: string
           start_date: string | null
           status: string | null
@@ -25,13 +105,18 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          advertiser_id?: string | null
           budget?: number | null
+          campaign_type?:
+            | Database["public"]["Enums"]["campaign_type_enum"]
+            | null
           category_id?: string | null
           created_at?: string | null
           description?: string | null
           end_date?: string | null
           id?: string
           is_active?: boolean | null
+          market_id?: number | null
           name: string
           start_date?: string | null
           status?: string | null
@@ -39,13 +124,18 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          advertiser_id?: string | null
           budget?: number | null
+          campaign_type?:
+            | Database["public"]["Enums"]["campaign_type_enum"]
+            | null
           category_id?: string | null
           created_at?: string | null
           description?: string | null
           end_date?: string | null
           id?: string
           is_active?: boolean | null
+          market_id?: number | null
           name?: string
           start_date?: string | null
           status?: string | null
@@ -54,7 +144,28 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "campaign_manager_campaigns_advertiser_id_fkey"
+            columns: ["advertiser_id"]
+            isOneToOne: false
+            referencedRelation: "admin_advertisers"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "campaign_manager_campaigns_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_manager_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_manager_campaigns_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "admin_markets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_campaigns_category"
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "campaign_manager_categories"
@@ -175,6 +286,13 @@ export type Database = {
             referencedRelation: "campaign_manager_keywords"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_keyword_stats_keyword"
+            columns: ["keyword_id"]
+            isOneToOne: true
+            referencedRelation: "campaign_manager_keywords"
+            referencedColumns: ["id"]
+          },
         ]
       }
       campaign_manager_keywords: {
@@ -183,6 +301,7 @@ export type Database = {
           created_at: string | null
           id: string
           keyword: string
+          market_id: number | null
           match_type: string | null
           updated_at: string | null
         }
@@ -191,6 +310,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           keyword: string
+          market_id?: number | null
           match_type?: string | null
           updated_at?: string | null
         }
@@ -199,12 +319,27 @@ export type Database = {
           created_at?: string | null
           id?: string
           keyword?: string
+          market_id?: number | null
           match_type?: string | null
           updated_at?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "campaign_manager_keywords_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_manager_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_manager_keywords_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "admin_markets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_keywords_campaign"
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "campaign_manager_campaigns"
@@ -240,6 +375,42 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "campaign_manager_negative_keywords_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_manager_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_negative_keywords_campaign"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_manager_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_manager_type: {
+        Row: {
+          campaign_id: string | null
+          campaign_type: string | null
+          created_at: string
+          id: string
+        }
+        Insert: {
+          campaign_id?: string | null
+          campaign_type?: string | null
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          campaign_id?: string | null
+          campaign_type?: string | null
+          created_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_manager_type_campaign_id_fkey"
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "campaign_manager_campaigns"
@@ -2541,7 +2712,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      campaign_type_enum: "advertiser" | "market"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2656,6 +2827,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      campaign_type_enum: ["advertiser", "market"],
+    },
   },
 } as const
