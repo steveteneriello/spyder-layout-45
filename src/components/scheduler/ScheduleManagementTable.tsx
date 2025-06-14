@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScheduleActions } from './ScheduleActions';
+import { parseCronExpression, formatDateWithTimezone } from './utils/scheduleUtils';
 import {
   Play,
   Pause,
@@ -56,6 +57,7 @@ interface OxylabsSchedule {
 
 interface ScheduleManagementTableProps {
   schedules: OxylabsSchedule[];
+  allSchedules: OxylabsSchedule[];
   loading: boolean;
   onToggleSchedule: (scheduleId: string, currentState: boolean) => Promise<void>;
   onViewRuns: (scheduleId: string) => void;
@@ -68,6 +70,7 @@ const ITEMS_PER_PAGE = 10;
 
 export function ScheduleManagementTable({
   schedules,
+  allSchedules,
   loading,
   onToggleSchedule,
   onViewRuns,
@@ -78,45 +81,6 @@ export function ScheduleManagementTable({
   const [selectedSchedules, setSelectedSchedules] = useState<string[]>([]);
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-
-  const parseCronExpression = (cron: string) => {
-    if (!cron) return 'No schedule';
-    
-    try {
-      const parts = cron.split(' ');
-      if (parts.length !== 5) return `Invalid format: ${cron}`;
-      
-      const [minute, hour, dayOfMonth, month, dayOfWeek] = parts;
-      
-      // Handle common patterns
-      if (dayOfMonth === '*' && month === '*' && dayOfWeek === '*') {
-        if (minute === '*' && hour === '*') return 'Every minute';
-        if (minute === '0' && hour === '*') return 'Every hour';
-        return `Daily at ${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`;
-      } else if (dayOfWeek !== '*' && dayOfWeek !== '0') {
-        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        const dayName = days[parseInt(dayOfWeek)] || `Day ${dayOfWeek}`;
-        return `Weekly on ${dayName} at ${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`;
-      } else if (dayOfMonth !== '*') {
-        return `Monthly on day ${dayOfMonth} at ${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`;
-      }
-      
-      return cron;
-    } catch (error) {
-      console.error('Error parsing cron expression:', error);
-      return `Invalid: ${cron}`;
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    if (!dateString) return 'N/A';
-    try {
-      return new Date(dateString).toLocaleString();
-    } catch (error) {
-      console.error('Error formatting date:', error);
-      return 'Invalid date';
-    }
-  };
 
   const getStatusBadge = (schedule: OxylabsSchedule) => {
     if (!schedule.active) {
@@ -148,12 +112,13 @@ export function ScheduleManagementTable({
   const endIndex = startIndex + ITEMS_PER_PAGE;
   const currentSchedules = schedules.slice(startIndex, endIndex);
 
-  const isAllSelected = currentSchedules.length > 0 && selectedSchedules.length === currentSchedules.length;
-  const isPartiallySelected = selectedSchedules.length > 0 && selectedSchedules.length < currentSchedules.length;
+  // Select all logic now works with ALL schedules, not just current page
+  const isAllSelected = allSchedules.length > 0 && selectedSchedules.length === allSchedules.length;
+  const isPartiallySelected = selectedSchedules.length > 0 && selectedSchedules.length < allSchedules.length;
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedSchedules(currentSchedules.map(s => s.oxylabs_schedule_id));
+      setSelectedSchedules(allSchedules.map(s => s.oxylabs_schedule_id));
     } else {
       setSelectedSchedules([]);
     }
@@ -173,7 +138,7 @@ export function ScheduleManagementTable({
     setBulkActionLoading(true);
     try {
       for (const scheduleId of selectedSchedules) {
-        const schedule = schedules.find(s => s.oxylabs_schedule_id === scheduleId);
+        const schedule = allSchedules.find(s => s.oxylabs_schedule_id === scheduleId);
         if (!schedule) continue;
 
         if (action === 'activate' || action === 'deactivate') {
@@ -278,7 +243,7 @@ export function ScheduleManagementTable({
     return (
       <div className="space-y-3">
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="h-16 bg-gray-100 rounded animate-pulse" />
+          <div key={i} className="h-16 campaign-secondary-bg rounded animate-pulse" />
         ))}
       </div>
     );
@@ -287,7 +252,7 @@ export function ScheduleManagementTable({
   if (schedules.length === 0) {
     return (
       <div className="text-center py-12 campaign-card-bg rounded-lg border campaign-border">
-        <AlertCircle className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+        <AlertCircle className="w-12 h-12 mx-auto mb-4 campaign-accent" />
         <h3 className="text-lg font-medium mb-2 campaign-primary-text">No Schedules Found</h3>
         <p className="text-sm campaign-secondary-text mb-4">
           No Oxylabs schedules are currently available. Try syncing with Oxylabs to fetch the latest schedules.
@@ -303,7 +268,7 @@ export function ScheduleManagementTable({
         <div className="campaign-card-bg rounded-lg border campaign-border p-4">
           <div className="flex items-center justify-between">
             <span className="text-sm campaign-primary-text">
-              {selectedSchedules.length} schedule{selectedSchedules.length !== 1 ? 's' : ''} selected
+              {selectedSchedules.length} of {allSchedules.length} schedule{selectedSchedules.length !== 1 ? 's' : ''} selected
             </span>
             <div className="flex items-center gap-2">
               <Button
@@ -345,7 +310,7 @@ export function ScheduleManagementTable({
       <div className="campaign-card-bg rounded-lg border campaign-border overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="campaign-secondary-bg">
+            <TableRow className="campaign-secondary-bg border-campaign-border">
               <TableHead className="w-12">
                 <div className="relative">
                   <Checkbox
@@ -357,15 +322,15 @@ export function ScheduleManagementTable({
                   )}
                 </div>
               </TableHead>
-              <TableHead className="w-12">Status</TableHead>
-              <TableHead>Schedule</TableHead>
-              <TableHead>Schedule Pattern</TableHead>
-              <TableHead>Items</TableHead>
-              <TableHead>Total Jobs</TableHead>
-              <TableHead>Success Rate</TableHead>
-              <TableHead>Next Run</TableHead>
-              <TableHead>Management</TableHead>
-              <TableHead className="w-20">Actions</TableHead>
+              <TableHead className="w-12 campaign-primary-text">Status</TableHead>
+              <TableHead className="campaign-primary-text">Schedule</TableHead>
+              <TableHead className="campaign-primary-text">Schedule Pattern</TableHead>
+              <TableHead className="campaign-primary-text">Items</TableHead>
+              <TableHead className="campaign-primary-text">Total Jobs</TableHead>
+              <TableHead className="campaign-primary-text">Success Rate</TableHead>
+              <TableHead className="campaign-primary-text">Next Run</TableHead>
+              <TableHead className="campaign-primary-text">Management</TableHead>
+              <TableHead className="w-20 campaign-primary-text">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -375,7 +340,7 @@ export function ScheduleManagementTable({
               const isSelected = selectedSchedules.includes(schedule.oxylabs_schedule_id);
               
               return (
-                <TableRow key={schedule.id} className="hover:campaign-secondary-bg">
+                <TableRow key={schedule.id} className="hover:campaign-secondary-bg border-campaign-border">
                   <TableCell>
                     <Checkbox
                       checked={isSelected}
@@ -408,7 +373,7 @@ export function ScheduleManagementTable({
                     <div className="flex items-center gap-1">
                       <Clock className="w-3 h-3 campaign-secondary-text" />
                       <span className="text-sm campaign-primary-text">
-                        {parseCronExpression(schedule.cron_expression)}
+                        {parseCronExpression(schedule.cron_expression, 'UTC')}
                       </span>
                     </div>
                   </TableCell>
@@ -436,7 +401,7 @@ export function ScheduleManagementTable({
                   
                   <TableCell>
                     <div className="text-xs campaign-secondary-text">
-                      {formatDate(schedule.next_run_at)}
+                      {formatDateWithTimezone(schedule.next_run_at, 'UTC')}
                     </div>
                   </TableCell>
                   
@@ -469,6 +434,11 @@ export function ScheduleManagementTable({
         <div className="flex items-center justify-between">
           <div className="text-sm campaign-secondary-text">
             Showing {startIndex + 1} to {Math.min(endIndex, schedules.length)} of {schedules.length} schedules
+            {selectedSchedules.length > 0 && (
+              <span className="ml-2 campaign-primary-text">
+                ({selectedSchedules.length} selected across all pages)
+              </span>
+            )}
           </div>
           
           <Pagination>

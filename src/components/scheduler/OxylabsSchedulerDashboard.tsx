@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { ScheduleManagementTable } from './ScheduleManagementTable';
 import { OperationsMonitoring } from './OperationsMonitoring';
@@ -330,10 +329,10 @@ export default function OxylabsSchedulerDashboard() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-background">
+    <div className="h-full flex flex-col campaign-page-bg">
       {/* Header Section */}
-      <div className="border-b p-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-foreground">Oxylabs Scheduler Dashboard</h2>
+      <div className="border-b campaign-border p-4 flex items-center justify-between campaign-card-bg">
+        <h2 className="text-lg font-semibold campaign-primary-text">Oxylabs Scheduler Dashboard</h2>
         <Button variant="outline" size="sm" onClick={refetch} disabled={isLoading}>
           {isLoading ? (
             <>
@@ -353,55 +352,55 @@ export default function OxylabsSchedulerDashboard() {
       <div className="flex-1 p-6 space-y-6 overflow-auto">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
+          <Card className="campaign-card-bg border-campaign-border">
             <CardHeader>
-              <CardTitle className="text-sm font-medium">Total Schedules</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-sm font-medium campaign-primary-text">Total Schedules</CardTitle>
+              <CardDescription className="campaign-secondary-text">
                 Total number of active and inactive schedules
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{totalCount}</div>
+              <div className="text-2xl font-bold campaign-primary-text">{totalCount}</div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="campaign-card-bg border-campaign-border">
             <CardHeader>
-              <CardTitle className="text-sm font-medium">Active Schedules</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-sm font-medium campaign-primary-text">Active Schedules</CardTitle>
+              <CardDescription className="campaign-secondary-text">
                 Number of schedules currently active
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="text-2xl font-bold campaign-primary-text">
                 {schedules.filter(schedule => schedule.active).length}
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="campaign-card-bg border-campaign-border">
             <CardHeader>
-              <CardTitle className="text-sm font-medium">Inactive Schedules</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-sm font-medium campaign-primary-text">Inactive Schedules</CardTitle>
+              <CardDescription className="campaign-secondary-text">
                 Number of schedules currently inactive
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="text-2xl font-bold campaign-primary-text">
                 {schedules.filter(schedule => !schedule.active).length}
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="campaign-card-bg border-campaign-border">
             <CardHeader>
-              <CardTitle className="text-sm font-medium">Unmanaged Schedules</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-sm font-medium campaign-primary-text">Unmanaged Schedules</CardTitle>
+              <CardDescription className="campaign-secondary-text">
                 Schedules not fully managed by this system
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="text-2xl font-bold campaign-primary-text">
                 {schedules.filter(schedule => schedule.management_status === 'unmanaged').length}
               </div>
             </CardContent>
@@ -426,11 +425,11 @@ export default function OxylabsSchedulerDashboard() {
             <TabsTrigger value="operations">Operations</TabsTrigger>
           </TabsList>
           
-          <div className="border rounded-md p-4 bg-card">
+          <div className="border campaign-border rounded-md p-4 campaign-card-bg">
             <div className="flex items-center justify-between">
               <div className="flex-1 space-y-2">
-                <h3 className="text-lg font-semibold">Manage Schedules</h3>
-                <p className="text-sm text-muted-foreground">
+                <h3 className="text-lg font-semibold campaign-primary-text">Manage Schedules</h3>
+                <p className="text-sm campaign-secondary-text">
                   View, edit, and manage your Oxylabs schedules.
                 </p>
               </div>
@@ -473,6 +472,7 @@ export default function OxylabsSchedulerDashboard() {
           <TabsContent value="schedules">
             <ScheduleManagementTable
               schedules={filteredSchedules}
+              allSchedules={schedules}
               loading={isLoading}
               onToggleSchedule={handleToggleSchedule}
               onViewRuns={handleViewRuns}
