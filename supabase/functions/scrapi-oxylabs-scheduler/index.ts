@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -19,15 +20,33 @@ serve(async (req) => {
     )
 
     const url = new URL(req.url)
-    const path = url.pathname.replace('/functions/v1/scrapi-oxylabs-scheduler', '')
+    // More flexible path parsing to handle different URL formats
+    let path = url.pathname
+    if (path.includes('/functions/v1/scrapi-oxylabs-scheduler')) {
+      path = path.replace('/functions/v1/scrapi-oxylabs-scheduler', '')
+    }
+    if (path.includes('/scrapi-oxylabs-scheduler')) {
+      path = path.replace('/scrapi-oxylabs-scheduler', '')
+    }
+    
+    // Ensure path starts with /
+    if (path && !path.startsWith('/')) {
+      path = '/' + path
+    }
+    
+    // Default to dashboard if no path
+    if (!path || path === '/') {
+      path = '/dashboard'
+    }
 
     console.log(`Request received: ${req.method} ${req.url}`)
+    console.log(`Parsed path: ${path}`)
 
     // Dashboard endpoint
     if (path === '/dashboard' && req.method === 'GET') {
       console.log('Dashboard endpoint called')
       
-      const limit = url.searchParams.get('limit') || '1000'
+      const limit = url.searchParams.get('limit') || '100'
       const offset = url.searchParams.get('offset') || '0'
       
       const { data: schedules, error } = await supabaseClient
@@ -217,8 +236,9 @@ serve(async (req) => {
       )
     }
 
+    console.log(`No matching endpoint found for path: ${path}`)
     return new Response(
-      JSON.stringify({ success: false, error: 'Endpoint not found' }),
+      JSON.stringify({ success: false, error: `Endpoint not found for path: ${path}` }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
     )
 
