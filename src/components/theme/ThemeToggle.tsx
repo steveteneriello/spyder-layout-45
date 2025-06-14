@@ -7,6 +7,12 @@ import { Button } from '@/components/ui/button';
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
 
+  // Add error boundary for theme context
+  if (!setTheme) {
+    console.warn('ThemeToggle: theme context not available');
+    return null;
+  }
+
   const toggleTheme = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
   };
