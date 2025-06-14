@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { ScheduleManagementTable } from './ScheduleManagementTable';
 import { OperationsMonitoring } from './OperationsMonitoring';
@@ -133,17 +132,35 @@ export default function OxylabsSchedulerDashboard() {
     try {
       console.log('Deleting schedule:', scheduleId);
       
+      // Add a small delay to ensure any pending operations complete
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       const response = await fetch(`${API_BASE_URL}/schedule/${scheduleId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtybXdwaHFobHpzY251eHd4dmt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxMzExMjUsImV4cCI6MjA2NDcwNzEyNX0.k5fDJWwqMdqd9XQgWuDGwcJbwUuL8U-mF7NhiJxY4eU`,
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
+        mode: 'cors',
+        credentials: 'include',
       });
 
+      console.log('Delete response status:', response.status);
+      console.log('Delete response headers:', Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete schedule');
+        let errorMessage = 'Failed to delete schedule';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch (parseError) {
+          console.error('Failed to parse error response:', parseError);
+          const responseText = await response.text();
+          console.error('Raw error response:', responseText);
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
 
       const result = await response.json();
@@ -158,9 +175,18 @@ export default function OxylabsSchedulerDashboard() {
       });
     } catch (error) {
       console.error('Error deleting schedule:', error);
+      
+      // Provide more specific error messages
+      let errorMessage = 'Failed to delete schedule';
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        errorMessage = 'Network error: Unable to connect to the server. Please check your connection and try again.';
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to delete schedule',
+        description: errorMessage,
         variant: 'destructive',
       });
       throw error;
