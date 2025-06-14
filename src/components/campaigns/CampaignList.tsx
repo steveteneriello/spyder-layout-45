@@ -2,10 +2,8 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
-import { Target, Calendar, DollarSign, Plus } from 'lucide-react';
-import { useCampaignStatus } from '@/hooks/useCampaignStatus';
+import { Plus, Edit, Trash2, Archive, RefreshCw } from 'lucide-react';
 import { CampaignActions } from './CampaignActions';
 
 interface Campaign {
@@ -13,19 +11,22 @@ interface Campaign {
   name: string;
   description?: string;
   status: string;
-  campaign_type: 'advertiser' | 'market';
+  is_active: boolean;
   budget?: number;
-  start_date?: string;
-  end_date?: string;
   category?: {
+    id: string;
     name: string;
   };
   advertiser?: {
-    advertiser_name: string;
+    id: string;
+    name: string;
   };
   market?: {
-    market: string;
+    id: string;
+    name: string;
   };
+  created_at: string;
+  updated_at: string;
 }
 
 interface CampaignListProps {
@@ -33,174 +34,164 @@ interface CampaignListProps {
   loading: boolean;
   onSelectCampaign: (campaignId: string) => void;
   selectedCampaignId: string | null;
-  onAddCampaign?: () => void;
-  onEditCampaign?: (campaignId: string) => void;
-  onRefresh?: () => void;
+  onAddCampaign: () => void;
+  onEditCampaign: (campaignId: string) => void;
+  onRefresh: () => void;
 }
 
-export function CampaignList({ 
-  campaigns, 
-  loading, 
-  onSelectCampaign, 
-  selectedCampaignId, 
+export function CampaignList({
+  campaigns,
+  loading,
+  onSelectCampaign,
+  selectedCampaignId,
   onAddCampaign,
   onEditCampaign,
-  onRefresh = () => {}
+  onRefresh
 }: CampaignListProps) {
-  const { campaignStatuses, toggleCampaignStatus, loading: statusLoading } = useCampaignStatus();
+  const getStatusBadgeVariant = (status: string, isActive: boolean) => {
+    if (status === 'archived') return 'secondary';
+    if (!isActive) return 'destructive';
+    return 'default';
+  };
 
-  console.log('CampaignList - campaigns:', campaigns, 'loading:', loading);
+  const getStatusText = (status: string, isActive: boolean) => {
+    if (status === 'archived') return 'Archived';
+    if (!isActive) return 'Inactive';
+    return 'Active';
+  };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-2 text-muted-foreground">Loading campaigns...</p>
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-semibold text-foreground">Campaigns</h2>
+          <div className="flex gap-2">
+            <Button onClick={onRefresh} variant="outline" size="sm" disabled>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+            <Button onClick={onAddCampaign} size="sm" disabled>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Campaign
+            </Button>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm">
+              <div className="grid auto-rows-min grid-rows-[auto_auto] items-start gap-1.5 px-6">
+                <div className="animate-pulse">
+                  <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
+                  <div className="h-6 bg-muted rounded w-1/2 mb-2"></div>
+                  <div className="h-3 bg-muted rounded w-full"></div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Add Campaign Button */}
-      {onAddCampaign && (
-        <div className="flex justify-between items-center">
-          <h2 className="text-xl font-semibold text-foreground">Your Campaigns</h2>
-          <Button onClick={onAddCampaign} className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Add New Campaign
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-semibold text-foreground">Campaigns</h2>
+        <div className="flex gap-2">
+          <Button onClick={onRefresh} variant="outline" size="sm" className="border-border hover:bg-accent hover:text-accent-foreground">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+          <Button onClick={onAddCampaign} size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground">
+            <Plus className="h-4 w-4 mr-2" />
+            Add Campaign
           </Button>
         </div>
-      )}
+      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {campaigns.map((campaign) => {
-          const status = campaignStatuses[campaign.id];
-          const isActive = status?.active ?? false;
-          const isArchived = campaign.status === 'archived';
-
-          return (
-            <Card 
-              key={campaign.id} 
-              className={`cursor-pointer transition-all hover:shadow-md dark:hover:shadow-lg border bg-card ${
-                selectedCampaignId === campaign.id 
-                  ? 'ring-2 ring-primary border-primary shadow-md' 
-                  : 'border-border hover:border-primary/50'
-              } ${isArchived ? 'opacity-75' : ''}`}
+      {campaigns.length === 0 ? (
+        <div className="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-12 shadow-sm text-center">
+          <div className="px-6">
+            <div className="text-muted-foreground text-sm mb-2">No campaigns found</div>
+            <div className="text-lg font-semibold mb-4">Get started by creating your first campaign</div>
+            <Button onClick={onAddCampaign} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+              <Plus className="h-4 w-4 mr-2" />
+              Create Campaign
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {campaigns.map((campaign) => (
+            <div
+              key={campaign.id}
+              className={`bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 ${
+                selectedCampaignId === campaign.id ? 'ring-2 ring-primary' : ''
+              }`}
               onClick={() => onSelectCampaign(campaign.id)}
             >
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2">
-                    <Target className="h-4 w-4 text-primary" />
-                    <CardTitle className="text-lg text-card-foreground">{campaign.name}</CardTitle>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {!isArchived && (
-                      <Switch 
-                        checked={isActive}
-                        onCheckedChange={(checked) => toggleCampaignStatus(campaign.id, checked)}
-                        disabled={statusLoading}
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    )}
-                    <Badge variant={isArchived ? 'outline' : isActive ? 'default' : 'secondary'}>
-                      {isArchived ? 'Archived' : isActive ? 'Active' : 'Paused'}
-                    </Badge>
-                    <div onClick={(e) => e.stopPropagation()}>
-                      <CampaignActions
-                        campaignId={campaign.id}
-                        campaignName={campaign.name}
-                        currentStatus={campaign.status}
-                        onEdit={() => onEditCampaign?.(campaign.id)}
-                        onRefresh={onRefresh}
-                      />
+              <div className="grid auto-rows-min grid-rows-[auto_auto] items-start gap-1.5 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto]">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <div className="text-muted-foreground text-sm mb-1">
+                      {campaign.category?.name || 'Uncategorized'}
                     </div>
+                    <div className="text-lg font-semibold mb-2 line-clamp-2">
+                      {campaign.name}
+                    </div>
+                    {campaign.description && (
+                      <div className="text-sm text-muted-foreground line-clamp-2 mb-2">
+                        {campaign.description}
+                      </div>
+                    )}
                   </div>
+                  <Badge
+                    variant={getStatusBadgeVariant(campaign.status, campaign.is_active)}
+                    className="ml-2 shrink-0"
+                  >
+                    {getStatusText(campaign.status, campaign.is_active)}
+                  </Badge>
                 </div>
-              </CardHeader>
+              </div>
               
-              <CardContent className="space-y-3">
-                {campaign.description && (
-                  <p className="text-sm text-muted-foreground line-clamp-2">
-                    {campaign.description}
-                  </p>
-                )}
-
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Badge variant="outline" className="text-xs border-border bg-background">
-                      {campaign.campaign_type === 'advertiser' ? 'Advertiser' : 'Market'}
-                    </Badge>
-                    {campaign.category && (
-                      <span className="text-muted-foreground">{campaign.category.name}</span>
+              <div className="flex px-6 flex-col items-start gap-1.5 text-sm">
+                <div className="flex justify-between items-center w-full">
+                  <div className="text-muted-foreground">
+                    {campaign.advertiser?.name && (
+                      <span>Advertiser: {campaign.advertiser.name}</span>
+                    )}
+                    {campaign.market?.name && (
+                      <span className="ml-2">Market: {campaign.market.name}</span>
                     )}
                   </div>
-
-                  {campaign.campaign_type === 'advertiser' && campaign.advertiser && (
-                    <div className="text-sm text-muted-foreground">
-                      Advertiser: {campaign.advertiser.advertiser_name}
-                    </div>
-                  )}
-
-                  {campaign.campaign_type === 'market' && campaign.market && (
-                    <div className="text-sm text-muted-foreground">
-                      Market: {campaign.market.market}
-                    </div>
-                  )}
-
-                  {campaign.budget && (
-                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                      <DollarSign className="h-3 w-3" />
-                      Budget: ${campaign.budget.toLocaleString()}
-                    </div>
-                  )}
-
-                  {campaign.start_date && (
-                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                      <Calendar className="h-3 w-3" />
-                      {new Date(campaign.start_date).toLocaleDateString()}
-                      {campaign.end_date && ` - ${new Date(campaign.end_date).toLocaleDateString()}`}
-                    </div>
-                  )}
+                  <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEditCampaign(campaign.id);
+                      }}
+                      className="h-8 w-8 p-0 hover:bg-accent hover:text-accent-foreground"
+                    >
+                      <Edit className="h-3 w-3" />
+                    </Button>
+                    <CampaignActions campaignId={campaign.id} />
+                  </div>
                 </div>
-
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full mt-3 border-border hover:bg-accent hover:text-accent-foreground"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (onEditCampaign) {
-                      onEditCampaign(campaign.id);
-                    } else {
-                      onSelectCampaign(campaign.id);
-                    }
-                  }}
-                >
-                  Edit Campaign
-                </Button>
-              </CardContent>
-            </Card>
-          );
-        })}
-
-        {campaigns.length === 0 && (
-          <div className="col-span-full text-center py-12 text-muted-foreground">
-            <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <h3 className="text-lg font-medium mb-2 text-foreground">No campaigns found</h3>
-            <p className="mb-4">Create your first campaign to get started.</p>
-            {onAddCampaign && (
-              <Button onClick={onAddCampaign} className="flex items-center gap-2 mx-auto">
-                <Plus className="h-4 w-4" />
-                Add New Campaign
-              </Button>
-            )}
-          </div>
-        )}
-      </div>
+                {campaign.budget && (
+                  <div className="text-muted-foreground text-xs">
+                    Budget: ${campaign.budget.toLocaleString()}
+                  </div>
+                )}
+                <div className="text-muted-foreground text-xs">
+                  Created: {new Date(campaign.created_at).toLocaleDateString()}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
