@@ -44,7 +44,7 @@ const Campaigns = () => {
   const nav = (
     <div className="flex items-center justify-between w-full px-6">
       <div className="flex items-center gap-4">
-        <h1 className="text-xl font-bold">Campaign Manager</h1>
+        <h1 className="text-xl font-bold">Your App</h1>
       </div>
       <div className="flex items-center gap-4">
         <ThemeToggle />
