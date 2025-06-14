@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import SidebarLayout from '@/components/layout/SidebarLayout';
 import { CompanySelector } from '@/components/navigation/CompanySelector';
@@ -84,7 +83,7 @@ const Campaigns = () => {
       footer={footer}
       menuItems={mockMenuItems}
     >
-      <div className="campaign-page-bg min-h-screen p-6">
+      <div className="bg-neutral-800 min-h-screen p-6">
         <CampaignDesigner />
       </div>
     </SidebarLayout>
