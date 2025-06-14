@@ -8,6 +8,15 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -31,7 +40,8 @@ import {
   AlertCircle,
   CheckCircle,
   Trash2,
-  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 interface OxylabsSchedule {
@@ -65,6 +75,8 @@ interface ScheduleManagementTableProps {
   onViewJobs: (scheduleId: string) => void;
 }
 
+const ITEMS_PER_PAGE = 10;
+
 export function ScheduleManagementTable({
   schedules,
   loading,
@@ -75,27 +87,45 @@ export function ScheduleManagementTable({
 }: ScheduleManagementTableProps) {
   const [selectedSchedules, setSelectedSchedules] = useState<string[]>([]);
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const parseCronExpression = (cron: string) => {
     if (!cron) return 'No schedule';
     
-    const parts = cron.split(' ');
-    if (parts.length !== 5) return cron;
-    
-    const [minute, hour, dayOfMonth, month, dayOfWeek] = parts;
-    
-    if (dayOfMonth === '*' && month === '*' && dayOfWeek === '*') {
-      return `Daily at ${hour}:${minute.padStart(2, '0')}`;
-    } else if (dayOfWeek !== '*') {
-      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-      return `Weekly on ${days[parseInt(dayOfWeek)]} at ${hour}:${minute.padStart(2, '0')}`;
+    try {
+      const parts = cron.split(' ');
+      if (parts.length !== 5) return `Invalid format: ${cron}`;
+      
+      const [minute, hour, dayOfMonth, month, dayOfWeek] = parts;
+      
+      // Handle common patterns
+      if (dayOfMonth === '*' && month === '*' && dayOfWeek === '*') {
+        if (minute === '*' && hour === '*') return 'Every minute';
+        if (minute === '0' && hour === '*') return 'Every hour';
+        return `Daily at ${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`;
+      } else if (dayOfWeek !== '*' && dayOfWeek !== '0') {
+        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const dayName = days[parseInt(dayOfWeek)] || `Day ${dayOfWeek}`;
+        return `Weekly on ${dayName} at ${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`;
+      } else if (dayOfMonth !== '*') {
+        return `Monthly on day ${dayOfMonth} at ${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`;
+      }
+      
+      return cron;
+    } catch (error) {
+      console.error('Error parsing cron expression:', error);
+      return `Invalid: ${cron}`;
     }
-    return cron;
   };
 
   const formatDate = (dateString: string) => {
     if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleString();
+    try {
+      return new Date(dateString).toLocaleString();
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Invalid date';
+    }
   };
 
   const getStatusBadge = (schedule: OxylabsSchedule) => {
@@ -113,13 +143,18 @@ export function ScheduleManagementTable({
   };
 
   const getSuccessRate = (schedule: OxylabsSchedule) => {
-    const doneOutcome = schedule.stats?.job_result_outcomes?.find(o => o.status === 'done');
-    return doneOutcome ? (doneOutcome.ratio * 100).toFixed(1) + '%' : '0%';
+    try {
+      const doneOutcome = schedule.stats?.job_result_outcomes?.find(o => o.status === 'done');
+      return doneOutcome ? (doneOutcome.ratio * 100).toFixed(1) + '%' : '0%';
+    } catch (error) {
+      console.error('Error calculating success rate:', error);
+      return 'N/A';
+    }
   };
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedSchedules(schedules.map(s => s.oxylabs_schedule_id));
+      setSelectedSchedules(currentSchedules.map(s => s.oxylabs_schedule_id));
     } else {
       setSelectedSchedules([]);
     }
@@ -145,8 +180,6 @@ export function ScheduleManagementTable({
         if (action === 'activate' || action === 'deactivate') {
           await onToggleSchedule(scheduleId, action === 'deactivate');
         } else if (action === 'delete') {
-          // For now, we'll just deactivate as a soft delete
-          // You can implement actual delete functionality later
           await onToggleSchedule(scheduleId, true);
         }
       }
@@ -158,8 +191,98 @@ export function ScheduleManagementTable({
     }
   };
 
-  const isAllSelected = schedules.length > 0 && selectedSchedules.length === schedules.length;
-  const isPartiallySelected = selectedSchedules.length > 0 && selectedSchedules.length < schedules.length;
+  // Pagination logic
+  const totalPages = Math.ceil(schedules.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const currentSchedules = schedules.slice(startIndex, endIndex);
+
+  const isAllSelected = currentSchedules.length > 0 && selectedSchedules.length === currentSchedules.length;
+  const isPartiallySelected = selectedSchedules.length > 0 && selectedSchedules.length < currentSchedules.length;
+
+  const goToPage = (page: number) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+  };
+
+  const renderPaginationItems = () => {
+    const items = [];
+    const maxVisiblePages = 5;
+    
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        items.push(
+          <PaginationItem key={i}>
+            <PaginationLink
+              onClick={() => goToPage(i)}
+              isActive={currentPage === i}
+              className="cursor-pointer"
+            >
+              {i}
+            </PaginationLink>
+          </PaginationItem>
+        );
+      }
+    } else {
+      items.push(
+        <PaginationItem key={1}>
+          <PaginationLink
+            onClick={() => goToPage(1)}
+            isActive={currentPage === 1}
+            className="cursor-pointer"
+          >
+            1
+          </PaginationLink>
+        </PaginationItem>
+      );
+
+      if (currentPage > 3) {
+        items.push(
+          <PaginationItem key="ellipsis1">
+            <PaginationEllipsis />
+          </PaginationItem>
+        );
+      }
+
+      const start = Math.max(2, currentPage - 1);
+      const end = Math.min(totalPages - 1, currentPage + 1);
+
+      for (let i = start; i <= end; i++) {
+        items.push(
+          <PaginationItem key={i}>
+            <PaginationLink
+              onClick={() => goToPage(i)}
+              isActive={currentPage === i}
+              className="cursor-pointer"
+            >
+              {i}
+            </PaginationLink>
+          </PaginationItem>
+        );
+      }
+
+      if (currentPage < totalPages - 2) {
+        items.push(
+          <PaginationItem key="ellipsis2">
+            <PaginationEllipsis />
+          </PaginationItem>
+        );
+      }
+
+      items.push(
+        <PaginationItem key={totalPages}>
+          <PaginationLink
+            onClick={() => goToPage(totalPages)}
+            isActive={currentPage === totalPages}
+            className="cursor-pointer"
+          >
+            {totalPages}
+          </PaginationLink>
+        </PaginationItem>
+      );
+    }
+
+    return items;
+  };
 
   if (loading) {
     return (
@@ -237,11 +360,7 @@ export function ScheduleManagementTable({
                 <Checkbox
                   checked={isAllSelected}
                   onCheckedChange={handleSelectAll}
-                  ref={(el) => {
-                    if (el) {
-                      el.indeterminate = isPartiallySelected;
-                    }
-                  }}
+                  indeterminate={isPartiallySelected}
                 />
               </TableHead>
               <TableHead className="w-12">Status</TableHead>
@@ -256,7 +375,7 @@ export function ScheduleManagementTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {schedules.map((schedule) => {
+            {currentSchedules.map((schedule) => {
               const status = getStatusBadge(schedule);
               const StatusIcon = status.icon;
               const isSelected = selectedSchedules.includes(schedule.oxylabs_schedule_id);
@@ -388,6 +507,35 @@ export function ScheduleManagementTable({
           </TableBody>
         </Table>
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <div className="text-sm campaign-secondary-text">
+            Showing {startIndex + 1} to {Math.min(endIndex, schedules.length)} of {schedules.length} schedules
+          </div>
+          
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={() => goToPage(currentPage - 1)}
+                  className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                />
+              </PaginationItem>
+              
+              {renderPaginationItems()}
+              
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() => goToPage(currentPage + 1)}
+                  className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
     </div>
   );
 }
