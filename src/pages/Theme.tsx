@@ -50,17 +50,35 @@ export default function Theme() {
   };
 
   const accentColors = {
-    blue: { primary: '221 83% 53%', secondary: '210 40% 96%' },
-    grey: { primary: '220 9% 46%', secondary: '210 20% 94%' },
-    black: { primary: '0 0% 0%', secondary: '0 0% 96%' },
+    blue: { 
+      primary: '221 83% 53%', 
+      secondary: '210 40% 96%',
+      accent: '210 40% 96%'
+    },
+    grey: { 
+      primary: '220 9% 46%', 
+      secondary: '220 9% 94%',
+      accent: '220 9% 94%'
+    },
+    black: { 
+      primary: '0 0% 9%', 
+      secondary: '0 0% 96%',
+      accent: '0 0% 96%'
+    },
   };
 
   const applyAccent = (color: string) => {
+    console.log('Applying accent color:', color);
     setAccentColor(color);
     const root = document.documentElement;
     const colors = accentColors[color as keyof typeof accentColors];
-    root.style.setProperty('--primary', colors.primary);
-    root.style.setProperty('--secondary', colors.secondary);
+    
+    if (colors) {
+      root.style.setProperty('--primary', colors.primary);
+      root.style.setProperty('--secondary', colors.secondary);
+      root.style.setProperty('--accent', colors.accent);
+      console.log('Applied colors:', colors);
+    }
   };
 
   return (
@@ -90,7 +108,7 @@ export default function Theme() {
               <Palette className="h-5 w-5" />
               Accent Colors
             </CardTitle>
-            <CardDescription>Choose your preferred accent color</CardDescription>
+            <CardDescription>Choose your preferred accent color - Current: {accentColor}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex gap-4">
