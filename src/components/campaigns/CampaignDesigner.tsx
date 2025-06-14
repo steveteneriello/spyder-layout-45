@@ -3,19 +3,16 @@ import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CampaignList } from './CampaignList';
 import { CampaignEditor } from './CampaignEditor';
-import { CampaignForm } from './CampaignForm';
+import { CampaignWorkflow } from './CampaignWorkflow';
 import { useCampaigns } from '@/hooks/useCampaigns';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 
-type View = 'list' | 'editor' | 'form';
+type View = 'list' | 'editor' | 'workflow';
 
 export function CampaignDesigner() {
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<View>('list');
   const [activeTab, setActiveTab] = useState('campaigns');
   const { campaigns, loading, refetch } = useCampaigns();
-  const { toast } = useToast();
 
   console.log('CampaignDesigner - campaigns:', campaigns, 'loading:', loading);
 
@@ -31,61 +28,18 @@ export function CampaignDesigner() {
   };
 
   const handleAddCampaign = () => {
-    setCurrentView('form');
+    setCurrentView('workflow');
   };
 
   const handleBackToList = () => {
     setCurrentView('list');
     setActiveTab('campaigns');
+    refetch();
   };
 
-  const handleSaveCampaign = async (data: any) => {
-    try {
-      const { error } = await supabase
-        .from('campaign_manager_campaigns')
-        .insert({
-          name: data.name,
-          description: data.description,
-          campaign_type: data.campaign_type,
-          budget: data.budget,
-          start_date: data.start_date,
-          end_date: data.end_date,
-          status: 'draft'
-        });
-
-      if (error) {
-        console.error('Error creating campaign:', error);
-        toast({
-          title: "Error",
-          description: "Failed to create campaign. Please try again.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      toast({
-        title: "Success",
-        description: "Campaign created successfully!",
-      });
-
-      refetch();
-      handleBackToList();
-    } catch (error) {
-      console.error('Error creating campaign:', error);
-      toast({
-        title: "Error",
-        description: "Failed to create campaign. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  if (currentView === 'form') {
+  if (currentView === 'workflow') {
     return (
-      <CampaignForm 
-        onBack={handleBackToList}
-        onSave={handleSaveCampaign}
-      />
+      <CampaignWorkflow onBack={handleBackToList} />
     );
   }
 
