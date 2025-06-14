@@ -28,40 +28,59 @@ export function CampaignFilters({
   const { categories } = useCampaignCategories();
 
   return (
-    <div className="bg-neutral-800 p-6 rounded-lg mb-6">
+    <div style={{ backgroundColor: '#444444' }} className="p-6 rounded-lg mb-6">
       <div className="space-y-4">
         <div className="flex items-center gap-4 flex-wrap">
           <div className="relative flex-1 min-w-[300px]">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-stone-300 h-4 w-4" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" style={{ color: '#B0B0B0' }} />
             <Input
               placeholder="Search campaigns..."
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="pl-10 bg-zinc-950 border-zinc-800 text-neutral-50 placeholder:text-stone-300"
+              className="pl-10"
+              style={{ 
+                backgroundColor: '#121212', 
+                borderColor: '#444444', 
+                color: '#E0E0E0'
+              }}
             />
           </div>
           
           <Select value={statusFilter} onValueChange={onStatusFilterChange}>
-            <SelectTrigger className="w-[180px] bg-zinc-950 border-zinc-800 text-neutral-50">
+            <SelectTrigger 
+              className="w-[180px]" 
+              style={{ 
+                backgroundColor: '#121212', 
+                borderColor: '#444444', 
+                color: '#E0E0E0' 
+              }}
+            >
               <Filter className="h-4 w-4 mr-2" />
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
-            <SelectContent className="bg-zinc-950 border-zinc-800">
-              <SelectItem value="all">All Campaigns</SelectItem>
-              <SelectItem value="active">Active Only</SelectItem>
-              <SelectItem value="inactive">Inactive Only</SelectItem>
-              <SelectItem value="archived">Archived Only</SelectItem>
+            <SelectContent style={{ backgroundColor: '#121212', borderColor: '#444444' }}>
+              <SelectItem value="all" style={{ color: '#E0E0E0' }}>All Campaigns</SelectItem>
+              <SelectItem value="active" style={{ color: '#E0E0E0' }}>Active Only</SelectItem>
+              <SelectItem value="inactive" style={{ color: '#E0E0E0' }}>Inactive Only</SelectItem>
+              <SelectItem value="archived" style={{ color: '#E0E0E0' }}>Archived Only</SelectItem>
             </SelectContent>
           </Select>
 
           <Select value={categoryFilter} onValueChange={onCategoryFilterChange}>
-            <SelectTrigger className="w-[200px] bg-zinc-950 border-zinc-800 text-neutral-50">
+            <SelectTrigger 
+              className="w-[200px]" 
+              style={{ 
+                backgroundColor: '#121212', 
+                borderColor: '#444444', 
+                color: '#E0E0E0' 
+              }}
+            >
               <SelectValue placeholder="Filter by category" />
             </SelectTrigger>
-            <SelectContent className="bg-zinc-950 border-zinc-800">
-              <SelectItem value="all">All Categories</SelectItem>
+            <SelectContent style={{ backgroundColor: '#121212', borderColor: '#444444' }}>
+              <SelectItem value="all" style={{ color: '#E0E0E0' }}>All Categories</SelectItem>
               {categories.map((category) => (
-                <SelectItem key={category.id} value={category.id}>
+                <SelectItem key={category.id} value={category.id} style={{ color: '#E0E0E0' }}>
                   {category.name}
                 </SelectItem>
               ))}
@@ -70,26 +89,51 @@ export function CampaignFilters({
         </div>
 
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="text-sm border-zinc-700 bg-zinc-950 text-stone-300">
+          <div 
+            className="text-sm px-2 py-1 rounded border"
+            style={{ 
+              borderColor: '#444444', 
+              backgroundColor: '#121212', 
+              color: '#B0B0B0' 
+            }}
+          >
             {totalResults} campaign{totalResults !== 1 ? 's' : ''} found
-          </Badge>
+          </div>
           
           {searchTerm && (
-            <Badge variant="secondary" className="text-sm bg-zinc-800 text-stone-300 border-zinc-700">
+            <div 
+              className="text-sm px-2 py-1 rounded"
+              style={{ 
+                backgroundColor: '#444444', 
+                color: '#B0B0B0' 
+              }}
+            >
               Search: "{searchTerm}"
-            </Badge>
+            </div>
           )}
           
           {statusFilter !== 'all' && (
-            <Badge variant="secondary" className="text-sm bg-zinc-800 text-stone-300 border-zinc-700">
+            <div 
+              className="text-sm px-2 py-1 rounded"
+              style={{ 
+                backgroundColor: '#444444', 
+                color: '#B0B0B0' 
+              }}
+            >
               Status: {statusFilter}
-            </Badge>
+            </div>
           )}
           
           {categoryFilter !== 'all' && (
-            <Badge variant="secondary" className="text-sm bg-zinc-800 text-stone-300 border-zinc-700">
+            <div 
+              className="text-sm px-2 py-1 rounded"
+              style={{ 
+                backgroundColor: '#444444', 
+                color: '#B0B0B0' 
+              }}
+            >
               Category: {categories.find(c => c.id === categoryFilter)?.name}
-            </Badge>
+            </div>
           )}
         </div>
       </div>

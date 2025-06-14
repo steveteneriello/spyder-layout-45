@@ -1,9 +1,10 @@
+
 import React, { useState } from 'react';
 import SidebarLayout from '@/components/layout/SidebarLayout';
 import { CompanySelector } from '@/components/navigation/CompanySelector';
 import { ProfileDropdown } from '@/components/navigation/ProfileDropdown';
 import { SideCategory } from '@/components/navigation/SideCategory';
-import { ThemeToggle } from '@/components/theme/ThemeToggle';
+import { ThemeToggle } from '@/components/navigation/ThemeToggle';
 import { CampaignDesigner } from '@/components/campaigns/CampaignDesigner';
 
 // Mock data
@@ -83,7 +84,7 @@ const Campaigns = () => {
       footer={footer}
       menuItems={mockMenuItems}
     >
-      <div className="bg-neutral-800 min-h-screen p-6">
+      <div style={{ backgroundColor: '#121212' }} className="min-h-screen p-6">
         <CampaignDesigner />
       </div>
     </SidebarLayout>

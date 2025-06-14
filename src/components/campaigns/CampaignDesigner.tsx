@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CampaignList } from './CampaignList';
@@ -153,22 +154,27 @@ export function CampaignDesigner() {
   }
 
   return (
-    <div className="space-y-6 campaign-page-bg text-foreground min-h-screen">
+    <div className="space-y-6 min-h-screen" style={{ backgroundColor: '#121212', color: '#E0E0E0' }}>
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-foreground">Campaign Manager</h1>
+        <h1 className="text-3xl font-bold" style={{ color: '#E0E0E0' }}>Campaign Manager</h1>
       </div>
 
       <CampaignDashboard />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="bg-muted border-border">
-          <TabsTrigger value="campaigns" className="text-foreground data-[state=active]:bg-background data-[state=active]:text-foreground">
+        <TabsList style={{ backgroundColor: '#444444', borderColor: '#444444' }}>
+          <TabsTrigger 
+            value="campaigns" 
+            className="data-[state=active]:bg-[#888888] data-[state=active]:text-[#E0E0E0]"
+            style={{ color: '#E0E0E0' }}
+          >
             Campaigns
           </TabsTrigger>
           <TabsTrigger 
             value="editor" 
             disabled={!selectedCampaignId}
-            className="text-foreground data-[state=active]:bg-background data-[state=active]:text-foreground disabled:text-muted-foreground"
+            className="data-[state=active]:bg-[#888888] data-[state=active]:text-[#E0E0E0] disabled:text-[#B0B0B0]"
+            style={{ color: '#E0E0E0' }}
           >
             Campaign Editor
           </TabsTrigger>
