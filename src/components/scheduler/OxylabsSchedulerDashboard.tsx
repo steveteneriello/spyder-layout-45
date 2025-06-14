@@ -1,7 +1,5 @@
 
-// Enhanced dashboard with light/dark mode support
-
-import React, { useState, useEffect, useCallback, createContext, useContext } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   RefreshCw, Play, Pause, Trash2, CheckSquare, Square, 
   Search, ChevronLeft, ChevronRight, Clock, CheckCircle,
@@ -119,13 +117,10 @@ const OxylabsSchedulerDashboard: React.FC = () => {
   const [isProcessingBulk, setIsProcessingBulk] = useState(false);
   const [activeTab, setActiveTab] = useState<'schedules' | 'queue' | 'history'>('schedules');
   
-  // Pagination and filtering
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(25);
+  // Filtering only (no pagination)
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'unmanaged'>('all');
   const [totalCount, setTotalCount] = useState(0);
-  const [hasMore, setHasMore] = useState(false);
 
   // Auto-refresh
   const [autoRefresh, setAutoRefresh] = useState(true);
@@ -160,10 +155,8 @@ const OxylabsSchedulerDashboard: React.FC = () => {
       return data;
     },
 
-    async getDashboard(limit = 50, offset = 0, search = '', status = 'all') {
+    async getDashboard(search = '', status = 'all') {
       const params = new URLSearchParams({
-        limit: limit.toString(),
-        offset: offset.toString(),
         search,
         status,
         sortBy: 'created_at',
@@ -172,12 +165,8 @@ const OxylabsSchedulerDashboard: React.FC = () => {
       return this.call(`/dashboard?${params}`);
     },
 
-    async getOperations(limit = 100, offset = 0, status?: string, timeframe = '24h') {
-      const params = new URLSearchParams({
-        limit: limit.toString(),
-        offset: offset.toString(),
-        timeframe
-      });
+    async getOperations(status?: string, timeframe = '7d') {
+      const params = new URLSearchParams({ timeframe });
       if (status && status !== 'all') params.append('status', status);
       return this.call(`/operations?${params}`);
     },
@@ -204,6 +193,62 @@ const OxylabsSchedulerDashboard: React.FC = () => {
     }
   };
 
+  // Helper functions for better time formatting
+  const formatCronExpression = (cron: string) => {
+    if (!cron) return 'N/A';
+    
+    // Common cron patterns to human readable
+    const patterns: { [key: string]: string } = {
+      '0 0 * * *': 'Daily at midnight',
+      '0 9 * * *': 'Daily at 9:00 AM',
+      '0 18 * * *': 'Daily at 6:00 PM',
+      '0 0 * * 0': 'Weekly on Sunday',
+      '0 0 1 * *': 'Monthly on 1st',
+      '*/5 * * * *': 'Every 5 minutes',
+      '*/15 * * * *': 'Every 15 minutes',
+      '0 */6 * * *': 'Every 6 hours',
+      '0 0 */7 * *': 'Every 7 days'
+    };
+    
+    return patterns[cron] || cron;
+  };
+
+  const formatRelativeTime = (dateString: string) => {
+    if (!dateString) return 'N/A';
+    
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffMinutes < 1) return 'Just now';
+    if (diffMinutes < 60) return `${diffMinutes}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    
+    return date.toLocaleDateString();
+  };
+
+  const formatNextRun = (dateString: string) => {
+    if (!dateString) return 'N/A';
+    
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = date.getTime() - now.getTime();
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffMs < 0) return 'Overdue';
+    if (diffMinutes < 60) return `${diffMinutes}m`;
+    if (diffHours < 24) return `${diffHours}h`;
+    if (diffDays < 30) return `${diffDays}d`;
+    
+    return date.toLocaleDateString();
+  };
+
   // Notification system
   const addNotification = (type: Notification['type'], message: string) => {
     const notification: Notification = {
@@ -220,19 +265,17 @@ const OxylabsSchedulerDashboard: React.FC = () => {
     }, 5000);
   };
 
-  // Load dashboard data with pagination
-  const loadDashboard = useCallback(async (page = currentPage, search = searchTerm, status = statusFilter) => {
+  // Load dashboard data with unlimited records
+  const loadDashboard = useCallback(async (search = searchTerm, status = statusFilter) => {
     if (loading) return;
     
     try {
       setLoading(true);
-      console.log(`🔥 FRONTEND: Loading dashboard page ${page}, search: "${search}", status: ${status}`);
-      
-      const offset = (page - 1) * itemsPerPage;
+      console.log(`🔥 FRONTEND: Loading dashboard, search: "${search}", status: ${status}`);
       
       const [dashboardData, operationsData] = await Promise.all([
-        api.getDashboard(itemsPerPage, offset, search, status),
-        api.getOperations(100, 0, undefined, '24h')
+        api.getDashboard(search, status),
+        api.getOperations(undefined, '7d')
       ]);
 
       console.log('🔥 FRONTEND: Dashboard data loaded:', dashboardData);
@@ -242,22 +285,34 @@ const OxylabsSchedulerDashboard: React.FC = () => {
       setOperations(operationsData.operations || []);
       setQueueStats(operationsData.queue_stats || { pending: 0, processing: 0, completed: 0, failed: 0 });
       setTotalCount(dashboardData.total_count || 0);
-      setHasMore(dashboardData.offset + dashboardData.schedules?.length < dashboardData.total_count);
       
     } catch (error) {
       console.error('🔥 FRONTEND: Dashboard load error:', error);
-      addNotification('error', `Failed to load dashboard: ${error.message}`);
+      addNotification('error', `Failed to load dashboard: ${error instanceof Error ? error.message : 'Unknown error'}`);
       
       // Set empty data on error to prevent UI issues
       setSchedules([]);
       setOperations([]);
       setQueueStats({ pending: 0, processing: 0, completed: 0, failed: 0 });
       setTotalCount(0);
-      setHasMore(false);
     } finally {
       setLoading(false);
     }
-  }, [currentPage, itemsPerPage, searchTerm, statusFilter]);
+  }, [loading, searchTerm, statusFilter]);
+
+  // Handle search and filter changes
+  const handleSearch = (newSearchTerm: string) => {
+    setSearchTerm(newSearchTerm);
+    loadDashboard(newSearchTerm, statusFilter);
+  };
+
+  const handleStatusFilter = (newStatus: typeof statusFilter) => {
+    setStatusFilter(newStatus);
+    loadDashboard(searchTerm, newStatus);
+  };
+
+  // All schedules are displayed (no pagination)
+  const filteredSchedules = schedules;
 
   // Individual operations with enhanced error handling
   const toggleScheduleState = async (scheduleId: string, currentState: boolean) => {
@@ -275,7 +330,7 @@ const OxylabsSchedulerDashboard: React.FC = () => {
       }
     } catch (error) {
       console.error(`🔥 FRONTEND: State change error:`, error);
-      addNotification('error', `Failed to queue state change: ${error.message}`);
+      addNotification('error', `Failed to queue state change: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -298,7 +353,7 @@ const OxylabsSchedulerDashboard: React.FC = () => {
       }
     } catch (error) {
       console.error(`🔥 FRONTEND: Delete error:`, error);
-      addNotification('error', `Failed to queue deletion: ${error.message}`);
+      addNotification('error', `Failed to queue deletion: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -406,12 +461,28 @@ const OxylabsSchedulerDashboard: React.FC = () => {
     }
   };
 
-  // Selection management
+  // Selection management with true "select all"
   const toggleSelectAll = () => {
-    if (selectedSchedules.size === schedules.length) {
-      setSelectedSchedules(new Set());
+    if (selectedSchedules.size === filteredSchedules.length && filteredSchedules.length > 0) {
+      setSelectedSchedules(new Set()); // Deselect all
     } else {
-      setSelectedSchedules(new Set(schedules.map(s => s.oxylabs_schedule_id)));
+      setSelectedSchedules(new Set(filteredSchedules.map(s => s.oxylabs_schedule_id))); // Select ALL schedules
+    }
+  };
+
+  const selectAllVisible = () => {
+    setSelectedSchedules(new Set(filteredSchedules.map(s => s.oxylabs_schedule_id)));
+  };
+
+  const selectAllMatching = async () => {
+    // Select all schedules that match current filters (even those not visible)
+    try {
+      const allMatchingData = await api.getDashboard(searchTerm, statusFilter);
+      const allMatchingIds = allMatchingData.schedules?.map((s: Schedule) => s.oxylabs_schedule_id) || [];
+      setSelectedSchedules(new Set(allMatchingIds));
+      addNotification('info', `Selected ${allMatchingIds.length} schedules matching current filters`);
+    } catch (error) {
+      addNotification('error', 'Failed to select all matching schedules');
     }
   };
 
@@ -424,27 +495,6 @@ const OxylabsSchedulerDashboard: React.FC = () => {
     }
     setSelectedSchedules(newSelection);
   };
-
-  // Handle search and filter changes
-  const handleSearch = (newSearchTerm: string) => {
-    setSearchTerm(newSearchTerm);
-    setCurrentPage(1);
-    setTimeout(() => loadDashboard(1, newSearchTerm, statusFilter), 500);
-  };
-
-  const handleStatusFilter = (newStatus: typeof statusFilter) => {
-    setStatusFilter(newStatus);
-    setCurrentPage(1);
-    loadDashboard(1, searchTerm, newStatus);
-  };
-
-  const handlePageChange = (newPage: number) => {
-    setCurrentPage(newPage);
-    loadDashboard(newPage, searchTerm, statusFilter);
-  };
-
-  // Filtering and pagination - now server-side
-  const totalPages = Math.ceil(totalCount / itemsPerPage);
 
   // Status helpers
   const getStatusBadge = (schedule: Schedule) => {
@@ -505,7 +555,7 @@ const OxylabsSchedulerDashboard: React.FC = () => {
       const interval = setInterval(() => loadDashboard(), 30000); // Refresh every 30 seconds
       return () => clearInterval(interval);
     }
-  }, [autoRefresh]);
+  }, [autoRefresh, loadDashboard]);
 
   return (
     <div className={`min-h-screen ${classes.background} ${classes.text}`}>
@@ -671,61 +721,75 @@ const OxylabsSchedulerDashboard: React.FC = () => {
                   </select>
                 </div>
 
-                {/* Items per page */}
-                <select
-                  value={itemsPerPage}
-                  onChange={(e) => setItemsPerPage(Number(e.target.value))}
-                  className={`px-3 py-2 ${classes.background} border ${classes.border} rounded-lg ${classes.text} focus:outline-none focus:${classes.focusBorder}`}
-                >
-                  <option value={10}>10 per page</option>
-                  <option value={25}>25 per page</option>
-                  <option value={50}>50 per page</option>
-                  <option value={100}>100 per page</option>
-                </select>
+                {/* Summary */}
+                <div className={`px-4 py-2 ${classes.tertiaryBackground} border ${classes.border} rounded-lg`}>
+                  <span className={`${classes.text} text-sm font-medium`}>
+                    {totalCount} total schedules
+                  </span>
+                </div>
               </div>
 
-              {/* Bulk Actions */}
+              {/* Enhanced Bulk Actions */}
               {selectedSchedules.size > 0 && (
                 <div className={`mb-6 p-4 ${classes.tertiaryBackground} border ${classes.border} rounded-lg`}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <span className={`${classes.text} font-medium`}>
-                        {selectedSchedules.size} schedule{selectedSchedules.size !== 1 ? 's' : ''} selected
-                      </span>
-                      <button
-                        onClick={() => setSelectedSchedules(new Set())}
-                        className={`${classes.textSecondary} hover:${classes.text} text-sm`}
-                      >
-                        Clear selection
-                      </button>
+                  <div className="flex flex-col gap-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <span className={`${classes.text} font-medium`}>
+                          {selectedSchedules.size} schedule{selectedSchedules.size !== 1 ? 's' : ''} selected
+                        </span>
+                        <button
+                          onClick={() => setSelectedSchedules(new Set())}
+                          className={`${classes.textSecondary} hover:${classes.text} text-sm`}
+                        >
+                          Clear selection
+                        </button>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={bulkActivate}
+                          disabled={isProcessingBulk}
+                          className={`px-3 py-1.5 ${classes.successBg} hover:${classes.successBg}/80 ${classes.successText} border ${classes.successBorder} rounded text-sm font-medium transition-colors disabled:opacity-50`}
+                        >
+                          <Play className="w-4 h-4 inline mr-1" />
+                          Activate
+                        </button>
+                        
+                        <button
+                          onClick={bulkDeactivate}
+                          disabled={isProcessingBulk}
+                          className={`px-3 py-1.5 ${classes.secondaryButton} ${classes.textSecondary} border ${classes.border} rounded text-sm font-medium transition-colors disabled:opacity-50`}
+                        >
+                          <Pause className="w-4 h-4 inline mr-1" />
+                          Deactivate
+                        </button>
+                        
+                        <button
+                          onClick={bulkDelete}
+                          disabled={isProcessingBulk}
+                          className={`px-3 py-1.5 ${classes.errorBg} hover:${classes.errorBg}/80 ${classes.errorText} border ${classes.errorBorder} rounded text-sm font-medium transition-colors disabled:opacity-50`}
+                        >
+                          <Trash2 className="w-4 h-4 inline mr-1" />
+                          Delete All Selected
+                        </button>
+                      </div>
                     </div>
                     
-                    <div className="flex items-center gap-2">
+                    {/* Additional selection options */}
+                    <div className="flex items-center gap-2 text-sm">
                       <button
-                        onClick={bulkActivate}
-                        disabled={isProcessingBulk}
-                        className={`px-3 py-1.5 ${classes.successBg} hover:${classes.successBg}/80 ${classes.successText} border ${classes.successBorder} rounded text-sm font-medium transition-colors disabled:opacity-50`}
+                        onClick={selectAllVisible}
+                        className={`${classes.textSecondary} hover:${classes.text} underline`}
                       >
-                        <Play className="w-4 h-4 inline mr-1" />
-                        Activate
+                        Select all visible ({filteredSchedules.length})
                       </button>
-                      
+                      <span className={classes.textSecondary}>•</span>
                       <button
-                        onClick={bulkDeactivate}
-                        disabled={isProcessingBulk}
-                        className={`px-3 py-1.5 ${classes.secondaryButton} ${classes.textSecondary} border ${classes.border} rounded text-sm font-medium transition-colors disabled:opacity-50`}
+                        onClick={selectAllMatching}
+                        className={`${classes.textSecondary} hover:${classes.text} underline`}
                       >
-                        <Pause className="w-4 h-4 inline mr-1" />
-                        Deactivate
-                      </button>
-                      
-                      <button
-                        onClick={bulkDelete}
-                        disabled={isProcessingBulk}
-                        className={`px-3 py-1.5 ${classes.errorBg} hover:${classes.errorBg}/80 ${classes.errorText} border ${classes.errorBorder} rounded text-sm font-medium transition-colors disabled:opacity-50`}
-                      >
-                        <Trash2 className="w-4 h-4 inline mr-1" />
-                        Delete
+                        Select all matching filters ({totalCount})
                       </button>
                     </div>
                   </div>
@@ -743,7 +807,7 @@ const OxylabsSchedulerDashboard: React.FC = () => {
                             onClick={toggleSelectAll}
                             className={`${classes.textSecondary} hover:${classes.text}`}
                           >
-                            {selectedSchedules.size === schedules.length && schedules.length > 0 ? 
+                            {selectedSchedules.size === filteredSchedules.length && filteredSchedules.length > 0 ? 
                               <CheckSquare className="w-4 h-4" /> : 
                               <Square className="w-4 h-4" />
                             }
@@ -759,7 +823,7 @@ const OxylabsSchedulerDashboard: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody className={`${classes.background} divide-y ${classes.secondaryBorder}`}>
-                      {schedules.map(schedule => {
+                      {filteredSchedules.map(schedule => {
                         const status = getStatusBadge(schedule);
                         const isSelected = selectedSchedules.has(schedule.oxylabs_schedule_id);
                         
@@ -803,17 +867,28 @@ const OxylabsSchedulerDashboard: React.FC = () => {
                               </span>
                             </td>
                             <td className="px-4 py-4">
-                              <span className={`${classes.textSecondary} text-sm font-mono`}>
-                                {schedule.cron_expression || 'N/A'}
-                              </span>
+                              <div className="flex flex-col">
+                                <span className={`${classes.textSecondary} text-sm font-mono`}>
+                                  {formatCronExpression(schedule.cron_expression)}
+                                </span>
+                                {schedule.cron_expression && formatCronExpression(schedule.cron_expression) !== schedule.cron_expression && (
+                                  <span className={`${classes.textTertiary} text-xs`}>
+                                    {schedule.cron_expression}
+                                  </span>
+                                )}
+                              </div>
                             </td>
                             <td className="px-4 py-4">
-                              <span className={`${classes.textSecondary} text-sm`}>
-                                {schedule.next_run_at ? 
-                                  new Date(schedule.next_run_at).toLocaleDateString() : 
-                                  'N/A'
-                                }
-                              </span>
+                              <div className="flex flex-col">
+                                <span className={`${classes.textSecondary} text-sm`}>
+                                  {formatNextRun(schedule.next_run_at)}
+                                </span>
+                                {schedule.next_run_at && (
+                                  <span className={`${classes.textTertiary} text-xs`}>
+                                    {new Date(schedule.next_run_at).toLocaleString()}
+                                  </span>
+                                )}
+                              </div>
                             </td>
                             <td className="px-4 py-4">
                               <span className={`${classes.text} text-sm`}>
@@ -855,7 +930,7 @@ const OxylabsSchedulerDashboard: React.FC = () => {
                   </table>
                 </div>
 
-                {schedules.length === 0 && !loading && (
+                {filteredSchedules.length === 0 && !loading && (
                   <div className="p-12 text-center">
                     <Calendar className={`w-12 h-12 ${classes.textSecondary} mx-auto mb-4`} />
                     <h3 className={`${classes.text} font-medium mb-2`}>No schedules found</h3>
@@ -876,36 +951,13 @@ const OxylabsSchedulerDashboard: React.FC = () => {
                 )}
               </div>
 
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between mt-6">
-                  <div className={`${classes.textSecondary} text-sm`}>
-                    Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalCount)} of {totalCount} schedules
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
-                      disabled={currentPage === 1 || loading}
-                      className={`p-2 ${classes.textSecondary} hover:${classes.text} disabled:opacity-50 disabled:cursor-not-allowed`}
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-                    
-                    <span className={`px-3 py-1 ${classes.tertiaryBackground} border ${classes.border} rounded ${classes.text} text-sm`}>
-                      {currentPage} of {totalPages}
-                    </span>
-                    
-                    <button
-                      onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
-                      disabled={currentPage === totalPages || loading}
-                      className={`p-2 ${classes.textSecondary} hover:${classes.text} disabled:opacity-50 disabled:cursor-not-allowed`}
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-                  </div>
+              {/* Summary Information */}
+              <div className="mt-6 text-center">
+                <div className={`${classes.textSecondary} text-sm`}>
+                  Showing all {totalCount} schedules
+                  {searchTerm || statusFilter !== 'all' ? ' matching current filters' : ''}
                 </div>
-              )}
+              </div>
             </div>
           )}
 
@@ -917,7 +969,6 @@ const OxylabsSchedulerDashboard: React.FC = () => {
               <div className="space-y-4">
                 {operations
                   .filter(op => ['pending', 'processing'].includes(op.status))
-                  .slice(0, 20)
                   .map(operation => (
                   <div key={operation.id} className={`p-4 flex items-center justify-between ${classes.tertiaryBackground} border ${classes.border} rounded-lg`}>
                     <div className="flex items-center gap-4">
@@ -932,7 +983,7 @@ const OxylabsSchedulerDashboard: React.FC = () => {
                           {operation.job_name && (
                             <span>{operation.job_name} • </span>
                           )}
-                          Requested {new Date(operation.requested_at).toLocaleString()}
+                          Requested {formatRelativeTime(operation.requested_at)}
                           {operation.retry_count > 0 && (
                             <span> • Retry {operation.retry_count}/{operation.max_retries}</span>
                           )}
@@ -970,7 +1021,6 @@ const OxylabsSchedulerDashboard: React.FC = () => {
               <div className="space-y-4">
                 {operations
                   .filter(op => ['completed', 'failed'].includes(op.status))
-                  .slice(0, 50)
                   .map(operation => (
                   <div key={operation.id} className={`p-4 flex items-center justify-between ${classes.tertiaryBackground} border ${classes.border} rounded-lg`}>
                     <div className="flex items-center gap-4">
@@ -986,7 +1036,7 @@ const OxylabsSchedulerDashboard: React.FC = () => {
                             <span>{operation.job_name} • </span>
                           )}
                           {operation.status === 'completed' ? 'Completed' : 'Failed'} {' '}
-                          {new Date(operation.completed_at || operation.requested_at).toLocaleString()}
+                          {formatRelativeTime(operation.completed_at || operation.requested_at)}
                           {operation.processing_duration_seconds && (
                             <span> • {operation.processing_duration_seconds.toFixed(1)}s</span>
                           )}
