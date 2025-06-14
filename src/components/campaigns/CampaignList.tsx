@@ -37,6 +37,8 @@ interface CampaignListProps {
 export function CampaignList({ campaigns, loading, onSelectCampaign, selectedCampaignId }: CampaignListProps) {
   const { campaignStatuses, toggleCampaignStatus, loading: statusLoading } = useCampaignStatus();
 
+  console.log('CampaignList - campaigns:', campaigns, 'loading:', loading);
+
   if (loading) {
     return <div className="text-center py-8">Loading campaigns...</div>;
   }

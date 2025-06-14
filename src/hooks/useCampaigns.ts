@@ -12,6 +12,7 @@ export function useCampaigns() {
 
   const fetchCampaigns = async () => {
     try {
+      console.log('Fetching campaigns...');
       const { data, error } = await supabase
         .from('campaign_manager_campaigns')
         .select(`
@@ -27,6 +28,7 @@ export function useCampaigns() {
         return;
       }
 
+      console.log('Campaigns fetched:', data);
       setCampaigns(data || []);
     } catch (error) {
       console.error('Error fetching campaigns:', error);

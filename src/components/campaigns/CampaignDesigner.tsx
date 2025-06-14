@@ -1,6 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CampaignList } from './CampaignList';
 import { CampaignEditor } from './CampaignEditor';
@@ -9,6 +8,8 @@ import { useCampaigns } from '@/hooks/useCampaigns';
 export function CampaignDesigner() {
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
   const { campaigns, loading } = useCampaigns();
+
+  console.log('CampaignDesigner - campaigns:', campaigns, 'loading:', loading);
 
   return (
     <div className="space-y-6">
