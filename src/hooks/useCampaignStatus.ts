@@ -35,19 +35,46 @@ export function useCampaignStatus() {
   const toggleCampaignStatus = async (campaignId: string, active: boolean) => {
     setLoading(true);
     try {
-      const { error } = await supabase
+      // First try to update existing record
+      const { data: existingData, error: selectError } = await supabase
         .from('campaign_manager_campaign_status')
-        .upsert({
-          campaign_id: campaignId,
-          active,
-          last_updated: new Date().toISOString()
-        }, {
-          onConflict: 'campaign_id'
-        });
+        .select('id')
+        .eq('campaign_id', campaignId)
+        .single();
 
-      if (error) {
-        console.error('Error updating campaign status:', error);
+      if (selectError && selectError.code !== 'PGRST116') {
+        console.error('Error checking existing status:', selectError);
         return;
+      }
+
+      if (existingData) {
+        // Update existing record
+        const { error } = await supabase
+          .from('campaign_manager_campaign_status')
+          .update({
+            active,
+            last_updated: new Date().toISOString()
+          })
+          .eq('campaign_id', campaignId);
+
+        if (error) {
+          console.error('Error updating campaign status:', error);
+          return;
+        }
+      } else {
+        // Insert new record
+        const { error } = await supabase
+          .from('campaign_manager_campaign_status')
+          .insert({
+            campaign_id: campaignId,
+            active,
+            last_updated: new Date().toISOString()
+          });
+
+        if (error) {
+          console.error('Error inserting campaign status:', error);
+          return;
+        }
       }
 
       setCampaignStatuses(prev => ({

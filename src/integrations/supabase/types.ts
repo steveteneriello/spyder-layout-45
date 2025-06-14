@@ -804,6 +804,36 @@ export type Database = {
           },
         ]
       }
+      scrapi_scheduled_jobs: {
+        Row: {
+          created_at: string
+          id: string
+          job_id: string | null
+          keyword: string | null
+          location_city: string | null
+          location_country: string | null
+          location_state: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          job_id?: string | null
+          keyword?: string | null
+          location_city?: string | null
+          location_country?: string | null
+          location_state?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          job_id?: string | null
+          keyword?: string | null
+          location_city?: string | null
+          location_country?: string | null
+          location_state?: string | null
+        }
+        Relationships: []
+      }
       scrapi_search_queries: {
         Row: {
           batch_id: string
