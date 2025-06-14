@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
-import { Sun, Moon, Palette, TrendingUp, Users, DollarSign, ShoppingCart, Activity, AlertCircle, CheckCircle, Clock, Star, Mail, Phone, MapPin, Calendar, Search, Filter, MoreHorizontal, Edit, Trash2, Eye, Download, Upload, Plus, Minus, Settings, Home, User, Bell, Heart, Share2, MessageSquare, ThumbsUp } from 'lucide-react';
+import { Sun, Moon, Palette, TrendingUp, Users, DollarSign, ShoppingCart, Activity, AlertCircle, CheckCircle, Clock, Star, Mail, Phone, MapPin, Calendar, Search, Filter, MoreHorizontal, Edit, Trash2, Eye, Download, Upload, Plus, Minus, Settings, Home, User, Bell, Heart, Share2, MessageSquare, ThumbsUp, PlayCircle, PauseCircle, RotateCcw, ArrowRight, Timer, Target, Flag } from 'lucide-react';
 
 // Sample data for charts
 const chartData = [
@@ -25,17 +24,17 @@ const chartData = [
 ];
 
 const pieData = [
-  { name: 'Desktop', value: 400, color: '#0088FE' },
-  { name: 'Mobile', value: 300, color: '#00C49F' },
-  { name: 'Tablet', value: 200, color: '#FFBB28' },
-  { name: 'Other', value: 100, color: '#FF8042' },
+  { name: 'Desktop', value: 400, color: '#3b82f6' },
+  { name: 'Mobile', value: 300, color: '#06b6d4' },
+  { name: 'Tablet', value: 200, color: '#8b5cf6' },
+  { name: 'Other', value: 100, color: '#f59e0b' },
 ];
 
 const chartConfig = {
-  desktop: { label: 'Desktop', color: 'hsl(var(--primary))' },
-  mobile: { label: 'Mobile', color: 'hsl(var(--secondary))' },
-  revenue: { label: 'Revenue', color: 'hsl(var(--primary))' },
-  users: { label: 'Users', color: 'hsl(var(--secondary))' },
+  desktop: { label: 'Desktop', color: '#3b82f6' },
+  mobile: { label: 'Mobile', color: '#06b6d4' },
+  revenue: { label: 'Revenue', color: '#3b82f6' },
+  users: { label: 'Users', color: '#06b6d4' },
 };
 
 const tableData = [
@@ -45,8 +44,16 @@ const tableData = [
   { id: '4', name: 'Alice Brown', email: 'alice@example.com', status: 'Pending', role: 'User', lastSeen: 'Never' },
 ];
 
+const taskData = [
+  { id: '1', title: 'Design new landing page', description: 'Create wireframes and mockups for the new homepage', priority: 'High', status: 'In Progress', assignee: 'John Doe', dueDate: '2024-01-20', progress: 75 },
+  { id: '2', title: 'Implement user authentication', description: 'Add login and registration functionality', priority: 'Critical', status: 'Todo', assignee: 'Jane Smith', dueDate: '2024-01-18', progress: 0 },
+  { id: '3', title: 'Fix mobile responsive issues', description: 'Ensure all pages work correctly on mobile devices', priority: 'Medium', status: 'Review', assignee: 'Bob Johnson', dueDate: '2024-01-22', progress: 90 },
+  { id: '4', title: 'Update documentation', description: 'Add API documentation and user guides', priority: 'Low', status: 'Done', assignee: 'Alice Brown', dueDate: '2024-01-15', progress: 100 },
+  { id: '5', title: 'Performance optimization', description: 'Improve page load times and reduce bundle size', priority: 'High', status: 'In Progress', assignee: 'John Doe', dueDate: '2024-01-25', progress: 45 },
+];
+
 const ComponentId = ({ id }: { id: string }) => (
-  <div className="absolute top-1 right-1 bg-muted text-muted-foreground text-xs px-1 py-0.5 rounded text-[10px] font-mono">
+  <div className="absolute top-1 right-1 bg-blue-500/20 text-blue-400 text-xs px-1 py-0.5 rounded text-[10px] font-mono border border-blue-500/30">
     {id}
   </div>
 );
@@ -92,6 +99,26 @@ export default function Theme() {
     }
   };
 
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'Critical': return 'bg-red-500';
+      case 'High': return 'bg-orange-500';
+      case 'Medium': return 'bg-yellow-500';
+      case 'Low': return 'bg-green-500';
+      default: return 'bg-blue-500';
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Done': return 'text-green-400 bg-green-500/20 border-green-500/30';
+      case 'In Progress': return 'text-blue-400 bg-blue-500/20 border-blue-500/30';
+      case 'Review': return 'text-purple-400 bg-purple-500/20 border-purple-500/30';
+      case 'Todo': return 'text-gray-400 bg-gray-500/20 border-gray-500/30';
+      default: return 'text-blue-400 bg-blue-500/20 border-blue-500/30';
+    }
+  };
+
   return (
     <div className={`min-h-screen bg-background text-foreground ${isDark ? 'dark' : ''}`}>
       <div className="container mx-auto p-6 space-y-8">
@@ -100,7 +127,7 @@ export default function Theme() {
           <div>
             <h1 className="text-4xl font-bold">Design System Showcase</h1>
             <p className="text-muted-foreground mt-2">
-              Explore all available components and styling options
+              Explore all available components with blue accents in dark mode
             </p>
           </div>
           <div className="flex items-center gap-4">
@@ -117,7 +144,7 @@ export default function Theme() {
           <ComponentId id="AC-001" />
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Palette className="h-5 w-5" />
+              <Palette className="h-5 w-5 text-blue-500" />
               Accent Colors
             </CardTitle>
             <CardDescription>Choose your preferred accent color - Current: {accentColor}</CardDescription>
@@ -140,8 +167,9 @@ export default function Theme() {
 
         {/* Components Showcase */}
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+            <TabsTrigger value="tasks">Tasks</TabsTrigger>
             <TabsTrigger value="cards">Cards</TabsTrigger>
             <TabsTrigger value="tables">Tables</TabsTrigger>
             <TabsTrigger value="charts">Charts</TabsTrigger>
@@ -152,50 +180,50 @@ export default function Theme() {
           <TabsContent value="dashboard" className="space-y-6">
             {/* KPI Cards Row 1 */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card className="relative">
+              <Card className="relative border-blue-500/20">
                 <ComponentId id="KPI-001" />
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                  <DollarSign className="h-4 w-4 text-muted-foreground" />
+                  <DollarSign className="h-4 w-4 text-blue-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">$45,231.89</div>
+                  <div className="text-2xl font-bold text-blue-400">$45,231.89</div>
                   <p className="text-xs text-muted-foreground">+20.1% from last month</p>
                 </CardContent>
               </Card>
 
-              <Card className="relative">
+              <Card className="relative border-blue-500/20">
                 <ComponentId id="KPI-002" />
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Subscriptions</CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <Users className="h-4 w-4 text-blue-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">+2,350</div>
+                  <div className="text-2xl font-bold text-blue-400">+2,350</div>
                   <p className="text-xs text-muted-foreground">+180.1% from last month</p>
                 </CardContent>
               </Card>
 
-              <Card className="relative">
+              <Card className="relative border-blue-500/20">
                 <ComponentId id="KPI-003" />
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Sales</CardTitle>
-                  <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+                  <ShoppingCart className="h-4 w-4 text-blue-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">+12,234</div>
+                  <div className="text-2xl font-bold text-blue-400">+12,234</div>
                   <p className="text-xs text-muted-foreground">+19% from last month</p>
                 </CardContent>
               </Card>
 
-              <Card className="relative">
+              <Card className="relative border-blue-500/20">
                 <ComponentId id="KPI-004" />
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Active Now</CardTitle>
-                  <Activity className="h-4 w-4 text-muted-foreground" />
+                  <Activity className="h-4 w-4 text-blue-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">+573</div>
+                  <div className="text-2xl font-bold text-blue-400">+573</div>
                   <p className="text-xs text-muted-foreground">+201 since last hour</p>
                 </CardContent>
               </Card>
@@ -203,10 +231,10 @@ export default function Theme() {
 
             {/* Dashboard Charts */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="relative">
+              <Card className="relative border-blue-500/20">
                 <ComponentId id="DASH-001" />
                 <CardHeader>
-                  <CardTitle>Revenue Overview</CardTitle>
+                  <CardTitle className="text-blue-400">Revenue Overview</CardTitle>
                   <CardDescription>Monthly revenue trends</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -216,17 +244,17 @@ export default function Theme() {
                         <XAxis dataKey="month" />
                         <YAxis />
                         <ChartTooltip content={<ChartTooltipContent />} />
-                        <Area dataKey="revenue" fill="var(--color-revenue)" stroke="var(--color-revenue)" strokeWidth={2} />
+                        <Area dataKey="revenue" fill="#3b82f6" stroke="#3b82f6" strokeWidth={2} />
                       </AreaChart>
                     </ResponsiveContainer>
                   </ChartContainer>
                 </CardContent>
               </Card>
 
-              <Card className="relative">
+              <Card className="relative border-blue-500/20">
                 <ComponentId id="DASH-002" />
                 <CardHeader>
-                  <CardTitle>User Activity</CardTitle>
+                  <CardTitle className="text-blue-400">User Activity</CardTitle>
                   <CardDescription>Device usage breakdown</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -254,10 +282,10 @@ export default function Theme() {
             </div>
 
             {/* Recent Activity */}
-            <Card className="relative">
+            <Card className="relative border-blue-500/20">
               <ComponentId id="DASH-003" />
               <CardHeader>
-                <CardTitle>Recent Activity</CardTitle>
+                <CardTitle className="text-blue-400">Recent Activity</CardTitle>
                 <CardDescription>Latest user actions and system events</CardDescription>
               </CardHeader>
               <CardContent>
@@ -270,8 +298,8 @@ export default function Theme() {
                   ].map((item, index) => (
                     <div key={index} className="flex items-center gap-3">
                       <item.icon className={`h-4 w-4 ${
-                        item.status === 'success' ? 'text-green-500' :
-                        item.status === 'warning' ? 'text-yellow-500' : 'text-blue-500'
+                        item.status === 'success' ? 'text-green-400' :
+                        item.status === 'warning' ? 'text-yellow-400' : 'text-blue-400'
                       }`} />
                       <div className="flex-1">
                         <p className="text-sm">{item.text}</p>
@@ -280,6 +308,163 @@ export default function Theme() {
                     </div>
                   ))}
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="tasks" className="space-y-6">
+            {/* Task Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <Card className="relative border-blue-500/20">
+                <ComponentId id="TASK-001" />
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Tasks</CardTitle>
+                  <Target className="h-4 w-4 text-blue-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-blue-400">24</div>
+                  <p className="text-xs text-muted-foreground">+3 this week</p>
+                </CardContent>
+              </Card>
+
+              <Card className="relative border-blue-500/20">
+                <ComponentId id="TASK-002" />
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">In Progress</CardTitle>
+                  <PlayCircle className="h-4 w-4 text-blue-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-blue-400">8</div>
+                  <p className="text-xs text-muted-foreground">33% of total</p>
+                </CardContent>
+              </Card>
+
+              <Card className="relative border-blue-500/20">
+                <ComponentId id="TASK-003" />
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Completed</CardTitle>
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-green-400">12</div>
+                  <p className="text-xs text-muted-foreground">50% completion rate</p>
+                </CardContent>
+              </Card>
+
+              <Card className="relative border-blue-500/20">
+                <ComponentId id="TASK-004" />
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Overdue</CardTitle>
+                  <AlertCircle className="h-4 w-4 text-red-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-red-400">2</div>
+                  <p className="text-xs text-muted-foreground">Need attention</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Task Board */}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              {['Todo', 'In Progress', 'Review', 'Done'].map((status) => (
+                <Card key={status} className="relative border-blue-500/20">
+                  <ComponentId id={`BOARD-${status.replace(' ', '').toUpperCase()}`} />
+                  <CardHeader>
+                    <CardTitle className="text-sm font-medium text-blue-400">{status}</CardTitle>
+                    <CardDescription>
+                      {taskData.filter(task => task.status === status).length} tasks
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {taskData.filter(task => task.status === status).map((task) => (
+                      <div key={task.id} className="p-3 bg-muted/50 rounded-lg border border-blue-500/20">
+                        <div className="flex items-start justify-between mb-2">
+                          <h4 className="text-sm font-medium">{task.title}</h4>
+                          <div className={`w-2 h-2 rounded-full ${getPriorityColor(task.priority)}`} />
+                        </div>
+                        <p className="text-xs text-muted-foreground mb-2">{task.description}</p>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground">{task.assignee}</span>
+                          <Badge variant="outline" className={getStatusColor(task.status)}>
+                            {task.priority}
+                          </Badge>
+                        </div>
+                        {task.progress > 0 && (
+                          <div className="mt-2">
+                            <Progress value={task.progress} className="h-1" />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* Task Details Table */}
+            <Card className="relative border-blue-500/20">
+              <ComponentId id="TASK-TABLE" />
+              <CardHeader>
+                <CardTitle className="text-blue-400">Task Management</CardTitle>
+                <CardDescription>Detailed view of all tasks</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Task</TableHead>
+                      <TableHead>Assignee</TableHead>
+                      <TableHead>Priority</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Progress</TableHead>
+                      <TableHead>Due Date</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {taskData.map((task) => (
+                      <TableRow key={task.id}>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{task.title}</div>
+                            <div className="text-sm text-muted-foreground">{task.description}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell>{task.assignee}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={`${getPriorityColor(task.priority)} text-white`}>
+                            {task.priority}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={getStatusColor(task.status)}>
+                            {task.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="w-16">
+                            <Progress value={task.progress} className="h-2" />
+                            <span className="text-xs text-muted-foreground">{task.progress}%</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm">{task.dueDate}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-1">
+                            <Button size="sm" variant="outline" className="h-6 w-6 p-0">
+                              <PlayCircle className="h-3 w-3 text-blue-500" />
+                            </Button>
+                            <Button size="sm" variant="outline" className="h-6 w-6 p-0">
+                              <Edit className="h-3 w-3 text-blue-500" />
+                            </Button>
+                            <Button size="sm" variant="outline" className="h-6 w-6 p-0">
+                              <Eye className="h-3 w-3 text-blue-500" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
           </TabsContent>
