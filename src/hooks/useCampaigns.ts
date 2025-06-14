@@ -16,7 +16,7 @@ export function useCampaigns() {
         .from('campaign_manager_campaigns')
         .select(`
           *,
-          category:campaign_manager_categories(*),
+          category:campaign_manager_categories!fk_campaigns_category(*),
           advertiser:admin_advertisers(*),
           market:admin_markets(*)
         `)
