@@ -4,34 +4,9 @@ import { ScheduleManagementTable } from './ScheduleManagementTable';
 import { OperationsMonitoring } from './OperationsMonitoring';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import {
-  ArrowDown,
-  ArrowUp,
-  CheckCircle,
-  AlertTriangle,
-  Loader2,
-  RefreshCw,
-  Settings,
-  Target,
-  Home,
-  Pause,
-  Play,
-  Eye,
-  Activity,
-  Calendar,
-  Clock,
-  TrendingUp,
-  TrendingDown,
-  AlertCircle,
-  Trash2,
-  ChevronLeft,
-  ChevronRight,
-  Minus,
-} from 'lucide-react';
+import { Loader2, RefreshCw } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast"
 
 interface OxylabsSchedule {
@@ -56,7 +31,7 @@ interface OxylabsSchedule {
   last_synced_at: string;
 }
 
-const API_BASE_URL = '/functions/v1/scrapi-oxylabs-scheduler';
+const API_BASE_URL = 'https://krmwphqhlzscnuxwxvkz.supabase.co/functions/v1/scrapi-oxylabs-scheduler';
 
 export default function OxylabsSchedulerDashboard() {
   const [schedules, setSchedules] = useState<OxylabsSchedule[]>([]);
@@ -75,20 +50,37 @@ export default function OxylabsSchedulerDashboard() {
     setError(null);
     try {
       const url = `${API_BASE_URL}/dashboard?limit=${limit}&offset=${offset}`;
-      const response = await fetch(url);
+      console.log('Fetching data from:', url);
+      
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtybXdwaHFobHpzY251eHd4dmt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxMzExMjUsImV4cCI6MjA2NDcwNzEyNX0.k5fDJWwqMdqd9XQgWuDGwcJbwUuL8U-mF7NhiJxY4eU`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch data');
+        const errorText = await response.text();
+        console.error('Error response text:', errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
 
       const result = await response.json();
-      setSchedules(result.schedules);
-      setTotalCount(result.total_count);
-      setFilteredSchedules(result.schedules);
+      console.log('API Response:', result);
+      
+      setSchedules(result.schedules || []);
+      setTotalCount(result.total_count || 0);
+      setFilteredSchedules(result.schedules || []);
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to fetch data');
       console.error('Error fetching data:', error);
+      setError(error instanceof Error ? error.message : 'Failed to fetch data');
+      // Set empty data on error to prevent UI issues
+      setSchedules([]);
+      setFilteredSchedules([]);
+      setTotalCount(0);
     } finally {
       setIsLoading(false);
     }
@@ -105,6 +97,7 @@ export default function OxylabsSchedulerDashboard() {
       const response = await fetch(`${API_BASE_URL}/schedule/${scheduleId}/state`, {
         method: 'PUT',
         headers: {
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtybXdwaHFobHpzY251eHd4dmt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxMzExMjUsImV4cCI6MjA2NDcwNzEyNX0.k5fDJWwqMdqd9XQgWuDGwcJbwUuL8U-mF7NhiJxY4eU`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ active: !currentState }),
@@ -143,6 +136,7 @@ export default function OxylabsSchedulerDashboard() {
       const response = await fetch(`${API_BASE_URL}/schedule/${scheduleId}`, {
         method: 'DELETE',
         headers: {
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtybXdwaHFobHpzY251eHd4dmt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxMzExMjUsImV4cCI6MjA2NDcwNzEyNX0.k5fDJWwqMdqd9XQgWuDGwcJbwUuL8U-mF7NhiJxY4eU`,
           'Content-Type': 'application/json',
         },
       });
@@ -175,7 +169,6 @@ export default function OxylabsSchedulerDashboard() {
 
   const handleViewRuns = (scheduleId: string) => {
     console.log('View runs for schedule:', scheduleId);
-    // Placeholder function
     toast({
       title: 'View Runs',
       description: `View runs action for schedule ${scheduleId} is not implemented yet.`,
@@ -184,7 +177,6 @@ export default function OxylabsSchedulerDashboard() {
 
   const handleViewDetails = (scheduleId: string) => {
     console.log('View details for schedule:', scheduleId);
-    // Placeholder function
     toast({
       title: 'View Details',
       description: `View details action for schedule ${scheduleId} is not implemented yet.`,
@@ -193,7 +185,6 @@ export default function OxylabsSchedulerDashboard() {
 
   const handleViewJobs = (scheduleId: string) => {
     console.log('View jobs for schedule:', scheduleId);
-    // Placeholder function
     toast({
       title: 'View Jobs',
       description: `View jobs action for schedule ${scheduleId} is not implemented yet.`,
@@ -218,9 +209,6 @@ export default function OxylabsSchedulerDashboard() {
     await fetchData();
   };
 
-  const isLoadingPlaceholder = !schedules && isLoading;
-  const hasError = !schedules && error;
-
   return (
     <div className="h-full flex flex-col bg-white">
       {/* Header Section */}
@@ -230,7 +218,7 @@ export default function OxylabsSchedulerDashboard() {
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Loading ...
+              Loading...
             </>
           ) : (
             <>
@@ -266,7 +254,7 @@ export default function OxylabsSchedulerDashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold campaign-primary-text">
-                {schedules?.filter(schedule => schedule.active).length}
+                {schedules.filter(schedule => schedule.active).length}
               </div>
             </CardContent>
           </Card>
@@ -280,7 +268,7 @@ export default function OxylabsSchedulerDashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold campaign-primary-text">
-                {schedules?.filter(schedule => !schedule.active).length}
+                {schedules.filter(schedule => !schedule.active).length}
               </div>
             </CardContent>
           </Card>
@@ -294,11 +282,22 @@ export default function OxylabsSchedulerDashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold campaign-primary-text">
-                {schedules?.filter(schedule => schedule.management_status === 'unmanaged').length}
+                {schedules.filter(schedule => schedule.management_status === 'unmanaged').length}
               </div>
             </CardContent>
           </Card>
         </div>
+
+        {/* Error Display */}
+        {error && (
+          <Card className="border-destructive bg-destructive/5">
+            <CardContent className="pt-6">
+              <div className="text-sm text-destructive">
+                <strong>Error:</strong> {error}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Tabs */}
         <Tabs defaultValue="schedules" className="space-y-4" onValueChange={(value) => setActiveTab(value as 'schedules' | 'operations')}>
@@ -329,9 +328,7 @@ export default function OxylabsSchedulerDashboard() {
                       variant="ghost"
                       size="sm"
                       className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full p-0"
-                      onClick={() => {
-                        handleSearch('');
-                      }}
+                      onClick={() => handleSearch('')}
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
