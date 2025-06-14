@@ -1,9 +1,9 @@
-
 import React, { useState } from 'react';
 import SidebarLayout from '@/components/layout/SidebarLayout';
 import { CompanySelector } from '@/components/navigation/CompanySelector';
 import { ProfileDropdown } from '@/components/navigation/ProfileDropdown';
 import { SideCategory } from '@/components/navigation/SideCategory';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
 
 // Mock data
 const mockUser = {
@@ -45,6 +45,7 @@ const Index = () => {
       </div>
       <div className="flex items-center gap-4">
         <span className="text-sm text-muted-foreground">Welcome back!</span>
+        <ThemeToggle />
       </div>
     </div>
   );
