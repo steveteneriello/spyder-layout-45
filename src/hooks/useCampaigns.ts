@@ -49,9 +49,13 @@ export function useCampaigns(filters: CampaignFilters = {}) {
 
       // Apply status filter
       if (statusFilter === 'active') {
-        query = query.eq('is_active', true);
+        query = query.eq('is_active', true).neq('status', 'archived');
       } else if (statusFilter === 'inactive') {
-        query = query.eq('is_active', false);
+        query = query.eq('is_active', false).neq('status', 'archived');
+      } else if (statusFilter === 'archived') {
+        query = query.eq('status', 'archived');
+      } else if (statusFilter === 'all') {
+        // Show all campaigns including archived
       }
 
       // Apply category filter

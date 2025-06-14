@@ -49,6 +49,7 @@ export function CampaignFilters({
             <SelectItem value="all">All Campaigns</SelectItem>
             <SelectItem value="active">Active Only</SelectItem>
             <SelectItem value="inactive">Inactive Only</SelectItem>
+            <SelectItem value="archived">Archived Only</SelectItem>
           </SelectContent>
         </Select>
 

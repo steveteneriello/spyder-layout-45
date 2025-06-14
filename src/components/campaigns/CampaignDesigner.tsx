@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CampaignList } from './CampaignList';
@@ -154,7 +153,7 @@ export function CampaignDesigner() {
   }
 
   return (
-    <div className="space-y-6 bg-background text-foreground">
+    <div className="space-y-6 campaign-page-bg text-foreground min-h-screen">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-foreground">Campaign Manager</h1>
       </div>
@@ -193,6 +192,7 @@ export function CampaignDesigner() {
             selectedCampaignId={selectedCampaignId}
             onAddCampaign={handleAddCampaign}
             onEditCampaign={handleEditCampaign}
+            onRefresh={refetch}
           />
           
           {renderPagination()}

@@ -45,6 +45,9 @@
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 0 0% 30%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Campaign page specific background */
+    --campaign-page-background: 0 0% 96%;
   }
 
   .dark {
@@ -84,6 +87,9 @@
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 0 0% 30%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Campaign page specific background - lighter than sidebar */
+    --campaign-page-background: 0 0% 8%;
   }
 }
 
@@ -114,5 +120,10 @@
   
   .sidebar-layout .text-sidebar-foreground {
     color: hsl(0 0% 100%) !important;
+  }
+
+  /* Campaign page background */
+  .campaign-page-bg {
+    background-color: hsl(var(--campaign-page-background));
   }
 }

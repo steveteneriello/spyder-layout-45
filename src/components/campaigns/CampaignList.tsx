@@ -6,6 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Target, Calendar, DollarSign, Plus } from 'lucide-react';
 import { useCampaignStatus } from '@/hooks/useCampaignStatus';
+import { CampaignActions } from './CampaignActions';
 
 interface Campaign {
   id: string;
@@ -34,6 +35,7 @@ interface CampaignListProps {
   selectedCampaignId: string | null;
   onAddCampaign?: () => void;
   onEditCampaign?: (campaignId: string) => void;
+  onRefresh?: () => void;
 }
 
 export function CampaignList({ 
@@ -42,7 +44,8 @@ export function CampaignList({
   onSelectCampaign, 
   selectedCampaignId, 
   onAddCampaign,
-  onEditCampaign 
+  onEditCampaign,
+  onRefresh = () => {}
 }: CampaignListProps) {
   const { campaignStatuses, toggleCampaignStatus, loading: statusLoading } = useCampaignStatus();
 
@@ -76,6 +79,7 @@ export function CampaignList({
         {campaigns.map((campaign) => {
           const status = campaignStatuses[campaign.id];
           const isActive = status?.active ?? false;
+          const isArchived = campaign.status === 'archived';
 
           return (
             <Card 
@@ -84,7 +88,7 @@ export function CampaignList({
                 selectedCampaignId === campaign.id 
                   ? 'ring-2 ring-primary border-primary shadow-md' 
                   : 'border-border hover:border-primary/50'
-              }`}
+              } ${isArchived ? 'opacity-75' : ''}`}
               onClick={() => onSelectCampaign(campaign.id)}
             >
               <CardHeader className="pb-3">
@@ -94,15 +98,26 @@ export function CampaignList({
                     <CardTitle className="text-lg text-card-foreground">{campaign.name}</CardTitle>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Switch 
-                      checked={isActive}
-                      onCheckedChange={(checked) => toggleCampaignStatus(campaign.id, checked)}
-                      disabled={statusLoading}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                    <Badge variant={isActive ? 'default' : 'secondary'}>
-                      {isActive ? 'Active' : 'Paused'}
+                    {!isArchived && (
+                      <Switch 
+                        checked={isActive}
+                        onCheckedChange={(checked) => toggleCampaignStatus(campaign.id, checked)}
+                        disabled={statusLoading}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    )}
+                    <Badge variant={isArchived ? 'outline' : isActive ? 'default' : 'secondary'}>
+                      {isArchived ? 'Archived' : isActive ? 'Active' : 'Paused'}
                     </Badge>
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <CampaignActions
+                        campaignId={campaign.id}
+                        campaignName={campaign.name}
+                        currentStatus={campaign.status}
+                        onEdit={() => onEditCampaign?.(campaign.id)}
+                        onRefresh={onRefresh}
+                      />
+                    </div>
                   </div>
                 </div>
               </CardHeader>
