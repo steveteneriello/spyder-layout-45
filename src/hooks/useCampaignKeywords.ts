@@ -17,12 +17,12 @@ export function useCampaignKeywords(campaignId: string) {
     try {
       console.log('Fetching keywords for campaign:', campaignId);
       
-      // Fetch positive keywords with stats
+      // Fetch positive keywords with stats - specify the correct relationship
       const { data: keywordData, error: keywordError } = await supabase
         .from('campaign_manager_keywords')
         .select(`
           *,
-          stats:campaign_manager_keyword_stats(*)
+          stats:campaign_manager_keyword_stats!fk_keyword_stats_keyword(*)
         `)
         .eq('campaign_id', campaignId);
 
