@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { ScheduleManagementTable } from './ScheduleManagementTable';
 import { OperationsMonitoring } from './OperationsMonitoring';
@@ -31,7 +32,7 @@ import {
   ChevronRight,
   Minus,
 } from 'lucide-react';
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast"
 
 interface OxylabsSchedule {
   id: string;
@@ -305,6 +306,7 @@ export default function OxylabsSchedulerDashboard() {
             <TabsTrigger value="schedules" className="data-[state=active]:text-primary">Schedules</TabsTrigger>
             <TabsTrigger value="operations" className="data-[state=active]:text-primary">Operations</TabsTrigger>
           </TabsList>
+          
           <div className="border rounded-md p-4 campaign-card-bg campaign-border">
             <div className="flex items-center justify-between">
               <div className="flex-1 space-y-2">
@@ -351,23 +353,22 @@ export default function OxylabsSchedulerDashboard() {
             </div>
           </div>
 
-        {/* Schedule Management Table */}
-        {activeTab === 'schedules' && (
-          <ScheduleManagementTable
-            schedules={filteredSchedules}
-            loading={isLoading}
-            onToggleSchedule={handleToggleSchedule}
-            onViewRuns={handleViewRuns}
-            onViewDetails={handleViewDetails}
-            onViewJobs={handleViewJobs}
-            onDeleteSchedule={handleDeleteSchedule}
-          />
-        )}
+          <TabsContent value="schedules">
+            <ScheduleManagementTable
+              schedules={filteredSchedules}
+              loading={isLoading}
+              onToggleSchedule={handleToggleSchedule}
+              onViewRuns={handleViewRuns}
+              onViewDetails={handleViewDetails}
+              onViewJobs={handleViewJobs}
+              onDeleteSchedule={handleDeleteSchedule}
+            />
+          </TabsContent>
 
-        {/* Operations Monitoring */}
-        {activeTab === 'operations' && (
-          <OperationsMonitoring />
-        )}
+          <TabsContent value="operations">
+            <OperationsMonitoring />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
