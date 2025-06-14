@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Table,
   TableBody,
@@ -11,6 +11,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,6 +30,8 @@ import {
   TrendingDown,
   AlertCircle,
   CheckCircle,
+  Trash2,
+  ChevronDown,
 } from 'lucide-react';
 
 interface OxylabsSchedule {
@@ -70,6 +73,9 @@ export function ScheduleManagementTable({
   onViewDetails,
   onViewJobs
 }: ScheduleManagementTableProps) {
+  const [selectedSchedules, setSelectedSchedules] = useState<string[]>([]);
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
+
   const parseCronExpression = (cron: string) => {
     if (!cron) return 'No schedule';
     
@@ -111,6 +117,50 @@ export function ScheduleManagementTable({
     return doneOutcome ? (doneOutcome.ratio * 100).toFixed(1) + '%' : '0%';
   };
 
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedSchedules(schedules.map(s => s.oxylabs_schedule_id));
+    } else {
+      setSelectedSchedules([]);
+    }
+  };
+
+  const handleSelectSchedule = (scheduleId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedSchedules(prev => [...prev, scheduleId]);
+    } else {
+      setSelectedSchedules(prev => prev.filter(id => id !== scheduleId));
+    }
+  };
+
+  const handleBulkAction = async (action: 'activate' | 'deactivate' | 'delete') => {
+    if (selectedSchedules.length === 0) return;
+    
+    setBulkActionLoading(true);
+    try {
+      for (const scheduleId of selectedSchedules) {
+        const schedule = schedules.find(s => s.oxylabs_schedule_id === scheduleId);
+        if (!schedule) continue;
+
+        if (action === 'activate' || action === 'deactivate') {
+          await onToggleSchedule(scheduleId, action === 'deactivate');
+        } else if (action === 'delete') {
+          // For now, we'll just deactivate as a soft delete
+          // You can implement actual delete functionality later
+          await onToggleSchedule(scheduleId, true);
+        }
+      }
+      setSelectedSchedules([]);
+    } catch (error) {
+      console.error(`Failed to ${action} schedules:`, error);
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+
+  const isAllSelected = schedules.length > 0 && selectedSchedules.length === schedules.length;
+  const isPartiallySelected = selectedSchedules.length > 0 && selectedSchedules.length < schedules.length;
+
   if (loading) {
     return (
       <div className="space-y-3">
@@ -134,143 +184,210 @@ export function ScheduleManagementTable({
   }
 
   return (
-    <div className="campaign-card-bg rounded-lg border campaign-border overflow-hidden">
-      <Table>
-        <TableHeader>
-          <TableRow className="campaign-secondary-bg">
-            <TableHead className="w-12">Status</TableHead>
-            <TableHead>Schedule</TableHead>
-            <TableHead>Schedule Pattern</TableHead>
-            <TableHead>Items</TableHead>
-            <TableHead>Total Jobs</TableHead>
-            <TableHead>Success Rate</TableHead>
-            <TableHead>Next Run</TableHead>
-            <TableHead>Management</TableHead>
-            <TableHead className="w-20">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {schedules.map((schedule) => {
-            const status = getStatusBadge(schedule);
-            const StatusIcon = status.icon;
-            
-            return (
-              <TableRow key={schedule.id} className="hover:campaign-secondary-bg">
-                <TableCell>
-                  <Switch
-                    checked={schedule.active}
-                    onCheckedChange={() => onToggleSchedule(schedule.oxylabs_schedule_id, schedule.active)}
-                    className="data-[state=checked]:bg-green-600"
-                  />
-                </TableCell>
-                
-                <TableCell>
-                  <div>
-                    <div className="font-medium campaign-primary-text">
-                      {schedule.job_name || schedule.schedule_name || 'Unnamed Schedule'}
+    <div className="space-y-4">
+      {/* Bulk Actions Bar */}
+      {selectedSchedules.length > 0 && (
+        <div className="campaign-card-bg rounded-lg border campaign-border p-4">
+          <div className="flex items-center justify-between">
+            <span className="text-sm campaign-primary-text">
+              {selectedSchedules.length} schedule{selectedSchedules.length !== 1 ? 's' : ''} selected
+            </span>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleBulkAction('activate')}
+                disabled={bulkActionLoading}
+                className="flex items-center gap-1"
+              >
+                <Play className="w-3 h-3" />
+                Activate
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleBulkAction('deactivate')}
+                disabled={bulkActionLoading}
+                className="flex items-center gap-1"
+              >
+                <Pause className="w-3 h-3" />
+                Deactivate
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => handleBulkAction('delete')}
+                disabled={bulkActionLoading}
+                className="flex items-center gap-1"
+              >
+                <Trash2 className="w-3 h-3" />
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Table */}
+      <div className="campaign-card-bg rounded-lg border campaign-border overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="campaign-secondary-bg">
+              <TableHead className="w-12">
+                <Checkbox
+                  checked={isAllSelected}
+                  onCheckedChange={handleSelectAll}
+                  ref={(el) => {
+                    if (el) {
+                      el.indeterminate = isPartiallySelected;
+                    }
+                  }}
+                />
+              </TableHead>
+              <TableHead className="w-12">Status</TableHead>
+              <TableHead>Schedule</TableHead>
+              <TableHead>Schedule Pattern</TableHead>
+              <TableHead>Items</TableHead>
+              <TableHead>Total Jobs</TableHead>
+              <TableHead>Success Rate</TableHead>
+              <TableHead>Next Run</TableHead>
+              <TableHead>Management</TableHead>
+              <TableHead className="w-20">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {schedules.map((schedule) => {
+              const status = getStatusBadge(schedule);
+              const StatusIcon = status.icon;
+              const isSelected = selectedSchedules.includes(schedule.oxylabs_schedule_id);
+              
+              return (
+                <TableRow key={schedule.id} className="hover:campaign-secondary-bg">
+                  <TableCell>
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={(checked) => 
+                        handleSelectSchedule(schedule.oxylabs_schedule_id, checked as boolean)
+                      }
+                    />
+                  </TableCell>
+                  
+                  <TableCell>
+                    <Switch
+                      checked={schedule.active}
+                      onCheckedChange={() => onToggleSchedule(schedule.oxylabs_schedule_id, schedule.active)}
+                      className="data-[state=checked]:bg-green-600"
+                    />
+                  </TableCell>
+                  
+                  <TableCell>
+                    <div>
+                      <div className="font-medium campaign-primary-text">
+                        {schedule.job_name || schedule.schedule_name || 'Unnamed Schedule'}
+                      </div>
+                      <div className="text-xs campaign-secondary-text">
+                        ID: {schedule.oxylabs_schedule_id}
+                      </div>
                     </div>
+                  </TableCell>
+                  
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <Clock className="w-3 h-3 campaign-secondary-text" />
+                      <span className="text-sm campaign-primary-text">
+                        {parseCronExpression(schedule.cron_expression)}
+                      </span>
+                    </div>
+                  </TableCell>
+                  
+                  <TableCell>
+                    <span className="text-sm campaign-primary-text">
+                      {schedule.items_count || 0}
+                    </span>
+                  </TableCell>
+                  
+                  <TableCell>
+                    <span className="text-sm campaign-primary-text">
+                      {schedule.stats?.total_job_count || 0}
+                    </span>
+                  </TableCell>
+                  
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <TrendingUp className="w-3 h-3 text-green-500" />
+                      <span className="text-sm campaign-primary-text">
+                        {getSuccessRate(schedule)}
+                      </span>
+                    </div>
+                  </TableCell>
+                  
+                  <TableCell>
                     <div className="text-xs campaign-secondary-text">
-                      ID: {schedule.oxylabs_schedule_id}
+                      {formatDate(schedule.next_run_at)}
                     </div>
-                  </div>
-                </TableCell>
-                
-                <TableCell>
-                  <div className="flex items-center gap-1">
-                    <Clock className="w-3 h-3 campaign-secondary-text" />
-                    <span className="text-sm campaign-primary-text">
-                      {parseCronExpression(schedule.cron_expression)}
-                    </span>
-                  </div>
-                </TableCell>
-                
-                <TableCell>
-                  <span className="text-sm campaign-primary-text">
-                    {schedule.items_count || 0}
-                  </span>
-                </TableCell>
-                
-                <TableCell>
-                  <span className="text-sm campaign-primary-text">
-                    {schedule.stats?.total_job_count || 0}
-                  </span>
-                </TableCell>
-                
-                <TableCell>
-                  <div className="flex items-center gap-1">
-                    <TrendingUp className="w-3 h-3 text-green-500" />
-                    <span className="text-sm campaign-primary-text">
-                      {getSuccessRate(schedule)}
-                    </span>
-                  </div>
-                </TableCell>
-                
-                <TableCell>
-                  <div className="text-xs campaign-secondary-text">
-                    {formatDate(schedule.next_run_at)}
-                  </div>
-                </TableCell>
-                
-                <TableCell>
-                  <Badge variant={status.variant} className="flex items-center gap-1">
-                    <StatusIcon className="w-3 h-3" />
-                    {status.text}
-                  </Badge>
-                </TableCell>
-                
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="campaign-card-bg campaign-border">
-                      <DropdownMenuItem 
-                        onClick={() => onViewDetails(schedule.oxylabs_schedule_id)}
-                        className="flex items-center gap-2"
-                      >
-                        <Eye className="h-4 w-4" />
-                        View Details
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => onViewRuns(schedule.oxylabs_schedule_id)}
-                        className="flex items-center gap-2"
-                      >
-                        <Activity className="h-4 w-4" />
-                        View Runs
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => onViewJobs(schedule.oxylabs_schedule_id)}
-                        className="flex items-center gap-2"
-                      >
-                        <Calendar className="h-4 w-4" />
-                        View Jobs
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => onToggleSchedule(schedule.oxylabs_schedule_id, schedule.active)}
-                        className="flex items-center gap-2"
-                      >
-                        {schedule.active ? (
-                          <>
-                            <Pause className="h-4 w-4" />
-                            Deactivate
-                          </>
-                        ) : (
-                          <>
-                            <Play className="h-4 w-4" />
-                            Activate
-                          </>
-                        )}
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
+                  </TableCell>
+                  
+                  <TableCell>
+                    <Badge variant={status.variant} className="flex items-center gap-1">
+                      <StatusIcon className="w-3 h-3" />
+                      {status.text}
+                    </Badge>
+                  </TableCell>
+                  
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="campaign-card-bg campaign-border">
+                        <DropdownMenuItem 
+                          onClick={() => onViewDetails(schedule.oxylabs_schedule_id)}
+                          className="flex items-center gap-2"
+                        >
+                          <Eye className="h-4 w-4" />
+                          View Details
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => onViewRuns(schedule.oxylabs_schedule_id)}
+                          className="flex items-center gap-2"
+                        >
+                          <Activity className="h-4 w-4" />
+                          View Runs
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => onViewJobs(schedule.oxylabs_schedule_id)}
+                          className="flex items-center gap-2"
+                        >
+                          <Calendar className="h-4 w-4" />
+                          View Jobs
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => onToggleSchedule(schedule.oxylabs_schedule_id, schedule.active)}
+                          className="flex items-center gap-2"
+                        >
+                          {schedule.active ? (
+                            <>
+                              <Pause className="h-4 w-4" />
+                              Deactivate
+                            </>
+                          ) : (
+                            <>
+                              <Play className="h-4 w-4" />
+                              Activate
+                            </>
+                          )}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }
