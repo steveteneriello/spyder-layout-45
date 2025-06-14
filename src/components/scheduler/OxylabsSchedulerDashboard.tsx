@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { ScheduleManagementTable } from './ScheduleManagementTable';
 import { OperationsMonitoring } from './OperationsMonitoring';
@@ -132,8 +133,9 @@ export default function OxylabsSchedulerDashboard() {
     try {
       console.log('Deleting schedule:', scheduleId);
       
-      // Add a small delay to ensure any pending operations complete
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Use AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
       
       const response = await fetch(`${API_BASE_URL}/schedule/${scheduleId}`, {
         method: 'DELETE',
@@ -142,10 +144,11 @@ export default function OxylabsSchedulerDashboard() {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        mode: 'cors',
-        credentials: 'include',
+        signal: controller.signal,
       });
 
+      clearTimeout(timeoutId);
+      
       console.log('Delete response status:', response.status);
       console.log('Delete response headers:', Object.fromEntries(response.headers.entries()));
 
@@ -178,8 +181,10 @@ export default function OxylabsSchedulerDashboard() {
       
       // Provide more specific error messages
       let errorMessage = 'Failed to delete schedule';
-      if (error instanceof TypeError && error.message === 'Failed to fetch') {
-        errorMessage = 'Network error: Unable to connect to the server. Please check your connection and try again.';
+      if (error instanceof Error && error.name === 'AbortError') {
+        errorMessage = 'Request timed out. Please try again.';
+      } else if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        errorMessage = 'Network error: Unable to connect to the server. The service may be temporarily unavailable.';
       } else if (error instanceof Error) {
         errorMessage = error.message;
       }
