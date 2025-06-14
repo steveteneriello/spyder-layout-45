@@ -208,7 +208,7 @@ export default function OxylabsSchedulerDashboard() {
     return () => clearInterval(interval);
   }, [loadDashboard]);
 
-  // Filtering and pagination
+  // Filtering and pagination - moved after state definitions
   const filteredSchedules = schedules.filter(schedule => {
     const matchesSearch = !searchTerm || 
       schedule.job_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -248,7 +248,6 @@ export default function OxylabsSchedulerDashboard() {
     setSelectedSchedules(newSelected);
   };
 
-  // Bulk operations
   const bulkActivate = async () => {
     if (selectedSchedules.size === 0) return;
     
