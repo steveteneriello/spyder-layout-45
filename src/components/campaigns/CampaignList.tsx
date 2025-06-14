@@ -78,7 +78,7 @@ export function CampaignList({
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm">
+            <div key={i} className="bg-neutral-800 text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm">
               <div className="grid auto-rows-min grid-rows-[auto_auto] items-start gap-1.5 px-6">
                 <div className="animate-pulse">
                   <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
@@ -110,7 +110,7 @@ export function CampaignList({
       </div>
 
       {campaigns.length === 0 ? (
-        <div className="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-12 shadow-sm text-center">
+        <div className="bg-neutral-800 text-card-foreground flex flex-col gap-6 rounded-xl border py-12 shadow-sm text-center">
           <div className="px-6">
             <div className="text-muted-foreground text-sm mb-2">No campaigns found</div>
             <div className="text-lg font-semibold mb-4">Get started by creating your first campaign</div>
@@ -125,12 +125,12 @@ export function CampaignList({
           {campaigns.map((campaign) => (
             <div
               key={campaign.id}
-              className={`bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 ${
+              className={`bg-neutral-800 text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 @container/card ${
                 selectedCampaignId === campaign.id ? 'ring-2 ring-primary' : ''
               }`}
               onClick={() => onSelectCampaign(campaign.id)}
             >
-              <div className="grid auto-rows-min grid-rows-[auto_auto] items-start gap-1.5 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto]">
+              <div className="@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-1.5 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto]">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <div className="text-muted-foreground text-sm mb-1">
@@ -176,7 +176,13 @@ export function CampaignList({
                     >
                       <Edit className="h-3 w-3" />
                     </Button>
-                    <CampaignActions campaignId={campaign.id} />
+                    <CampaignActions 
+                      campaignId={campaign.id}
+                      campaignName={campaign.name}
+                      currentStatus={campaign.status}
+                      onEdit={() => onEditCampaign(campaign.id)}
+                      onRefresh={onRefresh}
+                    />
                   </div>
                 </div>
                 {campaign.budget && (
