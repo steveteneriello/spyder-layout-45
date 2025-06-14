@@ -42,6 +42,7 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
+  Minus,
 } from 'lucide-react';
 
 interface OxylabsSchedule {
@@ -152,6 +153,15 @@ export function ScheduleManagementTable({
     }
   };
 
+  // Pagination logic
+  const totalPages = Math.ceil(schedules.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const currentSchedules = schedules.slice(startIndex, endIndex);
+
+  const isAllSelected = currentSchedules.length > 0 && selectedSchedules.length === currentSchedules.length;
+  const isPartiallySelected = selectedSchedules.length > 0 && selectedSchedules.length < currentSchedules.length;
+
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
       setSelectedSchedules(currentSchedules.map(s => s.oxylabs_schedule_id));
@@ -190,15 +200,6 @@ export function ScheduleManagementTable({
       setBulkActionLoading(false);
     }
   };
-
-  // Pagination logic
-  const totalPages = Math.ceil(schedules.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = startIndex + ITEMS_PER_PAGE;
-  const currentSchedules = schedules.slice(startIndex, endIndex);
-
-  const isAllSelected = currentSchedules.length > 0 && selectedSchedules.length === currentSchedules.length;
-  const isPartiallySelected = selectedSchedules.length > 0 && selectedSchedules.length < currentSchedules.length;
 
   const goToPage = (page: number) => {
     setCurrentPage(Math.max(1, Math.min(page, totalPages)));
@@ -357,11 +358,15 @@ export function ScheduleManagementTable({
           <TableHeader>
             <TableRow className="campaign-secondary-bg">
               <TableHead className="w-12">
-                <Checkbox
-                  checked={isAllSelected}
-                  onCheckedChange={handleSelectAll}
-                  indeterminate={isPartiallySelected}
-                />
+                <div className="relative">
+                  <Checkbox
+                    checked={isAllSelected}
+                    onCheckedChange={handleSelectAll}
+                  />
+                  {isPartiallySelected && !isAllSelected && (
+                    <Minus className="w-3 h-3 absolute top-0.5 left-0.5 text-primary" />
+                  )}
+                </div>
               </TableHead>
               <TableHead className="w-12">Status</TableHead>
               <TableHead>Schedule</TableHead>

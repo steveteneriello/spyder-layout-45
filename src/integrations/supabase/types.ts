@@ -1386,6 +1386,7 @@ export type Database = {
           active: boolean | null
           created_at: string | null
           cron_expression: string | null
+          deleted_at: string | null
           end_time: string | null
           id: string
           items_count: number | null
@@ -1400,6 +1401,7 @@ export type Database = {
           active?: boolean | null
           created_at?: string | null
           cron_expression?: string | null
+          deleted_at?: string | null
           end_time?: string | null
           id?: string
           items_count?: number | null
@@ -1414,6 +1416,7 @@ export type Database = {
           active?: boolean | null
           created_at?: string | null
           cron_expression?: string | null
+          deleted_at?: string | null
           end_time?: string | null
           id?: string
           items_count?: number | null
@@ -3303,6 +3306,24 @@ export type Database = {
         }
         Relationships: []
       }
+      scrapi_active_oxylabs_schedules: {
+        Row: {
+          active: boolean | null
+          cron_expression: string | null
+          deleted_at: string | null
+          end_time: string | null
+          id: string | null
+          job_name: string | null
+          last_synced_at: string | null
+          management_status: string | null
+          next_run_at: string | null
+          oxylabs_schedule_id: string | null
+          schedule_name: string | null
+          success_rate: number | null
+          total_jobs: string | null
+        }
+        Relationships: []
+      }
       scrapi_job_performance_metrics: {
         Row: {
           avg_processing_time_ms: number | null
@@ -3336,6 +3357,7 @@ export type Database = {
         Row: {
           active: boolean | null
           cron_expression: string | null
+          deleted_at: string | null
           end_time: string | null
           id: string | null
           job_name: string | null
