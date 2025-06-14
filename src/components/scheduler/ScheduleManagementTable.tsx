@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   Table,
@@ -21,27 +20,15 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { ScheduleActions } from './ScheduleActions';
 import {
   Play,
   Pause,
-  MoreVertical,
-  Eye,
-  Activity,
-  Calendar,
   Clock,
   TrendingUp,
-  TrendingDown,
   AlertCircle,
   CheckCircle,
   Trash2,
-  ChevronLeft,
-  ChevronRight,
   Minus,
 } from 'lucide-react';
 
@@ -74,6 +61,7 @@ interface ScheduleManagementTableProps {
   onViewRuns: (scheduleId: string) => void;
   onViewDetails: (scheduleId: string) => void;
   onViewJobs: (scheduleId: string) => void;
+  onDeleteSchedule: (scheduleId: string) => Promise<void>;
 }
 
 const ITEMS_PER_PAGE = 10;
@@ -84,7 +72,8 @@ export function ScheduleManagementTable({
   onToggleSchedule,
   onViewRuns,
   onViewDetails,
-  onViewJobs
+  onViewJobs,
+  onDeleteSchedule
 }: ScheduleManagementTableProps) {
   const [selectedSchedules, setSelectedSchedules] = useState<string[]>([]);
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
@@ -138,7 +127,7 @@ export function ScheduleManagementTable({
     }
     const successRate = schedule.stats?.job_result_outcomes?.find(o => o.status === 'done')?.ratio || 0;
     if (successRate < 0.5) {
-      return { variant: 'destructive' as const, text: 'Poor Performance', icon: TrendingDown };
+      return { variant: 'destructive' as const, text: 'Poor Performance', icon: TrendingUp };
     }
     return { variant: 'default' as const, text: 'Healthy', icon: CheckCircle };
   };
@@ -190,7 +179,7 @@ export function ScheduleManagementTable({
         if (action === 'activate' || action === 'deactivate') {
           await onToggleSchedule(scheduleId, action === 'deactivate');
         } else if (action === 'delete') {
-          await onToggleSchedule(scheduleId, true);
+          await onDeleteSchedule(scheduleId);
         }
       }
       setSelectedSchedules([]);
@@ -459,52 +448,14 @@ export function ScheduleManagementTable({
                   </TableCell>
                   
                   <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="campaign-card-bg campaign-border">
-                        <DropdownMenuItem 
-                          onClick={() => onViewDetails(schedule.oxylabs_schedule_id)}
-                          className="flex items-center gap-2"
-                        >
-                          <Eye className="h-4 w-4" />
-                          View Details
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => onViewRuns(schedule.oxylabs_schedule_id)}
-                          className="flex items-center gap-2"
-                        >
-                          <Activity className="h-4 w-4" />
-                          View Runs
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => onViewJobs(schedule.oxylabs_schedule_id)}
-                          className="flex items-center gap-2"
-                        >
-                          <Calendar className="h-4 w-4" />
-                          View Jobs
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => onToggleSchedule(schedule.oxylabs_schedule_id, schedule.active)}
-                          className="flex items-center gap-2"
-                        >
-                          {schedule.active ? (
-                            <>
-                              <Pause className="h-4 w-4" />
-                              Deactivate
-                            </>
-                          ) : (
-                            <>
-                              <Play className="h-4 w-4" />
-                              Activate
-                            </>
-                          )}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <ScheduleActions
+                      schedule={schedule}
+                      onToggleSchedule={onToggleSchedule}
+                      onViewDetails={onViewDetails}
+                      onViewRuns={onViewRuns}
+                      onViewJobs={onViewJobs}
+                      onDelete={onDeleteSchedule}
+                    />
                   </TableCell>
                 </TableRow>
               );

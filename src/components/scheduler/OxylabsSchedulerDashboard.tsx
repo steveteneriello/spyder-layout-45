@@ -1,12 +1,38 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { ScheduleManagementTable } from './ScheduleManagementTable';
+import { OperationsMonitoring } from './OperationsMonitoring';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import {
-  RefreshCw, Play, Pause, Trash2, CheckSquare, Square, 
-  ChevronLeft, ChevronRight, Search,
-  Clock, CheckCircle2, XCircle, Loader2, MoreHorizontal,
-  Settings, Eye, History, Activity, Calendar
+  ArrowDown,
+  ArrowUp,
+  CheckCircle,
+  AlertTriangle,
+  Loader2,
+  RefreshCw,
+  Settings,
+  Target,
+  Home,
+  Pause,
+  Play,
+  Eye,
+  Activity,
+  Calendar,
+  Clock,
+  TrendingUp,
+  TrendingDown,
+  AlertCircle,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  Minus,
 } from 'lucide-react';
+import { useToast } from "@/components/ui/use-toast"
 
-// Types
 interface OxylabsSchedule {
   id: string;
   oxylabs_schedule_id: string;
@@ -17,1000 +43,330 @@ interface OxylabsSchedule {
   job_name?: string;
   schedule_name?: string;
   items_count: number;
-  stats: any;
+  stats: {
+    total_job_count: number;
+    job_result_outcomes: Array<{
+      status: string;
+      job_count: number;
+      ratio: number;
+    }>;
+  };
   management_status: 'managed' | 'unmanaged';
   last_synced_at: string;
 }
 
-interface ScheduleOperation {
-  id: string;
-  oxylabs_schedule_id: string;
-  operation_type: 'delete' | 'activate' | 'deactivate';
-  status: 'pending' | 'processing' | 'completed' | 'failed';
-  requested_by: string;
-  requested_at: string;
-  completed_at?: string;
-  retry_count: number;
-  last_error?: string;
-  status_description: string;
-}
+const API_BASE_URL = '/functions/v1/scrapi-oxylabs-scheduler';
 
-interface QueueStats {
-  pending: number;
-  processing: number;
-  completed: number;
-  failed: number;
-  total: number;
-}
-
-// API Client
-class OxylabsSchedulerAPI {
-  private baseUrl: string;
-  private headers: HeadersInit;
-
-  constructor() {
-    this.baseUrl = 'https://krmwphqhlzscnuxwxvkz.supabase.co/functions/v1/scrapi-oxylabs-scheduler';
-    this.headers = {
-      'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtybXdwaHFobHpzY251eHd4dmt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxMzExMjUsImV4cCI6MjA2NDcwNzEyNX0.k5fDJWwqMdqd9XQgWuDGwcJbwUuL8U-mF7NhiJxY4eU',
-      'Content-Type': 'application/json'
-    };
-  }
-
-  async getDashboard(limit = 100, offset = 0) {
-    const params = new URLSearchParams({ 
-      limit: limit.toString(), 
-      offset: offset.toString() 
-    });
-    
-    const response = await fetch(`${this.baseUrl}/dashboard?${params}`, {
-      method: 'GET',
-      headers: this.headers
-    });
-    return response.json();
-  }
-
-  async getOperations(limit = 50, status?: string) {
-    const params = new URLSearchParams({ limit: limit.toString() });
-    if (status) params.append('status', status);
-    
-    const response = await fetch(`${this.baseUrl}/operations?${params}`, {
-      method: 'GET',
-      headers: this.headers
-    });
-    return response.json();
-  }
-
-  async queueScheduleStateChange(scheduleId: string, active: boolean) {
-    const response = await fetch(`${this.baseUrl}/schedule/${scheduleId}/state`, {
-      method: 'PUT',
-      headers: this.headers,
-      body: JSON.stringify({ active })
-    });
-    return response.json();
-  }
-
-  async queueScheduleDelete(scheduleId: string) {
-    const response = await fetch(`${this.baseUrl}/schedule/${scheduleId}`, {
-      method: 'DELETE',
-      headers: this.headers
-    });
-    return response.json();
-  }
-
-  async syncSchedules() {
-    const response = await fetch(`${this.baseUrl}/sync`, {
-      method: 'GET',
-      headers: this.headers
-    });
-    return response.json();
-  }
-
-  async mapUnmanaged() {
-    const response = await fetch(`${this.baseUrl}/map-unmanaged`, {
-      method: 'GET',
-      headers: this.headers
-    });
-    return response.json();
-  }
-}
-
-// Main Dashboard Component
 export default function OxylabsSchedulerDashboard() {
-  // State
   const [schedules, setSchedules] = useState<OxylabsSchedule[]>([]);
-  const [totalSchedules, setTotalSchedules] = useState(0);
-  const [operations, setOperations] = useState<ScheduleOperation[]>([]);
-  const [queueStats, setQueueStats] = useState<QueueStats>({
-    pending: 0,
-    processing: 0,
-    completed: 0,
-    failed: 0,
-    total: 0
-  });
-
-  // Pagination for API calls
-  const [apiPage, setApiPage] = useState(0);
-  const [apiLimit] = useState(100);
-  const [hasMoreData, setHasMoreData] = useState(true);
-
-  // Selection and pagination for display
-  const [selectedSchedules, setSelectedSchedules] = useState<Set<string>>(new Set());
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(25);
+  const [filteredSchedules, setFilteredSchedules] = useState<OxylabsSchedule[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'unmanaged'>('all');
-
-  // UI state
+  const [activeTab, setActiveTab] = useState<'schedules' | 'operations'>('schedules');
   const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [isProcessingBulk, setIsProcessingBulk] = useState(false);
-  const [activeTab, setActiveTab] = useState<'schedules' | 'queue' | 'history'>('schedules');
-  const [notifications, setNotifications] = useState<Array<{
-    id: string;
-    type: 'success' | 'error' | 'warning' | 'info';
-    message: string;
-  }>>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [totalCount, setTotalCount] = useState(0);
+  const [limit, setLimit] = useState(100);
+  const [offset, setOffset] = useState(0);
+  const { toast } = useToast()
 
-  // Initialize API
-  const api = new OxylabsSchedulerAPI();
-
-  // Notification helper
-  const addNotification = useCallback((type: 'success' | 'error' | 'warning' | 'info', message: string) => {
-    const id = Date.now().toString();
-    setNotifications(prev => [...prev, { id, type, message }]);
-    setTimeout(() => {
-      setNotifications(prev => prev.filter(n => n.id !== id));
-    }, 5000);
-  }, []);
-
-  // Load initial data
-  const loadDashboard = useCallback(async (reset = false) => {
-    if (reset) {
-      setIsLoading(true);
-      setSchedules([]);
-      setApiPage(0);
-      setHasMoreData(true);
-    } else {
-      setIsLoadingMore(true);
-    }
-
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
     try {
-      const offset = reset ? 0 : apiPage * apiLimit;
-      const [dashboardData, operationsData] = await Promise.all([
-        api.getDashboard(apiLimit, offset),
-        api.getOperations(100)
-      ]);
+      const url = `${API_BASE_URL}/dashboard?limit=${limit}&offset=${offset}`;
+      const response = await fetch(url);
 
-      console.log('Dashboard response:', dashboardData);
-
-      if (dashboardData.success) {
-        const transformedSchedules = (dashboardData.schedules || []).map((schedule: any) => ({
-          id: schedule.id,
-          oxylabs_schedule_id: schedule.oxylabs_schedule_id,
-          active: schedule.active || false,
-          cron_expression: schedule.cron_expression || '',
-          next_run_at: schedule.next_run_at || '',
-          end_time: schedule.end_time || '',
-          job_name: schedule.job_name,
-          schedule_name: schedule.schedule_name,
-          items_count: schedule.items_count || 0,
-          stats: schedule.stats || { total_job_count: 0, job_result_outcomes: [] },
-          management_status: schedule.management_status || 'unmanaged',
-          last_synced_at: schedule.last_synced_at || ''
-        }));
-
-        if (reset) {
-          setSchedules(transformedSchedules);
-        } else {
-          setSchedules(prev => [...prev, ...transformedSchedules]);
-        }
-        
-        setTotalSchedules(dashboardData.total_count || 0);
-        setHasMoreData(transformedSchedules.length === apiLimit);
-        
-        if (!reset) {
-          setApiPage(prev => prev + 1);
-        }
-      } else {
-        console.error('Dashboard API error:', dashboardData.error);
-        addNotification('error', dashboardData.error || 'Failed to load dashboard data');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch data');
       }
 
-      if (operationsData.success) {
-        setOperations(operationsData.operations || []);
-        setQueueStats(operationsData.queue_stats || {
-          pending: 0, processing: 0, completed: 0, failed: 0, total: 0
-        });
-      }
+      const result = await response.json();
+      setSchedules(result.schedules);
+      setTotalCount(result.total_count);
+      setFilteredSchedules(result.schedules);
     } catch (error) {
-      console.error('Dashboard load error:', error);
-      addNotification('error', 'Failed to load dashboard data');
+      setError(error instanceof Error ? error.message : 'Failed to fetch data');
+      console.error('Error fetching data:', error);
     } finally {
       setIsLoading(false);
-      setIsLoadingMore(false);
     }
-  }, [api, addNotification, apiPage, apiLimit]);
+  }, [limit, offset]);
 
-  // Load more data
-  const loadMoreData = useCallback(() => {
-    if (!isLoadingMore && hasMoreData) {
-      loadDashboard(false);
-    }
-  }, [loadDashboard, isLoadingMore, hasMoreData]);
-
-  // Initial load and auto-refresh
   useEffect(() => {
-    loadDashboard(true);
-    const interval = setInterval(() => loadDashboard(true), 30000);
-    return () => clearInterval(interval);
-  }, []);
+    fetchData();
+  }, [fetchData]);
 
-  // Filtering and pagination for display
-  const filteredSchedules = schedules.filter(schedule => {
-    const matchesSearch = !searchTerm || 
-      schedule.job_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      schedule.oxylabs_schedule_id.includes(searchTerm);
-    
-    const matchesFilter = statusFilter === 'all' ||
-      (statusFilter === 'active' && schedule.active) ||
-      (statusFilter === 'inactive' && !schedule.active) ||
-      (statusFilter === 'unmanaged' && schedule.management_status === 'unmanaged');
-    
-    return matchesSearch && matchesFilter;
-  });
+  const handleToggleSchedule = async (scheduleId: string, currentState: boolean) => {
+    try {
+      console.log('Toggling schedule:', scheduleId, currentState);
+      
+      const response = await fetch(`${API_BASE_URL}/schedule/${scheduleId}/state`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ active: !currentState }),
+      });
 
-  const totalPages = Math.ceil(filteredSchedules.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedSchedules = filteredSchedules.slice(startIndex, startIndex + itemsPerPage);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to toggle schedule');
+      }
 
-  // Selection helpers
-  const isAllSelected = selectedSchedules.size === filteredSchedules.length && filteredSchedules.length > 0;
-  const isIndeterminate = selectedSchedules.size > 0 && selectedSchedules.size < filteredSchedules.length;
+      const result = await response.json();
+      console.log('Toggle schedule result:', result);
 
-  const toggleSelectAll = () => {
-    if (isAllSelected) {
-      setSelectedSchedules(new Set());
+      // Refresh the data after toggle
+      await fetchData();
+      
+      toast({
+        title: 'Schedule Update Queued',
+        description: 'The schedule has been queued for activation/deactivation and will be updated shortly.',
+      });
+    } catch (error) {
+      console.error('Error toggling schedule:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to toggle schedule',
+        variant: 'destructive',
+      });
+      throw error;
+    }
+  };
+
+  const handleDeleteSchedule = async (scheduleId: string) => {
+    try {
+      console.log('Deleting schedule:', scheduleId);
+      
+      const response = await fetch(`${API_BASE_URL}/schedule/${scheduleId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete schedule');
+      }
+
+      const result = await response.json();
+      console.log('Delete schedule result:', result);
+
+      // Refresh the data after deletion
+      await fetchData();
+      
+      toast({
+        title: 'Schedule Deletion Queued',
+        description: 'The schedule has been queued for deletion and will be removed shortly.',
+      });
+    } catch (error) {
+      console.error('Error deleting schedule:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to delete schedule',
+        variant: 'destructive',
+      });
+      throw error;
+    }
+  };
+
+  const handleViewRuns = (scheduleId: string) => {
+    console.log('View runs for schedule:', scheduleId);
+    // Placeholder function
+    toast({
+      title: 'View Runs',
+      description: `View runs action for schedule ${scheduleId} is not implemented yet.`,
+    });
+  };
+
+  const handleViewDetails = (scheduleId: string) => {
+    console.log('View details for schedule:', scheduleId);
+    // Placeholder function
+    toast({
+      title: 'View Details',
+      description: `View details action for schedule ${scheduleId} is not implemented yet.`,
+    });
+  };
+
+  const handleViewJobs = (scheduleId: string) => {
+    console.log('View jobs for schedule:', scheduleId);
+    // Placeholder function
+    toast({
+      title: 'View Jobs',
+      description: `View jobs action for schedule ${scheduleId} is not implemented yet.`,
+    });
+  };
+
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+    if (term) {
+      const filtered = schedules.filter(schedule =>
+        schedule.job_name?.toLowerCase().includes(term.toLowerCase()) ||
+        schedule.schedule_name?.toLowerCase().includes(term.toLowerCase()) ||
+        schedule.oxylabs_schedule_id?.toLowerCase().includes(term.toLowerCase())
+      );
+      setFilteredSchedules(filtered);
     } else {
-      setSelectedSchedules(new Set(filteredSchedules.map(s => s.oxylabs_schedule_id)));
+      setFilteredSchedules(schedules);
     }
   };
 
-  const toggleSelectSchedule = (scheduleId: string) => {
-    const newSelected = new Set(selectedSchedules);
-    if (newSelected.has(scheduleId)) {
-      newSelected.delete(scheduleId);
-    } else {
-      newSelected.add(scheduleId);
-    }
-    setSelectedSchedules(newSelected);
+  const refetch = async () => {
+    await fetchData();
   };
 
-  // Bulk operations
-  const bulkActivate = async () => {
-    if (selectedSchedules.size === 0) return;
-    
-    setIsProcessingBulk(true);
-    let successCount = 0;
-    let errorCount = 0;
-
-    for (const scheduleId of selectedSchedules) {
-      try {
-        await api.queueScheduleStateChange(scheduleId, true);
-        successCount++;
-      } catch (error) {
-        errorCount++;
-      }
-    }
-
-    setIsProcessingBulk(false);
-    setSelectedSchedules(new Set());
-    
-    if (successCount > 0) {
-      addNotification('success', `Queued ${successCount} schedules for activation`);
-    }
-    if (errorCount > 0) {
-      addNotification('error', `Failed to queue ${errorCount} schedules`);
-    }
-    
-    setTimeout(() => loadDashboard(true), 1000);
-  };
-
-  const bulkDeactivate = async () => {
-    if (selectedSchedules.size === 0) return;
-    
-    setIsProcessingBulk(true);
-    let successCount = 0;
-    let errorCount = 0;
-
-    for (const scheduleId of selectedSchedules) {
-      try {
-        await api.queueScheduleStateChange(scheduleId, false);
-        successCount++;
-      } catch (error) {
-        errorCount++;
-      }
-    }
-
-    setIsProcessingBulk(false);
-    setSelectedSchedules(new Set());
-    
-    if (successCount > 0) {
-      addNotification('success', `Queued ${successCount} schedules for deactivation`);
-    }
-    if (errorCount > 0) {
-      addNotification('error', `Failed to queue ${errorCount} schedules`);
-    }
-    
-    setTimeout(() => loadDashboard(true), 1000);
-  };
-
-  const bulkDelete = async () => {
-    if (selectedSchedules.size === 0) return;
-    
-    if (!confirm(`Are you sure you want to delete ${selectedSchedules.size} schedules? This action cannot be undone.`)) {
-      return;
-    }
-    
-    setIsProcessingBulk(true);
-    let successCount = 0;
-    let errorCount = 0;
-
-    for (const scheduleId of selectedSchedules) {
-      try {
-        await api.queueScheduleDelete(scheduleId);
-        successCount++;
-      } catch (error) {
-        errorCount++;
-      }
-    }
-
-    setIsProcessingBulk(false);
-    setSelectedSchedules(new Set());
-    
-    if (successCount > 0) {
-      addNotification('success', `Queued ${successCount} schedules for deletion`);
-    }
-    if (errorCount > 0) {
-      addNotification('error', `Failed to queue ${errorCount} schedules`);
-    }
-    
-    setTimeout(() => loadDashboard(true), 1000);
-  };
-
-  // Individual operations
-  const toggleScheduleState = async (scheduleId: string, currentState: boolean) => {
-    try {
-      await api.queueScheduleStateChange(scheduleId, !currentState);
-      addNotification('success', `Schedule ${currentState ? 'deactivation' : 'activation'} queued`);
-      setTimeout(() => loadDashboard(true), 1000);
-    } catch (error) {
-      addNotification('error', 'Failed to queue operation');
-    }
-  };
-
-  const deleteSchedule = async (scheduleId: string, scheduleName: string) => {
-    if (!confirm(`Delete "${scheduleName}"? This action cannot be undone.`)) return;
-    
-    try {
-      await api.queueScheduleDelete(scheduleId);
-      addNotification('success', 'Schedule deletion queued');
-      setTimeout(() => loadDashboard(true), 1000);
-    } catch (error) {
-      addNotification('error', 'Failed to queue deletion');
-    }
-  };
-
-  // Sync operations
-  const syncSchedules = async () => {
-    setIsSyncing(true);
-    try {
-      const result = await api.syncSchedules();
-      if (result.success) {
-        addNotification('success', result.message || `Synced ${result.synced || 0} schedules`);
-        await loadDashboard(true);
-      } else {
-        addNotification('error', result.error || 'Failed to sync schedules');
-      }
-    } catch (error) {
-      addNotification('error', 'Failed to sync schedules');
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
-  const mapUnmanaged = async () => {
-    try {
-      const result = await api.mapUnmanaged();
-      const mapped = result.mappings?.filter((m: any) => m.success).length || 0;
-      addNotification('success', `Mapped ${mapped} unmanaged schedules`);
-      await loadDashboard(true);
-    } catch (error) {
-      addNotification('error', 'Failed to map unmanaged schedules');
-    }
-  };
-
-  // Utility functions
-  const getStatusBadge = (schedule: OxylabsSchedule) => {
-    if (!schedule.active) {
-      return { color: 'bg-gray-800 text-gray-300 border-gray-700', text: 'Inactive' };
-    }
-    if (schedule.management_status === 'unmanaged') {
-      return { color: 'bg-yellow-900 text-yellow-300 border-yellow-800', text: 'Unmanaged' };
-    }
-    const successRate = schedule.stats?.job_result_outcomes?.find((o: any) => o.status === 'done')?.ratio || 0;
-    if (successRate < 0.5) {
-      return { color: 'bg-red-900 text-red-300 border-red-800', text: 'Poor Performance' };
-    }
-    return { color: 'bg-green-900 text-green-300 border-green-800', text: 'Healthy' };
-  };
-
-  const getOperationStatusIcon = (status: string) => {
-    switch (status) {
-      case 'pending': return <Clock className="w-4 h-4 text-yellow-400" />;
-      case 'processing': return <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />;
-      case 'completed': return <CheckCircle2 className="w-4 h-4 text-green-400" />;
-      case 'failed': return <XCircle className="w-4 h-4 text-red-400" />;
-      default: return <Clock className="w-4 h-4 text-gray-400" />;
-    }
-  };
-
-  const formatRelativeTime = (dateString: string) => {
-    if (!dateString) return 'Never';
-    const date = new Date(dateString);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const minutes = Math.floor(diff / 60000);
-    
-    if (minutes < 1) return 'Just now';
-    if (minutes < 60) return `${minutes}m ago`;
-    if (minutes < 1440) return `${Math.floor(minutes / 60)}h ago`;
-    return `${Math.floor(minutes / 1440)}d ago`;
-  };
+  const isLoadingPlaceholder = !schedules && isLoading;
+  const hasError = !schedules && error;
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100">
-      {/* Notifications */}
-      <div className="fixed top-4 right-4 z-50 space-y-2">
-        {notifications.map(notification => (
-          <div
-            key={notification.id}
-            className={`px-4 py-3 rounded-lg shadow-lg transition-all border ${
-              notification.type === 'success' ? 'bg-green-900 border-green-700 text-green-100' :
-              notification.type === 'error' ? 'bg-red-900 border-red-700 text-red-100' :
-              notification.type === 'warning' ? 'bg-yellow-900 border-yellow-700 text-yellow-100' :
-              'bg-blue-900 border-blue-700 text-blue-100'
-            }`}
-          >
-            {notification.message}
-          </div>
-        ))}
-      </div>
-
-      {/* Header */}
-      <div className="bg-gray-800 border-b border-gray-700">
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-white">Oxylabs Scheduler</h1>
-              <p className="text-sm text-gray-400 mt-1">Manage scheduled scraping operations</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={mapUnmanaged}
-                className="px-4 py-2 bg-blue-900 text-blue-100 rounded-lg hover:bg-blue-800 transition-colors flex items-center gap-2 border border-blue-700"
-                disabled={schedules.filter(s => s.management_status === 'unmanaged').length === 0}
-              >
-                <Settings className="w-4 h-4" />
-                Map Unmanaged ({schedules.filter(s => s.management_status === 'unmanaged').length})
-              </button>
-              <button
-                onClick={syncSchedules}
-                disabled={isSyncing}
-                className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors flex items-center gap-2 disabled:opacity-50"
-              >
-                <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
-                Sync
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="px-6 py-6">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-400">Total Schedules</p>
-                <p className="text-2xl font-bold text-white mt-1">{totalSchedules}</p>
-                <p className="text-xs text-gray-500">Loaded: {schedules.length}</p>
-              </div>
-              <Calendar className="w-8 h-8 text-gray-500" />
-            </div>
-          </div>
-          
-          <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-400">Queue Status</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-lg font-bold text-yellow-400">{queueStats.pending}</span>
-                  <span className="text-sm text-gray-400">pending</span>
-                </div>
-              </div>
-              <Clock className="w-8 h-8 text-yellow-500" />
-            </div>
-          </div>
-          
-          <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-400">Processing</p>
-                <p className="text-2xl font-bold text-blue-400 mt-1">{queueStats.processing}</p>
-              </div>
-              <Loader2 className="w-8 h-8 text-blue-500" />
-            </div>
-          </div>
-          
-          <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-400">Completed</p>
-                <p className="text-2xl font-bold text-green-400 mt-1">{queueStats.completed}</p>
-              </div>
-              <CheckCircle2 className="w-8 h-8 text-green-500" />
-            </div>
-          </div>
-          
-          <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-400">Failed</p>
-                <p className="text-2xl font-bold text-red-400 mt-1">{queueStats.failed}</p>
-              </div>
-              <XCircle className="w-8 h-8 text-red-500" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="px-6">
-        <div className="border-b border-gray-700">
-          <nav className="flex space-x-8">
-            {[
-              { id: 'schedules', label: 'Schedules', count: schedules.length },
-              { id: 'queue', label: 'Queue', count: queueStats.pending + queueStats.processing },
-              { id: 'history', label: 'History', count: queueStats.completed + queueStats.failed }
-            ].map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === tab.id
-                    ? 'border-blue-500 text-blue-400'
-                    : 'border-transparent text-gray-400 hover:text-gray-300'
-                }`}
-              >
-                {tab.label}
-                {tab.count > 0 && (
-                  <span className="ml-2 bg-gray-700 text-gray-300 py-1 px-2 rounded-full text-xs">
-                    {tab.count}
-                  </span>
-                )}
-              </button>
-            ))}
-          </nav>
-        </div>
+    <div className="h-full flex flex-col bg-white">
+      {/* Header Section */}
+      <div className="border-b p-4 flex items-center justify-between">
+        <h2 className="text-lg font-semibold">Oxylabs Scheduler Dashboard</h2>
+        <Button variant="outline" size="sm" onClick={refetch} disabled={isLoading}>
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Loading ...
+            </>
+          ) : (
+            <>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Refresh Data
+            </>
+          )}
+        </Button>
       </div>
 
       {/* Main Content */}
-      <div className="px-6 py-6">
-        {activeTab === 'schedules' && (
-          <>
-            {/* Controls */}
-            <div className="bg-gray-800 rounded-lg p-4 border border-gray-700 mb-6">
-              <div className="flex flex-col sm:flex-row gap-4">
-                {/* Search */}
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="text"
+      <div className="flex-1 p-6 space-y-6 overflow-auto">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="campaign-card-bg campaign-border">
+            <CardHeader>
+              <CardTitle className="text-sm font-medium campaign-primary-text">Total Schedules</CardTitle>
+              <CardDescription className="campaign-secondary-text">
+                Total number of active and inactive schedules
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold campaign-primary-text">{totalCount}</div>
+            </CardContent>
+          </Card>
+
+          <Card className="campaign-card-bg campaign-border">
+            <CardHeader>
+              <CardTitle className="text-sm font-medium campaign-primary-text">Active Schedules</CardTitle>
+              <CardDescription className="campaign-secondary-text">
+                Number of schedules currently active
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold campaign-primary-text">
+                {schedules?.filter(schedule => schedule.active).length}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="campaign-card-bg campaign-border">
+            <CardHeader>
+              <CardTitle className="text-sm font-medium campaign-primary-text">Inactive Schedules</CardTitle>
+              <CardDescription className="campaign-secondary-text">
+                Number of schedules currently inactive
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold campaign-primary-text">
+                {schedules?.filter(schedule => !schedule.active).length}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="campaign-card-bg campaign-border">
+            <CardHeader>
+              <CardTitle className="text-sm font-medium campaign-primary-text">Unmanaged Schedules</CardTitle>
+              <CardDescription className="campaign-secondary-text">
+                Schedules not fully managed by this system
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold campaign-primary-text">
+                {schedules?.filter(schedule => schedule.management_status === 'unmanaged').length}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Tabs */}
+        <Tabs defaultValue="schedules" className="space-y-4" onValueChange={setActiveTab}>
+          <TabsList>
+            <TabsTrigger value="schedules" className="data-[state=active]:text-primary">Schedules</TabsTrigger>
+            <TabsTrigger value="operations" className="data-[state=active]:text-primary">Operations</TabsTrigger>
+          </TabsList>
+          <div className="border rounded-md p-4 campaign-card-bg campaign-border">
+            <div className="flex items-center justify-between">
+              <div className="flex-1 space-y-2">
+                <h3 className="text-lg font-semibold campaign-primary-text">Manage Schedules</h3>
+                <p className="text-sm text-muted-foreground">
+                  View, edit, and manage your Oxylabs schedules.
+                </p>
+              </div>
+              <div className="flex items-center space-x-4">
+                <div className="relative">
+                  <Input
+                    type="search"
                     placeholder="Search schedules..."
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                    onChange={(e) => handleSearch(e.target.value)}
+                    className="pr-10"
                   />
+                  {searchTerm && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full p-0"
+                      onClick={() => {
+                        handleSearch('');
+                      }}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                        className="h-4 w-4 text-gray-500"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <span className="sr-only">Clear search</span>
+                    </Button>
+                  )}
                 </div>
-                
-                {/* Filter */}
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as any)}
-                  className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-                >
-                  <option value="all">All Schedules</option>
-                  <option value="active">Active Only</option>
-                  <option value="inactive">Inactive Only</option>
-                  <option value="unmanaged">Unmanaged Only</option>
-                </select>
-
-                {/* Items per page */}
-                <select
-                  value={itemsPerPage}
-                  onChange={(e) => setItemsPerPage(Number(e.target.value))}
-                  className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-                >
-                  <option value={10}>10 per page</option>
-                  <option value={25}>25 per page</option>
-                  <option value={50}>50 per page</option>
-                  <option value={100}>100 per page</option>
-                </select>
               </div>
-
-              {/* Bulk Actions */}
-              {selectedSchedules.size > 0 && (
-                <div className="mt-4 pt-4 border-t border-gray-700">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-400">
-                      {selectedSchedules.size} schedule{selectedSchedules.size !== 1 ? 's' : ''} selected
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={bulkActivate}
-                        disabled={isProcessingBulk}
-                        className="px-3 py-1 bg-green-900 text-green-100 rounded border border-green-700 hover:bg-green-800 transition-colors text-sm disabled:opacity-50"
-                      >
-                        <Play className="w-3 h-3 inline mr-1" />
-                        Activate
-                      </button>
-                      <button
-                        onClick={bulkDeactivate}
-                        disabled={isProcessingBulk}
-                        className="px-3 py-1 bg-yellow-900 text-yellow-100 rounded border border-yellow-700 hover:bg-yellow-800 transition-colors text-sm disabled:opacity-50"
-                      >
-                        <Pause className="w-3 h-3 inline mr-1" />
-                        Deactivate
-                      </button>
-                      <button
-                        onClick={bulkDelete}
-                        disabled={isProcessingBulk}
-                        className="px-3 py-1 bg-red-900 text-red-100 rounded border border-red-700 hover:bg-red-800 transition-colors text-sm disabled:opacity-50"
-                      >
-                        <Trash2 className="w-3 h-3 inline mr-1" />
-                        Delete
-                      </button>
-                      <button
-                        onClick={() => setSelectedSchedules(new Set())}
-                        className="px-3 py-1 bg-gray-700 text-gray-300 rounded border border-gray-600 hover:bg-gray-600 transition-colors text-sm"
-                      >
-                        Clear
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Load More Button */}
-              {hasMoreData && (
-                <div className="mt-4 pt-4 border-t border-gray-700 text-center">
-                  <button
-                    onClick={loadMoreData}
-                    disabled={isLoadingMore}
-                    className="px-4 py-2 bg-blue-900 text-blue-100 rounded-lg hover:bg-blue-800 transition-colors disabled:opacity-50"
-                  >
-                    {isLoadingMore ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin inline mr-2" />
-                        Loading More...
-                      </>
-                    ) : (
-                      `Load More (${totalSchedules - schedules.length} remaining)`
-                    )}
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Schedules Table */}
-            <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-750 border-b border-gray-700">
-                    <tr>
-                      <th className="px-4 py-3 text-left">
-                        <button
-                          onClick={toggleSelectAll}
-                          className="flex items-center text-gray-400 hover:text-white"
-                        >
-                          {isAllSelected ? (
-                            <CheckSquare className="w-4 h-4" />
-                          ) : isIndeterminate ? (
-                            <Square className="w-4 h-4 fill-current" />
-                          ) : (
-                            <Square className="w-4 h-4" />
-                          )}
-                        </button>
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                        Schedule
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                        Next Run
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                        Performance
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-700">
-                    {isLoading ? (
-                      <tr>
-                        <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
-                          <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
-                          Loading schedules...
-                        </td>
-                      </tr>
-                    ) : paginatedSchedules.length === 0 ? (
-                      <tr>
-                        <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
-                          {schedules.length === 0 ? 'No schedules found. Try syncing with Oxylabs.' : 'No schedules match your filters.'}
-                        </td>
-                      </tr>
-                    ) : (
-                      paginatedSchedules.map((schedule) => {
-                        const status = getStatusBadge(schedule);
-                        const isSelected = selectedSchedules.has(schedule.oxylabs_schedule_id);
-                        const successRate = schedule.stats?.job_result_outcomes?.find((o: any) => o.status === 'done')?.ratio || 0;
-                        
-                        return (
-                          <tr 
-                            key={schedule.oxylabs_schedule_id} 
-                            className={`hover:bg-gray-750 transition-colors ${isSelected ? 'bg-gray-750' : ''}`}
-                          >
-                            <td className="px-4 py-4">
-                              <button
-                                onClick={() => toggleSelectSchedule(schedule.oxylabs_schedule_id)}
-                                className="text-gray-400 hover:text-white"
-                              >
-                                {isSelected ? (
-                                  <CheckSquare className="w-4 h-4 text-blue-400" />
-                                ) : (
-                                  <Square className="w-4 h-4" />
-                                )}
-                              </button>
-                            </td>
-                            
-                            <td className="px-4 py-4">
-                              <div>
-                                <div className="font-medium text-white">
-                                  {schedule.job_name || schedule.schedule_name || 'Unnamed Schedule'}
-                                </div>
-                                <div className="text-sm text-gray-400">
-                                  ID: {schedule.oxylabs_schedule_id}
-                                </div>
-                                <div className="text-xs text-gray-500">
-                                  {schedule.cron_expression || 'No cron expression'}
-                                </div>
-                              </div>
-                            </td>
-                            
-                            <td className="px-4 py-4">
-                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${status.color}`}>
-                                {status.text}
-                              </span>
-                            </td>
-                            
-                            <td className="px-4 py-4">
-                              <div className="text-sm text-gray-300">
-                                {schedule.next_run_at ? (
-                                  <>
-                                    <div>{formatRelativeTime(schedule.next_run_at)}</div>
-                                    <div className="text-xs text-gray-500">
-                                      {new Date(schedule.next_run_at).toLocaleDateString()}
-                                    </div>
-                                  </>
-                                ) : (
-                                  <span className="text-gray-500">Not scheduled</span>
-                                )}
-                              </div>
-                            </td>
-                            
-                            <td className="px-4 py-4">
-                              <div className="flex items-center gap-2">
-                                <div className="flex-1 bg-gray-700 rounded-full h-2">
-                                  <div
-                                    className={`h-2 rounded-full ${
-                                      successRate > 0.8 ? 'bg-green-500' :
-                                      successRate > 0.5 ? 'bg-yellow-500' :
-                                      'bg-red-500'
-                                    }`}
-                                    style={{ width: `${successRate * 100}%` }}
-                                  />
-                                </div>
-                                <span className="text-xs text-gray-400 w-8">
-                                  {(successRate * 100).toFixed(0)}%
-                                </span>
-                              </div>
-                              <div className="text-xs text-gray-500 mt-1">
-                                {schedule.items_count || 0} items
-                              </div>
-                            </td>
-                            
-                            <td className="px-4 py-4">
-                              <div className="flex items-center gap-1">
-                                <button
-                                  onClick={() => toggleScheduleState(schedule.oxylabs_schedule_id, schedule.active)}
-                                  className={`p-1 rounded transition-colors ${
-                                    schedule.active 
-                                      ? 'text-gray-400 hover:text-yellow-400' 
-                                      : 'text-gray-400 hover:text-green-400'
-                                  }`}
-                                  title={schedule.active ? 'Deactivate' : 'Activate'}
-                                >
-                                  {schedule.active ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                                </button>
-                                
-                                <button
-                                  onClick={() => deleteSchedule(schedule.oxylabs_schedule_id, schedule.job_name || 'Unnamed')}
-                                  className="p-1 text-gray-400 hover:text-red-400 transition-colors"
-                                  title="Delete"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                                
-                                <button className="p-1 text-gray-400 hover:text-gray-300 transition-colors">
-                                  <MoreHorizontal className="w-4 h-4" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Pagination for display */}
-              {totalPages > 1 && (
-                <div className="bg-gray-750 px-4 py-3 border-t border-gray-700">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm text-gray-400">
-                      Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredSchedules.length)} of {filteredSchedules.length} filtered schedules
-                      {filteredSchedules.length !== totalSchedules && (
-                        <span className="ml-2 text-yellow-400">
-                          ({totalSchedules - schedules.length} more available - click "Load More")
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                        disabled={currentPage === 1}
-                        className="p-2 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <ChevronLeft className="w-4 h-4" />
-                      </button>
-                      
-                      <span className="text-sm text-gray-400">
-                        Page {currentPage} of {totalPages}
-                      </span>
-                      
-                      <button
-                        onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                        disabled={currentPage === totalPages}
-                        className="p-2 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <ChevronRight className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </>
-        )}
-
-        {activeTab === 'queue' && (
-          <div className="bg-gray-800 rounded-lg border border-gray-700">
-            <div className="p-4 border-b border-gray-700">
-              <h3 className="text-lg font-medium text-white">Operation Queue</h3>
-              <p className="text-sm text-gray-400">Current and pending operations</p>
-            </div>
-            
-            <div className="divide-y divide-gray-700">
-              {operations
-                .filter(op => ['pending', 'processing'].includes(op.status))
-                .slice(0, 20)
-                .map(operation => (
-                <div key={operation.id} className="p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    {getOperationStatusIcon(operation.status)}
-                    <div>
-                      <div className="text-sm font-medium text-white">
-                        {operation.operation_type.charAt(0).toUpperCase() + operation.operation_type.slice(1)} Schedule
-                      </div>
-                      <div className="text-xs text-gray-400">
-                        ID: {operation.oxylabs_schedule_id}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="text-right">
-                    <div className="text-sm text-gray-300">{operation.status_description || operation.status}</div>
-                    <div className="text-xs text-gray-500">
-                      {formatRelativeTime(operation.requested_at)}
-                    </div>
-                  </div>
-                </div>
-              ))}
-              
-              {operations.filter(op => ['pending', 'processing'].includes(op.status)).length === 0 && (
-                <div className="p-8 text-center text-gray-400">
-                  <Clock className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                  <p>No pending operations</p>
-                </div>
-              )}
             </div>
           </div>
+
+        {/* Schedule Management Table */}
+        {activeTab === 'schedules' && (
+          <ScheduleManagementTable
+            schedules={filteredSchedules}
+            loading={isLoading}
+            onToggleSchedule={handleToggleSchedule}
+            onViewRuns={handleViewRuns}
+            onViewDetails={handleViewDetails}
+            onViewJobs={handleViewJobs}
+            onDeleteSchedule={handleDeleteSchedule}
+          />
         )}
 
-        {activeTab === 'history' && (
-          <div className="bg-gray-800 rounded-lg border border-gray-700">
-            <div className="p-4 border-b border-gray-700">
-              <h3 className="text-lg font-medium text-white">Operation History</h3>
-              <p className="text-sm text-gray-400">Recent completed and failed operations</p>
-            </div>
-            
-            <div className="divide-y divide-gray-700">
-              {operations
-                .filter(op => ['completed', 'failed'].includes(op.status))
-                .slice(0, 20)
-                .map(operation => (
-                <div key={operation.id} className="p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    {getOperationStatusIcon(operation.status)}
-                    <div>
-                      <div className="text-sm font-medium text-white">
-                        {operation.operation_type.charAt(0).toUpperCase() + operation.operation_type.slice(1)} Schedule
-                      </div>
-                      <div className="text-xs text-gray-400">
-                        ID: {operation.oxylabs_schedule_id}
-                      </div>
-                      {operation.last_error && (
-                        <div className="text-xs text-red-400 mt-1">
-                          Error: {operation.last_error}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="text-right">
-                    <div className="text-sm text-gray-300">{operation.status_description || operation.status}</div>
-                    <div className="text-xs text-gray-500">
-                      {operation.completed_at ? formatRelativeTime(operation.completed_at) : formatRelativeTime(operation.requested_at)}
-                    </div>
-                  </div>
-                </div>
-              ))}
-              
-              {operations.filter(op => ['completed', 'failed'].includes(op.status)).length === 0 && (
-                <div className="p-8 text-center text-gray-400">
-                  <History className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                  <p>No operation history</p>
-                </div>
-              )}
-            </div>
-          </div>
+        {/* Operations Monitoring */}
+        {activeTab === 'operations' && (
+          <OperationsMonitoring />
         )}
       </div>
     </div>
