@@ -28,20 +28,20 @@ export function CampaignFilters({
   const { categories } = useCampaignCategories();
 
   return (
-    <div style={{ backgroundColor: '#444444' }} className="p-6 rounded-lg mb-6">
+    <div style={{ backgroundColor: '#1e293b' }} className="p-6 rounded-lg mb-6">
       <div className="space-y-4">
         <div className="flex items-center gap-4 flex-wrap">
           <div className="relative flex-1 min-w-[300px]">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" style={{ color: '#B0B0B0' }} />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" style={{ color: '#cbd5e1' }} />
             <Input
               placeholder="Search campaigns..."
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
               className="pl-10"
               style={{ 
-                backgroundColor: '#121212', 
-                borderColor: '#444444', 
-                color: '#E0E0E0'
+                backgroundColor: '#0f172a', 
+                borderColor: '#475569', 
+                color: '#f8fafc'
               }}
             />
           </div>
@@ -50,19 +50,19 @@ export function CampaignFilters({
             <SelectTrigger 
               className="w-[180px]" 
               style={{ 
-                backgroundColor: '#121212', 
-                borderColor: '#444444', 
-                color: '#E0E0E0' 
+                backgroundColor: '#0f172a', 
+                borderColor: '#475569', 
+                color: '#f8fafc' 
               }}
             >
               <Filter className="h-4 w-4 mr-2" />
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
-            <SelectContent style={{ backgroundColor: '#121212', borderColor: '#444444' }}>
-              <SelectItem value="all" style={{ color: '#E0E0E0' }}>All Campaigns</SelectItem>
-              <SelectItem value="active" style={{ color: '#E0E0E0' }}>Active Only</SelectItem>
-              <SelectItem value="inactive" style={{ color: '#E0E0E0' }}>Inactive Only</SelectItem>
-              <SelectItem value="archived" style={{ color: '#E0E0E0' }}>Archived Only</SelectItem>
+            <SelectContent style={{ backgroundColor: '#0f172a', borderColor: '#475569' }}>
+              <SelectItem value="all" style={{ color: '#f8fafc' }}>All Campaigns</SelectItem>
+              <SelectItem value="active" style={{ color: '#f8fafc' }}>Active Only</SelectItem>
+              <SelectItem value="inactive" style={{ color: '#f8fafc' }}>Inactive Only</SelectItem>
+              <SelectItem value="archived" style={{ color: '#f8fafc' }}>Archived Only</SelectItem>
             </SelectContent>
           </Select>
 
@@ -70,17 +70,17 @@ export function CampaignFilters({
             <SelectTrigger 
               className="w-[200px]" 
               style={{ 
-                backgroundColor: '#121212', 
-                borderColor: '#444444', 
-                color: '#E0E0E0' 
+                backgroundColor: '#0f172a', 
+                borderColor: '#475569', 
+                color: '#f8fafc' 
               }}
             >
               <SelectValue placeholder="Filter by category" />
             </SelectTrigger>
-            <SelectContent style={{ backgroundColor: '#121212', borderColor: '#444444' }}>
-              <SelectItem value="all" style={{ color: '#E0E0E0' }}>All Categories</SelectItem>
+            <SelectContent style={{ backgroundColor: '#0f172a', borderColor: '#475569' }}>
+              <SelectItem value="all" style={{ color: '#f8fafc' }}>All Categories</SelectItem>
               {categories.map((category) => (
-                <SelectItem key={category.id} value={category.id} style={{ color: '#E0E0E0' }}>
+                <SelectItem key={category.id} value={category.id} style={{ color: '#f8fafc' }}>
                   {category.name}
                 </SelectItem>
               ))}
@@ -92,9 +92,9 @@ export function CampaignFilters({
           <div 
             className="text-sm px-2 py-1 rounded border"
             style={{ 
-              borderColor: '#444444', 
-              backgroundColor: '#121212', 
-              color: '#B0B0B0' 
+              borderColor: '#475569', 
+              backgroundColor: '#0f172a', 
+              color: '#cbd5e1' 
             }}
           >
             {totalResults} campaign{totalResults !== 1 ? 's' : ''} found
@@ -104,8 +104,8 @@ export function CampaignFilters({
             <div 
               className="text-sm px-2 py-1 rounded"
               style={{ 
-                backgroundColor: '#444444', 
-                color: '#B0B0B0' 
+                backgroundColor: '#334155', 
+                color: '#cbd5e1' 
               }}
             >
               Search: "{searchTerm}"
@@ -116,8 +116,8 @@ export function CampaignFilters({
             <div 
               className="text-sm px-2 py-1 rounded"
               style={{ 
-                backgroundColor: '#444444', 
-                color: '#B0B0B0' 
+                backgroundColor: '#334155', 
+                color: '#cbd5e1' 
               }}
             >
               Status: {statusFilter}
@@ -128,8 +128,8 @@ export function CampaignFilters({
             <div 
               className="text-sm px-2 py-1 rounded"
               style={{ 
-                backgroundColor: '#444444', 
-                color: '#B0B0B0' 
+                backgroundColor: '#334155', 
+                color: '#cbd5e1' 
               }}
             >
               Category: {categories.find(c => c.id === categoryFilter)?.name}

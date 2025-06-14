@@ -84,7 +84,7 @@ const Campaigns = () => {
       footer={footer}
       menuItems={mockMenuItems}
     >
-      <div style={{ backgroundColor: '#121212' }} className="min-h-screen p-6">
+      <div style={{ backgroundColor: '#0f172a' }} className="min-h-screen p-6">
         <CampaignDesigner />
       </div>
     </SidebarLayout>

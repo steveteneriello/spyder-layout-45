@@ -49,9 +49,9 @@ export function CampaignList({
   onRefresh
 }: CampaignListProps) {
   const getStatusBadgeClasses = (status: string, isActive: boolean) => {
-    if (status === 'archived') return { backgroundColor: '#444444', color: '#B0B0B0', borderColor: '#444444' };
-    if (!isActive) return { backgroundColor: '#444444', color: '#B0B0B0', borderColor: '#444444' };
-    return { backgroundColor: '#888888', color: '#E0E0E0', borderColor: '#888888' };
+    if (status === 'archived') return { backgroundColor: '#475569', color: '#cbd5e1', borderColor: '#475569' };
+    if (!isActive) return { backgroundColor: '#475569', color: '#cbd5e1', borderColor: '#475569' };
+    return { backgroundColor: '#64748b', color: '#f8fafc', borderColor: '#64748b' };
   };
 
   const getStatusText = (status: string, isActive: boolean) => {
@@ -62,17 +62,17 @@ export function CampaignList({
 
   if (loading) {
     return (
-      <div className="space-y-4 p-6 rounded-lg" style={{ backgroundColor: '#444444' }}>
+      <div className="space-y-4 p-6 rounded-lg" style={{ backgroundColor: '#1e293b' }}>
         <div className="flex justify-between items-center">
-          <h2 className="text-xl font-semibold" style={{ color: '#E0E0E0' }}>Campaigns</h2>
+          <h2 className="text-xl font-semibold" style={{ color: '#f8fafc' }}>Campaigns</h2>
           <div className="flex gap-2">
             <Button 
               onClick={onRefresh} 
               variant="outline" 
               size="sm" 
               disabled
-              style={{ borderColor: '#444444', color: '#B0B0B0' }}
-              className="hover:bg-[#444444]"
+              style={{ borderColor: '#475569', color: '#cbd5e1' }}
+              className="hover:bg-[#334155]"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh
@@ -81,8 +81,8 @@ export function CampaignList({
               onClick={onAddCampaign} 
               size="sm" 
               disabled
-              style={{ backgroundColor: '#888888', color: '#E0E0E0' }}
-              className="hover:bg-[#444444]"
+              style={{ backgroundColor: '#3b82f6', color: '#f8fafc' }}
+              className="hover:bg-[#2563eb]"
             >
               <Plus className="h-4 w-4 mr-2" />
               Add Campaign
@@ -94,13 +94,13 @@ export function CampaignList({
             <div 
               key={i} 
               className="flex flex-col gap-6 rounded-xl border py-6 shadow-sm"
-              style={{ backgroundColor: '#121212', borderColor: '#444444' }}
+              style={{ backgroundColor: '#0f172a', borderColor: '#475569' }}
             >
               <div className="grid auto-rows-min grid-rows-[auto_auto] items-start gap-1.5 px-6">
                 <div className="animate-pulse">
-                  <div style={{ backgroundColor: '#444444' }} className="h-4 rounded w-3/4 mb-2"></div>
-                  <div style={{ backgroundColor: '#444444' }} className="h-6 rounded w-1/2 mb-2"></div>
-                  <div style={{ backgroundColor: '#444444' }} className="h-3 rounded w-full"></div>
+                  <div style={{ backgroundColor: '#475569' }} className="h-4 rounded w-3/4 mb-2"></div>
+                  <div style={{ backgroundColor: '#475569' }} className="h-6 rounded w-1/2 mb-2"></div>
+                  <div style={{ backgroundColor: '#475569' }} className="h-3 rounded w-full"></div>
                 </div>
               </div>
             </div>
@@ -111,16 +111,16 @@ export function CampaignList({
   }
 
   return (
-    <div className="space-y-4 p-6 rounded-lg" style={{ backgroundColor: '#444444' }}>
+    <div className="space-y-4 p-6 rounded-lg" style={{ backgroundColor: '#1e293b' }}>
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold" style={{ color: '#E0E0E0' }}>Campaigns</h2>
+        <h2 className="text-xl font-semibold" style={{ color: '#f8fafc' }}>Campaigns</h2>
         <div className="flex gap-2">
           <Button 
             onClick={onRefresh} 
             variant="outline" 
             size="sm"
-            style={{ borderColor: '#444444', color: '#B0B0B0' }}
-            className="hover:bg-[#444444] hover:text-[#E0E0E0]"
+            style={{ borderColor: '#475569', color: '#cbd5e1' }}
+            className="hover:bg-[#334155] hover:text-[#f8fafc]"
           >
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
@@ -128,8 +128,8 @@ export function CampaignList({
           <Button 
             onClick={onAddCampaign} 
             size="sm"
-            style={{ backgroundColor: '#888888', color: '#E0E0E0' }}
-            className="hover:bg-[#B0B0B0]"
+            style={{ backgroundColor: '#3b82f6', color: '#f8fafc' }}
+            className="hover:bg-[#2563eb]"
           >
             <Plus className="h-4 w-4 mr-2" />
             Add Campaign
@@ -140,15 +140,15 @@ export function CampaignList({
       {campaigns.length === 0 ? (
         <div 
           className="flex flex-col gap-6 rounded-xl border py-12 shadow-sm text-center"
-          style={{ backgroundColor: '#121212', borderColor: '#444444' }}
+          style={{ backgroundColor: '#0f172a', borderColor: '#475569' }}
         >
           <div className="px-6">
-            <div className="text-sm mb-2" style={{ color: '#B0B0B0' }}>No campaigns found</div>
-            <div className="text-lg font-semibold mb-4" style={{ color: '#E0E0E0' }}>Get started by creating your first campaign</div>
+            <div className="text-sm mb-2" style={{ color: '#cbd5e1' }}>No campaigns found</div>
+            <div className="text-lg font-semibold mb-4" style={{ color: '#f8fafc' }}>Get started by creating your first campaign</div>
             <Button 
               onClick={onAddCampaign}
-              style={{ backgroundColor: '#888888', color: '#E0E0E0' }}
-              className="hover:bg-[#B0B0B0]"
+              style={{ backgroundColor: '#3b82f6', color: '#f8fafc' }}
+              className="hover:bg-[#2563eb]"
             >
               <Plus className="h-4 w-4 mr-2" />
               Create Campaign
@@ -166,23 +166,23 @@ export function CampaignList({
                   selectedCampaignId === campaign.id ? 'ring-2' : ''
                 }`}
                 style={{ 
-                  backgroundColor: '#121212', 
-                  borderColor: '#444444',
-                  ...(selectedCampaignId === campaign.id && { '--tw-ring-color': '#888888' })
+                  backgroundColor: '#0f172a', 
+                  borderColor: '#475569',
+                  ...(selectedCampaignId === campaign.id && { '--tw-ring-color': '#3b82f6' })
                 }}
                 onClick={() => onSelectCampaign(campaign.id)}
               >
                 <div className="@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-1.5 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto]">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
-                      <div className="text-sm mb-1" style={{ color: '#B0B0B0' }}>
+                      <div className="text-sm mb-1" style={{ color: '#cbd5e1' }}>
                         {campaign.category?.name || 'Uncategorized'}
                       </div>
-                      <div className="text-lg font-semibold mb-2 line-clamp-2" style={{ color: '#E0E0E0' }}>
+                      <div className="text-lg font-semibold mb-2 line-clamp-2" style={{ color: '#f8fafc' }}>
                         {campaign.name}
                       </div>
                       {campaign.description && (
-                        <div className="text-sm line-clamp-2 mb-2" style={{ color: '#B0B0B0' }}>
+                        <div className="text-sm line-clamp-2 mb-2" style={{ color: '#cbd5e1' }}>
                           {campaign.description}
                         </div>
                       )}
@@ -198,7 +198,7 @@ export function CampaignList({
                 
                 <div className="flex px-6 flex-col items-start gap-1.5 text-sm">
                   <div className="flex justify-between items-center w-full">
-                    <div style={{ color: '#B0B0B0' }}>
+                    <div style={{ color: '#cbd5e1' }}>
                       {campaign.advertiser?.name && (
                         <span>Advertiser: {campaign.advertiser.name}</span>
                       )}
@@ -215,7 +215,7 @@ export function CampaignList({
                           onEditCampaign(campaign.id);
                         }}
                         className="h-8 w-8 p-0"
-                        style={{ color: '#B0B0B0' }}
+                        style={{ color: '#cbd5e1' }}
                       >
                         <Edit className="h-3 w-3" />
                       </Button>
@@ -229,11 +229,11 @@ export function CampaignList({
                     </div>
                   </div>
                   {campaign.budget && (
-                    <div className="text-xs" style={{ color: '#B0B0B0' }}>
-                      Budget: <span style={{ color: '#E0E0E0' }} className="font-medium">${campaign.budget.toLocaleString()}</span>
+                    <div className="text-xs" style={{ color: '#cbd5e1' }}>
+                      Budget: <span style={{ color: '#f8fafc' }} className="font-medium">${campaign.budget.toLocaleString()}</span>
                     </div>
                   )}
-                  <div className="text-xs" style={{ color: '#B0B0B0' }}>
+                  <div className="text-xs" style={{ color: '#cbd5e1' }}>
                     Created: {new Date(campaign.created_at).toLocaleDateString()}
                   </div>
                 </div>
