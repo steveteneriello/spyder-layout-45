@@ -3,8 +3,10 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { Plus, Edit, Trash2, Archive, RefreshCw } from 'lucide-react';
 import { CampaignActions } from './CampaignActions';
+import { useCampaignStatus } from '@/hooks/useCampaignStatus';
 
 interface Campaign {
   id: string;
@@ -48,6 +50,8 @@ export function CampaignList({
   onEditCampaign,
   onRefresh
 }: CampaignListProps) {
+  const { campaignStatuses, toggleCampaignStatus, loading: statusLoading } = useCampaignStatus();
+
   const getStatusBadgeClasses = (status: string, isActive: boolean) => {
     if (status === 'archived') return 'bg-slate-500 text-slate-100 border-slate-500';
     if (!isActive) return 'bg-slate-500 text-slate-100 border-slate-500';
@@ -56,8 +60,19 @@ export function CampaignList({
 
   const getStatusText = (status: string, isActive: boolean) => {
     if (status === 'archived') return 'Archived';
-    if (!isActive) return 'Inactive';
+    if (!isActive) return 'Paused';
     return 'Active';
+  };
+
+  const getCampaignActiveStatus = (campaign: Campaign) => {
+    const status = campaignStatuses[campaign.id];
+    return status?.active ?? campaign.is_active ?? false;
+  };
+
+  const handleToggleStatus = async (campaignId: string, currentStatus: boolean) => {
+    await toggleCampaignStatus(campaignId, !currentStatus);
+    // Refresh campaigns after status change
+    onRefresh();
   };
 
   if (loading) {
@@ -149,7 +164,8 @@ export function CampaignList({
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {campaigns.map((campaign) => {
-            const statusClasses = getStatusBadgeClasses(campaign.status, campaign.is_active);
+            const isActive = getCampaignActiveStatus(campaign);
+            const statusClasses = getStatusBadgeClasses(campaign.status, isActive);
             return (
               <div
                 key={campaign.id}
@@ -160,21 +176,30 @@ export function CampaignList({
               >
                 <div className="@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-1.5 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto]">
                   <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="text-sm mb-1 campaign-secondary-text">
-                        {campaign.category?.name || 'Uncategorized'}
-                      </div>
-                      <div className="text-lg font-semibold mb-2 line-clamp-2 campaign-primary-text">
-                        {campaign.name}
-                      </div>
-                      {campaign.description && (
-                        <div className="text-sm line-clamp-2 mb-2 campaign-secondary-text">
-                          {campaign.description}
+                    <div className="flex items-center gap-3 flex-1">
+                      <Switch 
+                        checked={isActive}
+                        onCheckedChange={() => handleToggleStatus(campaign.id, isActive)}
+                        disabled={statusLoading}
+                        onClick={(e) => e.stopPropagation()}
+                        className="shrink-0"
+                      />
+                      <div className="flex-1">
+                        <div className="text-sm mb-1 campaign-secondary-text">
+                          {campaign.category?.name || 'Uncategorized'}
                         </div>
-                      )}
+                        <div className="text-lg font-semibold mb-2 line-clamp-2 campaign-primary-text">
+                          {campaign.name}
+                        </div>
+                        {campaign.description && (
+                          <div className="text-sm line-clamp-2 mb-2 campaign-secondary-text">
+                            {campaign.description}
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <div className={`ml-2 shrink-0 px-2 py-1 rounded text-xs font-medium border ${statusClasses}`}>
-                      {getStatusText(campaign.status, campaign.is_active)}
+                      {getStatusText(campaign.status, isActive)}
                     </div>
                   </div>
                 </div>
@@ -210,11 +235,6 @@ export function CampaignList({
                       />
                     </div>
                   </div>
-                  {campaign.budget && (
-                    <div className="text-xs campaign-secondary-text">
-                      Budget: <span className="font-medium campaign-primary-text">${campaign.budget.toLocaleString()}</span>
-                    </div>
-                  )}
                   <div className="text-xs campaign-secondary-text">
                     Created: {new Date(campaign.created_at).toLocaleDateString()}
                   </div>

@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { useCampaignDetails } from '@/hooks/useCampaignDetails';
 import { useCampaignStatus } from '@/hooks/useCampaignStatus';
-import { Calendar, DollarSign, Target, Building, MapPin } from 'lucide-react';
+import { Target, Building, MapPin } from 'lucide-react';
 
 interface CampaignDetailsProps {
   campaignId: string;
@@ -24,7 +24,11 @@ export function CampaignDetails({ campaignId }: CampaignDetailsProps) {
   }
 
   const status = campaignStatuses[campaignId];
-  const isActive = status?.active ?? false;
+  const isActive = status?.active ?? campaign.is_active ?? false;
+
+  const handleToggleStatus = async () => {
+    await toggleCampaignStatus(campaignId, !isActive);
+  };
 
   return (
     <div className="space-y-6">
@@ -38,7 +42,7 @@ export function CampaignDetails({ campaignId }: CampaignDetailsProps) {
             <div className="flex items-center gap-2">
               <Switch 
                 checked={isActive}
-                onCheckedChange={() => toggleCampaignStatus(campaignId, !isActive)}
+                onCheckedChange={handleToggleStatus}
                 disabled={statusLoading}
               />
               <Badge variant={isActive ? 'default' : 'secondary'}>
@@ -97,33 +101,6 @@ export function CampaignDetails({ campaignId }: CampaignDetailsProps) {
             </div>
 
             <div className="space-y-4">
-              {campaign.budget && (
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-1">
-                    <DollarSign className="h-3 w-3" />
-                    Budget
-                  </h3>
-                  <p className="text-sm font-mono">${campaign.budget.toLocaleString()}</p>
-                </div>
-              )}
-
-              {(campaign.start_date || campaign.end_date) && (
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    Campaign Period
-                  </h3>
-                  <div className="text-sm space-y-1">
-                    {campaign.start_date && (
-                      <p>Start: {new Date(campaign.start_date).toLocaleDateString()}</p>
-                    )}
-                    {campaign.end_date && (
-                      <p>End: {new Date(campaign.end_date).toLocaleDateString()}</p>
-                    )}
-                  </div>
-                </div>
-              )}
-
               <div>
                 <h3 className="text-sm font-medium text-muted-foreground mb-2">Status</h3>
                 <Badge variant="outline" className="text-sm">

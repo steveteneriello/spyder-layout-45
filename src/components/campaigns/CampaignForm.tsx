@@ -7,16 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Save } from 'lucide-react';
 
 interface CampaignFormData {
   name: string;
   description: string;
   campaign_type: 'advertiser' | 'market';
-  budget: number;
-  start_date: string;
-  end_date: string;
 }
 
 interface CampaignFormProps {
@@ -31,9 +27,6 @@ export function CampaignForm({ onBack, onSave, loading }: CampaignFormProps) {
       name: '',
       description: '',
       campaign_type: 'market',
-      budget: 0,
-      start_date: '',
-      end_date: '',
     },
   });
 
@@ -114,55 +107,6 @@ export function CampaignForm({ onBack, onSave, loading }: CampaignFormProps) {
                   </FormItem>
                 )}
               />
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <FormField
-                  control={form.control}
-                  name="budget"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Budget ($)</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          placeholder="0" 
-                          {...field}
-                          onChange={(e) => field.onChange(Number(e.target.value))}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="start_date"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Start Date</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="end_date"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>End Date</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
 
               <div className="flex justify-end gap-4">
                 <Button type="button" variant="outline" onClick={onBack}>
