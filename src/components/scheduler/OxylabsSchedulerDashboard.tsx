@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   RefreshCw, Play, Pause, Trash2, CheckSquare, Square, 
@@ -49,10 +48,10 @@ class OxylabsSchedulerAPI {
   private baseUrl: string;
   private headers: HeadersInit;
 
-  constructor(supabaseUrl: string, supabaseAnonKey: string) {
-    this.baseUrl = `${supabaseUrl}/functions/v1/scrapi-oxylabs-scheduler`;
+  constructor() {
+    this.baseUrl = 'https://krmwphqhlzscnuxwxvkz.supabase.co/functions/v1/scrapi-oxylabs-scheduler';
     this.headers = {
-      'Authorization': `Bearer ${supabaseAnonKey}`,
+      'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtybXdwaHFobHpzY251eHd4dmt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxMzExMjUsImV4cCI6MjA2NDcwNzEyNX0.k5fDJWwqMdqd9XQgWuDGwcJbwUuL8U-mF7NhiJxY4eU',
       'Content-Type': 'application/json'
     };
   }
@@ -142,10 +141,7 @@ export default function OxylabsSchedulerDashboard() {
   }>>([]);
 
   // Initialize API
-  const api = new OxylabsSchedulerAPI(
-    'https://krmwphqhlzscnuxwxvkz.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtybXdwaHFobHpzY251eHd4dmt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxMzExMjUsImV4cCI6MjA2NDcwNzEyNX0.k5fDJWwqMdqd9XQgWuDGwcJbwUuL8U-mF7NhiJxY4eU'
-  );
+  const api = new OxylabsSchedulerAPI();
 
   // Notification helper
   const addNotification = useCallback((type: 'success' | 'error' | 'warning' | 'info', message: string) => {
@@ -165,6 +161,9 @@ export default function OxylabsSchedulerDashboard() {
         api.getOperations(100)
       ]);
 
+      console.log('Dashboard response:', dashboardData);
+      console.log('Operations response:', operationsData);
+
       if (dashboardData.success) {
         const transformedSchedules = (dashboardData.schedules || []).map((schedule: any) => ({
           id: schedule.id,
@@ -181,6 +180,9 @@ export default function OxylabsSchedulerDashboard() {
           last_synced_at: schedule.last_synced_at || ''
         }));
         setSchedules(transformedSchedules);
+      } else {
+        console.error('Dashboard API error:', dashboardData.error);
+        addNotification('error', dashboardData.error || 'Failed to load dashboard data');
       }
 
       if (operationsData.success) {
@@ -188,10 +190,12 @@ export default function OxylabsSchedulerDashboard() {
         setQueueStats(operationsData.queue_stats || {
           pending: 0, processing: 0, completed: 0, failed: 0, total: 0
         });
+      } else {
+        console.error('Operations API error:', operationsData.error);
       }
     } catch (error) {
-      addNotification('error', 'Failed to load dashboard data');
       console.error('Dashboard load error:', error);
+      addNotification('error', 'Failed to load dashboard data');
     } finally {
       setIsLoading(false);
     }
@@ -364,8 +368,12 @@ export default function OxylabsSchedulerDashboard() {
     setIsSyncing(true);
     try {
       const result = await api.syncSchedules();
-      addNotification('success', `Synced ${result.synced || 0} schedules`);
-      await loadDashboard();
+      if (result.success) {
+        addNotification('success', result.message || `Synced ${result.synced || 0} schedules`);
+        await loadDashboard();
+      } else {
+        addNotification('error', result.error || 'Failed to sync schedules');
+      }
     } catch (error) {
       addNotification('error', 'Failed to sync schedules');
     } finally {
@@ -410,6 +418,7 @@ export default function OxylabsSchedulerDashboard() {
   };
 
   const formatRelativeTime = (dateString: string) => {
+    if (!dateString) return 'Never';
     const date = new Date(dateString);
     const now = new Date();
     const diff = now.getTime() - date.getTime();
@@ -694,7 +703,7 @@ export default function OxylabsSchedulerDashboard() {
                     ) : paginatedSchedules.length === 0 ? (
                       <tr>
                         <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
-                          No schedules found
+                          {schedules.length === 0 ? 'No schedules found. Try syncing with Oxylabs.' : 'No schedules match your filters.'}
                         </td>
                       </tr>
                     ) : (
@@ -724,13 +733,13 @@ export default function OxylabsSchedulerDashboard() {
                             <td className="px-4 py-4">
                               <div>
                                 <div className="font-medium text-white">
-                                  {schedule.job_name || 'Unnamed Schedule'}
+                                  {schedule.job_name || schedule.schedule_name || 'Unnamed Schedule'}
                                 </div>
                                 <div className="text-sm text-gray-400">
                                   ID: {schedule.oxylabs_schedule_id}
                                 </div>
                                 <div className="text-xs text-gray-500">
-                                  {schedule.cron_expression}
+                                  {schedule.cron_expression || 'No cron expression'}
                                 </div>
                               </div>
                             </td>
@@ -873,7 +882,7 @@ export default function OxylabsSchedulerDashboard() {
                   </div>
                   
                   <div className="text-right">
-                    <div className="text-sm text-gray-300">{operation.status_description}</div>
+                    <div className="text-sm text-gray-300">{operation.status_description || operation.status}</div>
                     <div className="text-xs text-gray-500">
                       {formatRelativeTime(operation.requested_at)}
                     </div>
@@ -922,7 +931,7 @@ export default function OxylabsSchedulerDashboard() {
                   </div>
                   
                   <div className="text-right">
-                    <div className="text-sm text-gray-300">{operation.status_description}</div>
+                    <div className="text-sm text-gray-300">{operation.status_description || operation.status}</div>
                     <div className="text-xs text-gray-500">
                       {operation.completed_at ? formatRelativeTime(operation.completed_at) : formatRelativeTime(operation.requested_at)}
                     </div>

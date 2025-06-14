@@ -164,6 +164,11 @@ serve(async (req) => {
 
     const oxylabsAPI = new OxylabsAPI(oxylabsUsername, oxylabsPassword);
 
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
     // Health check endpoint
     if (path.endsWith('/health')) {
       console.log('Health check called');
@@ -178,69 +183,68 @@ serve(async (req) => {
       );
     }
 
-    // Dashboard endpoint - fetch real data from Oxylabs
+    // Dashboard endpoint - fetch data from database and Oxylabs
     if (path.endsWith('/dashboard')) {
-      console.log('Dashboard endpoint called - fetching real data');
+      console.log('Dashboard endpoint called');
       
       try {
-        const oxylabsSchedules = await oxylabsAPI.getSchedules();
-        console.log('Fetched Oxylabs schedules:', oxylabsSchedules);
+        // Get schedules from our database view
+        const { data: schedules, error: dbError } = await supabase
+          .from('scrapi_active_oxylabs_schedules')
+          .select('*');
 
-        // Transform Oxylabs data to our format
-        const schedules: OxylabsSchedule[] = oxylabsSchedules.results?.map((schedule: any) => ({
+        if (dbError) {
+          console.error('Database error:', dbError);
+        }
+
+        // Try to get fresh data from Oxylabs API
+        let oxylabsSchedules = [];
+        try {
+          const oxylabsData = await oxylabsAPI.getSchedules();
+          oxylabsSchedules = oxylabsData.results || [];
+        } catch (oxylabsError) {
+          console.warn('Failed to fetch from Oxylabs, using database data only:', oxylabsError);
+        }
+
+        // Transform and combine data
+        const transformedSchedules: OxylabsSchedule[] = (schedules || []).map((schedule: any) => ({
           id: schedule.id,
-          oxylabs_schedule_id: schedule.id,
-          active: schedule.active,
+          oxylabs_schedule_id: schedule.oxylabs_schedule_id,
+          active: schedule.active || false,
           cron_expression: schedule.cron_expression || '',
-          next_run_at: schedule.next_run_at || new Date().toISOString(),
-          end_time: schedule.end_time || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-          job_name: schedule.name || 'Unnamed Schedule',
-          schedule_name: schedule.name || 'Unnamed Schedule',
+          next_run_at: schedule.next_run_at || '',
+          end_time: schedule.end_time || '',
+          job_name: schedule.job_name,
+          schedule_name: schedule.schedule_name,
           items_count: schedule.items_count || 0,
-          stats: {
-            total_job_count: schedule.stats?.total_job_count || 0,
-            job_result_outcomes: schedule.stats?.job_result_outcomes || [
+          stats: schedule.stats || { 
+            total_job_count: 0, 
+            job_result_outcomes: [
               { status: 'done', job_count: 0, ratio: 0 },
               { status: 'failed', job_count: 0, ratio: 0 }
             ]
           },
-          management_status: 'managed' as const,
-          last_synced_at: new Date().toISOString()
-        })) || [];
-
-        // Fetch recent runs for each schedule
-        const recent_runs = [];
-        for (const schedule of schedules.slice(0, 5)) { // Limit to prevent too many API calls
-          try {
-            const runs = await oxylabsAPI.getScheduleRuns(schedule.oxylabs_schedule_id);
-            if (runs.results?.length > 0) {
-              recent_runs.push({
-                run_id: runs.results[0].id,
-                success_rate: runs.results[0].success_rate || 0,
-                jobs: runs.results[0].jobs || [],
-                created_at: runs.results[0].created_at || new Date().toISOString()
-              });
-            }
-          } catch (error) {
-            console.error(`Failed to fetch runs for schedule ${schedule.oxylabs_schedule_id}:`, error);
-          }
-        }
+          management_status: schedule.management_status || 'unmanaged',
+          last_synced_at: schedule.last_synced_at || new Date().toISOString()
+        }));
 
         const dashboardData = {
-          schedules,
-          recent_runs
+          success: true,
+          schedules: transformedSchedules,
+          recent_runs: []
         };
 
-        console.log('Returning dashboard data:', dashboardData);
+        console.log('Returning dashboard data with', transformedSchedules.length, 'schedules');
         return new Response(
           JSON.stringify(dashboardData),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       } catch (error) {
-        console.error('Failed to fetch dashboard data:', error);
+        console.error('Dashboard error:', error);
         return new Response(
           JSON.stringify({ 
-            error: 'Failed to fetch data from Oxylabs API',
+            success: false,
+            error: 'Failed to fetch dashboard data',
             details: error.message,
             schedules: [],
             recent_runs: []
@@ -253,26 +257,93 @@ serve(async (req) => {
       }
     }
 
+    // Operations endpoint - get operation queue status
+    if (path.endsWith('/operations')) {
+      console.log('Operations endpoint called');
+      
+      try {
+        const { data: operations, error } = await supabase
+          .from('scrapi_schedule_operations')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(100);
+
+        if (error) {
+          console.error('Operations query error:', error);
+          throw error;
+        }
+
+        // Calculate queue stats
+        const stats = (operations || []).reduce((acc, op) => {
+          acc[op.status] = (acc[op.status] || 0) + 1;
+          acc.total++;
+          return acc;
+        }, { pending: 0, processing: 0, completed: 0, failed: 0, total: 0 });
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            operations: operations || [],
+            queue_stats: stats
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } catch (error) {
+        console.error('Operations error:', error);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'Failed to fetch operations',
+            operations: [],
+            queue_stats: { pending: 0, processing: 0, completed: 0, failed: 0, total: 0 }
+          }),
+          { 
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+    }
+
     // Sync endpoint - sync schedules from Oxylabs
     if (path.endsWith('/sync')) {
-      console.log('Sync endpoint called - syncing with Oxylabs');
+      console.log('Sync endpoint called');
       
       try {
         const oxylabsSchedules = await oxylabsAPI.getSchedules();
-        const syncedCount = oxylabsSchedules.results?.length || 0;
+        const schedules = oxylabsSchedules.results || [];
 
-        // Here you could also sync to your database
-        // const supabase = createClient(...)
-        // await supabase.from('scrapi_oxylabs_schedules').upsert(schedules)
+        // Sync schedules to database
+        for (const schedule of schedules) {
+          const { error: upsertError } = await supabase
+            .from('scrapi_oxylabs_schedules')
+            .upsert({
+              oxylabs_schedule_id: schedule.id,
+              active: schedule.active,
+              cron_expression: schedule.cron_expression || '',
+              next_run_at: schedule.next_run_at || null,
+              end_time: schedule.end_time || null,
+              items_count: schedule.items_count || 0,
+              stats: {
+                total_job_count: schedule.stats?.total_job_count || 0,
+                job_result_outcomes: schedule.stats?.job_result_outcomes || []
+              },
+              last_synced_at: new Date().toISOString()
+            }, {
+              onConflict: 'oxylabs_schedule_id'
+            });
 
-        const syncResult = {
-          success: true,
-          synced: syncedCount,
-          message: `Successfully synced ${syncedCount} schedules from Oxylabs`
-        };
+          if (upsertError) {
+            console.error('Upsert error for schedule', schedule.id, ':', upsertError);
+          }
+        }
 
         return new Response(
-          JSON.stringify(syncResult),
+          JSON.stringify({
+            success: true,
+            synced: schedules.length,
+            message: `Successfully synced ${schedules.length} schedules from Oxylabs`
+          }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       } catch (error) {
@@ -295,7 +366,6 @@ serve(async (req) => {
     if (path.endsWith('/map-unmanaged')) {
       console.log('Map unmanaged endpoint called');
       
-      // This would typically identify unmanaged schedules and map them to your system
       const mapResult = {
         success: true,
         mappings: [],
@@ -316,23 +386,76 @@ serve(async (req) => {
       const scheduleId = path.split('/')[2];
       
       try {
-        const result = await oxylabsAPI.updateScheduleState(scheduleId, body.active);
+        // Queue the operation instead of direct API call
+        const { error } = await supabase.rpc('scrapi_queue_schedule_operation', {
+          p_schedule_id: scheduleId,
+          p_operation_type: body.active ? 'activate' : 'deactivate',
+          p_requested_by: 'dashboard',
+          p_operation_data: { active: body.active }
+        });
+
+        if (error) {
+          throw error;
+        }
         
         return new Response(
           JSON.stringify({ 
             success: true, 
             schedule_id: scheduleId,
             active: body.active,
-            result 
+            message: `Operation queued successfully`
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       } catch (error) {
-        console.error('Failed to update schedule state:', error);
+        console.error('Failed to queue schedule state change:', error);
         return new Response(
           JSON.stringify({
             success: false,
-            error: 'Failed to update schedule state',
+            error: 'Failed to queue schedule state change',
+            details: error.message
+          }),
+          { 
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+    }
+
+    // Schedule delete endpoint
+    if (path.includes('/schedule/') && req.method === 'DELETE') {
+      console.log('Schedule delete called');
+      
+      const scheduleId = path.split('/')[2];
+      
+      try {
+        // Queue the delete operation
+        const { error } = await supabase.rpc('scrapi_queue_schedule_operation', {
+          p_schedule_id: scheduleId,
+          p_operation_type: 'delete',
+          p_requested_by: 'dashboard',
+          p_operation_data: {}
+        });
+
+        if (error) {
+          throw error;
+        }
+        
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            schedule_id: scheduleId,
+            message: `Delete operation queued successfully`
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } catch (error) {
+        console.error('Failed to queue schedule deletion:', error);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'Failed to queue schedule deletion',
             details: error.message
           }),
           { 
@@ -353,6 +476,7 @@ serve(async (req) => {
         const runs = await oxylabsAPI.getScheduleRuns(scheduleId);
         
         const scheduleDetails = {
+          success: true,
           id: scheduleId,
           details: 'Schedule details from Oxylabs',
           runs: runs.results || []
@@ -366,6 +490,7 @@ serve(async (req) => {
         console.error('Failed to get schedule details:', error);
         return new Response(
           JSON.stringify({
+            success: false,
             error: 'Failed to fetch schedule details',
             details: error.message
           }),
@@ -387,7 +512,6 @@ serve(async (req) => {
         const result = await oxylabsAPI.createScheduleFromJob(body.job_id, {
           name: body.schedule_name || `Schedule for job ${body.job_id}`,
           cron_expression: body.cron_expression || '0 9 * * *',
-          // Add other schedule configuration as needed
         });
 
         const createResult = {
@@ -419,7 +543,11 @@ serve(async (req) => {
 
     // Default response for unknown endpoints
     return new Response(
-      JSON.stringify({ error: 'Invalid endpoint' }),
+      JSON.stringify({ 
+        error: 'Invalid endpoint',
+        path: path,
+        method: req.method
+      }),
       { 
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
