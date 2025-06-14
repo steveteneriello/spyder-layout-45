@@ -46,8 +46,15 @@
     --sidebar-border: 0 0% 30%;
     --sidebar-ring: 217.2 91.2% 59.8%;
 
-    /* Campaign page specific background */
-    --campaign-page-background: 0 0% 96%;
+    /* Campaign page specific background - Clean Light Slate */
+    --campaign-page-background: 248 250 252; /* #f8fafc - slate-50 */
+    --campaign-secondary-background: 241 245 249; /* #f1f5f9 - slate-100 */
+    --campaign-card-background: 0 0% 100%; /* #ffffff - white */
+    --campaign-primary-text: 15 23 42; /* #0f172a - slate-900 */
+    --campaign-secondary-text: 71 85 105; /* #475569 - slate-600 */
+    --campaign-border: 226 232 240; /* #e2e8f0 - slate-200 */
+    --campaign-accent: 100 116 139; /* #64748b - slate-500 */
+    --campaign-button-blue: 59 130 246; /* #3b82f6 - blue-500 */
   }
 
   .dark {
@@ -88,8 +95,15 @@
     --sidebar-border: 0 0% 30%;
     --sidebar-ring: 217.2 91.2% 59.8%;
 
-    /* Campaign page specific background - lighter than sidebar */
-    --campaign-page-background: 0 0% 8%;
+    /* Campaign page specific background - Dark Slate */
+    --campaign-page-background: 15 23 42; /* #0f172a - slate-900 */
+    --campaign-secondary-background: 30 41 59; /* #1e293b - slate-800 */
+    --campaign-card-background: 51 65 85; /* #334155 - slate-700 */
+    --campaign-primary-text: 248 250 252; /* #f8fafc - slate-50 */
+    --campaign-secondary-text: 203 213 225; /* #cbd5e1 - slate-300 */
+    --campaign-border: 71 85 105; /* #475569 - slate-600 */
+    --campaign-accent: 100 116 139; /* #64748b - slate-500 */
+    --campaign-button-blue: 59 130 246; /* #3b82f6 - blue-500 */
   }
 }
 
@@ -125,5 +139,38 @@
   /* Campaign page background */
   .campaign-page-bg {
     background-color: hsl(var(--campaign-page-background));
+  }
+
+  /* Campaign component styles */
+  .campaign-secondary-bg {
+    background-color: hsl(var(--campaign-secondary-background));
+  }
+
+  .campaign-card-bg {
+    background-color: hsl(var(--campaign-card-background));
+  }
+
+  .campaign-primary-text {
+    color: hsl(var(--campaign-primary-text));
+  }
+
+  .campaign-secondary-text {
+    color: hsl(var(--campaign-secondary-text));
+  }
+
+  .campaign-border {
+    border-color: hsl(var(--campaign-border));
+  }
+
+  .campaign-accent {
+    color: hsl(var(--campaign-accent));
+  }
+
+  .campaign-button-blue {
+    background-color: hsl(var(--campaign-button-blue));
+  }
+
+  .campaign-button-blue:hover {
+    background-color: hsl(var(--campaign-button-blue) / 0.9);
   }
 }

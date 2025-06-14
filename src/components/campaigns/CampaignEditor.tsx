@@ -14,17 +14,17 @@ export function CampaignEditor({ campaignId }: CampaignEditorProps) {
   const { campaign, loading } = useCampaignDetails(campaignId);
 
   if (loading) {
-    return <div className="text-center py-8" style={{ color: '#f8fafc' }}>Loading campaign...</div>;
+    return <div className="text-center py-8 campaign-primary-text">Loading campaign...</div>;
   }
 
   return (
     <div className="space-y-6">
-      <Card style={{ backgroundColor: '#1e293b', borderColor: '#475569' }}>
+      <Card className="campaign-secondary-bg campaign-border">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2" style={{ color: '#f8fafc' }}>
+          <CardTitle className="flex items-center gap-2 campaign-primary-text">
             Campaign Editor
             {campaign && (
-              <span className="font-normal" style={{ color: '#cbd5e1' }}>
+              <span className="font-normal campaign-secondary-text">
                 - {campaign.name}
               </span>
             )}
@@ -32,9 +32,9 @@ export function CampaignEditor({ campaignId }: CampaignEditorProps) {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="keywords" className="w-full">
-            <TabsList style={{ backgroundColor: '#0f172a', borderColor: '#475569' }}>
-              <TabsTrigger value="keywords" style={{ color: '#f8fafc' }}>Keywords</TabsTrigger>
-              <TabsTrigger value="details" style={{ color: '#f8fafc' }}>Campaign Details</TabsTrigger>
+            <TabsList className="campaign-card-bg campaign-border">
+              <TabsTrigger value="keywords" className="campaign-primary-text">Keywords</TabsTrigger>
+              <TabsTrigger value="details" className="campaign-primary-text">Campaign Details</TabsTrigger>
             </TabsList>
 
             <TabsContent value="keywords" className="space-y-4">

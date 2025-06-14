@@ -12,38 +12,38 @@ export function CampaignDashboard() {
       title: 'Total Active Campaigns',
       value: stats.totalActiveCampaigns,
       icon: Target,
-      color: '#64748b'
+      color: 'campaign-accent'
     },
     {
       title: 'Total Categories',
       value: stats.totalCategories,
       icon: FolderOpen,
-      color: '#64748b'
+      color: 'campaign-accent'
     },
     {
       title: 'Total Keywords',
       value: stats.totalKeywords,
       icon: Hash,
-      color: '#64748b'
+      color: 'campaign-accent'
     },
     {
       title: 'Total Negative Keywords',
       value: stats.totalNegativeKeywords,
       icon: Minus,
-      color: '#64748b'
+      color: 'campaign-accent'
     }
   ];
 
   if (loading) {
     return (
-      <div style={{ backgroundColor: '#1e293b' }} className="p-6 rounded-lg mb-6">
+      <div className="p-6 rounded-lg mb-6 campaign-secondary-bg">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} style={{ backgroundColor: '#0f172a', borderColor: '#475569' }} className="border rounded-lg">
+            <div key={i} className="border rounded-lg campaign-card-bg campaign-border">
               <div className="p-6">
                 <div className="animate-pulse">
-                  <div style={{ backgroundColor: '#475569' }} className="h-4 rounded w-3/4 mb-2"></div>
-                  <div style={{ backgroundColor: '#475569' }} className="h-8 rounded w-1/2"></div>
+                  <div className="h-4 rounded w-3/4 mb-2 campaign-border bg-current opacity-20"></div>
+                  <div className="h-8 rounded w-1/2 campaign-border bg-current opacity-20"></div>
                 </div>
               </div>
             </div>
@@ -54,24 +54,23 @@ export function CampaignDashboard() {
   }
 
   return (
-    <div style={{ backgroundColor: '#1e293b' }} className="p-6 rounded-lg mb-6">
+    <div className="p-6 rounded-lg mb-6 campaign-secondary-bg">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {dashboardCards.map((card, index) => {
           const Icon = card.icon;
           return (
             <div 
               key={index} 
-              style={{ backgroundColor: '#0f172a', borderColor: '#475569' }} 
-              className="border rounded-lg hover:shadow-md transition-shadow"
+              className="border rounded-lg hover:shadow-md transition-shadow campaign-card-bg campaign-border"
             >
               <div className="flex flex-row items-center justify-between space-y-0 pb-2 p-6">
-                <div className="text-sm font-medium" style={{ color: '#cbd5e1' }}>
+                <div className="text-sm font-medium campaign-secondary-text">
                   {card.title}
                 </div>
-                <Icon className="h-4 w-4" style={{ color: card.color }} />
+                <Icon className={`h-4 w-4 ${card.color}`} />
               </div>
               <div className="px-6 pb-6">
-                <div className="text-2xl font-bold" style={{ color: '#f8fafc' }}>
+                <div className="text-2xl font-bold campaign-primary-text">
                   {card.value.toLocaleString()}
                 </div>
               </div>
