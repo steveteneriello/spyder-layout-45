@@ -1458,6 +1458,60 @@ export type Database = {
           },
         ]
       }
+      scrapi_schedule_operations: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          last_error: string | null
+          last_error_at: string | null
+          max_retries: number | null
+          operation_data: Json | null
+          operation_type: string
+          oxylabs_schedule_id: string
+          requested_at: string | null
+          requested_by: string | null
+          retry_count: number | null
+          started_at: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          last_error?: string | null
+          last_error_at?: string | null
+          max_retries?: number | null
+          operation_data?: Json | null
+          operation_type: string
+          oxylabs_schedule_id: string
+          requested_at?: string | null
+          requested_by?: string | null
+          retry_count?: number | null
+          started_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          last_error?: string | null
+          last_error_at?: string | null
+          max_retries?: number | null
+          operation_data?: Json | null
+          operation_type?: string
+          oxylabs_schedule_id?: string
+          requested_at?: string | null
+          requested_by?: string | null
+          retry_count?: number | null
+          started_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       scrapi_scheduled_jobs: {
         Row: {
           created_at: string
@@ -3370,6 +3424,54 @@ export type Database = {
         }
         Relationships: []
       }
+      scrapi_operation_monitoring: {
+        Row: {
+          completed_at: string | null
+          duration_seconds: number | null
+          id: string | null
+          last_error: string | null
+          max_retries: number | null
+          operation_type: string | null
+          oxylabs_schedule_id: string | null
+          requested_at: string | null
+          requested_by: string | null
+          retry_count: number | null
+          started_at: string | null
+          status: string | null
+          status_description: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          duration_seconds?: never
+          id?: string | null
+          last_error?: string | null
+          max_retries?: number | null
+          operation_type?: string | null
+          oxylabs_schedule_id?: string | null
+          requested_at?: string | null
+          requested_by?: string | null
+          retry_count?: number | null
+          started_at?: string | null
+          status?: string | null
+          status_description?: never
+        }
+        Update: {
+          completed_at?: string | null
+          duration_seconds?: never
+          id?: string | null
+          last_error?: string | null
+          max_retries?: number | null
+          operation_type?: string | null
+          oxylabs_schedule_id?: string | null
+          requested_at?: string | null
+          requested_by?: string | null
+          retry_count?: number | null
+          started_at?: string | null
+          status?: string | null
+          status_description?: never
+        }
+        Relationships: []
+      }
       scrapi_oxylabs_batch_info: {
         Row: {
           batch_id: string | null
@@ -3550,6 +3652,14 @@ export type Database = {
           avg_success_rate: number
         }[]
       }
+      scrapi_complete_operation: {
+        Args: {
+          p_operation_id: string
+          p_success: boolean
+          p_error_message?: string
+        }
+        Returns: undefined
+      }
       scrapi_create_job_batch: {
         Args: { p_job_id: string; p_schedule_id?: string }
         Returns: string
@@ -3576,6 +3686,29 @@ export type Database = {
           last_run: string
           next_run: string
         }[]
+      }
+      scrapi_get_next_pending_operation: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          operation_id: string
+          oxylabs_schedule_id: string
+          operation_type: string
+          operation_data: Json
+          retry_count: number
+        }[]
+      }
+      scrapi_queue_schedule_operation: {
+        Args: {
+          p_schedule_id: string
+          p_operation_type: string
+          p_requested_by?: string
+          p_operation_data?: Json
+        }
+        Returns: string
+      }
+      scrapi_start_operation: {
+        Args: { p_operation_id: string }
+        Returns: boolean
       }
       sync_facebook_advertising_businesses: {
         Args: Record<PropertyKey, never>
