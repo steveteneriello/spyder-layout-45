@@ -698,6 +698,36 @@ export type Database = {
           },
         ]
       }
+      scrapi_cron_executions: {
+        Row: {
+          batches_created: number | null
+          error_message: string | null
+          execution_duration_ms: number | null
+          execution_time: string | null
+          id: string
+          scheduled_jobs_found: number | null
+          success: boolean | null
+        }
+        Insert: {
+          batches_created?: number | null
+          error_message?: string | null
+          execution_duration_ms?: number | null
+          execution_time?: string | null
+          id?: string
+          scheduled_jobs_found?: number | null
+          success?: boolean | null
+        }
+        Update: {
+          batches_created?: number | null
+          error_message?: string | null
+          execution_duration_ms?: number | null
+          execution_time?: string | null
+          id?: string
+          scheduled_jobs_found?: number | null
+          success?: boolean | null
+        }
+        Relationships: []
+      }
       scrapi_google_ad_renderings: {
         Row: {
           ad_id: string

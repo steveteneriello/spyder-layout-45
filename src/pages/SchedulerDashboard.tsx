@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   RefreshCw,
@@ -66,67 +65,88 @@ interface DashboardStats {
   avg_success_rate: number;
 }
 
-// API client
+// API client with improved debugging
 class OxylabsSchedulerAPI {
   private baseUrl: string;
   private headers: HeadersInit;
+  private debugMode: boolean = true;
+  private onLog: (message: string, data?: any) => void;
 
-  constructor(supabaseUrl: string, supabaseAnonKey: string) {
+  constructor(supabaseUrl: string, supabaseAnonKey: string, onLog: (message: string, data?: any) => void) {
     this.baseUrl = `${supabaseUrl}/functions/v1/scrapi-oxylabs-scheduler`;
     this.headers = {
       'Authorization': `Bearer ${supabaseAnonKey}`,
       'Content-Type': 'application/json'
     };
+    this.onLog = onLog;
+  }
+
+  private async makeRequest(endpoint: string, options: RequestInit = {}) {
+    const url = `${this.baseUrl}${endpoint}`;
+    this.onLog(`Making request to: ${url}`, options);
+    
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers: { ...this.headers, ...options.headers }
+      });
+      
+      this.onLog(`Response status: ${response.status}`, {
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries())
+      });
+      
+      const responseText = await response.text();
+      this.onLog(`Response body: ${responseText}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${responseText}`);
+      }
+      
+      try {
+        return JSON.parse(responseText);
+      } catch (e) {
+        this.onLog('Failed to parse JSON', e);
+        throw new Error('Invalid JSON response');
+      }
+    } catch (error) {
+      this.onLog('Request failed', error);
+      throw error;
+    }
+  }
+
+  async testConnection() {
+    return this.makeRequest('/health');
   }
 
   async syncSchedules() {
-    const response = await fetch(`${this.baseUrl}/sync`, {
-      method: 'GET',
-      headers: this.headers
-    });
-    return response.json();
+    return this.makeRequest('/sync');
   }
 
   async mapUnmanaged() {
-    const response = await fetch(`${this.baseUrl}/map-unmanaged`, {
-      method: 'GET',
-      headers: this.headers
-    });
-    return response.json();
+    return this.makeRequest('/map-unmanaged');
   }
 
   async getSchedule(scheduleId: string) {
-    const response = await fetch(`${this.baseUrl}/schedule/${scheduleId}`, {
-      method: 'GET',
-      headers: this.headers
-    });
-    return response.json();
+    return this.makeRequest(`/schedule/${scheduleId}`);
   }
 
   async setScheduleState(scheduleId: string, active: boolean) {
-    const response = await fetch(`${this.baseUrl}/schedule/${scheduleId}/state`, {
+    return this.makeRequest(`/schedule/${scheduleId}/state`, {
       method: 'PUT',
-      headers: this.headers,
       body: JSON.stringify({ active })
     });
-    return response.json();
   }
 
   async getDashboard() {
-    const response = await fetch(`${this.baseUrl}/dashboard`, {
-      method: 'GET',
-      headers: this.headers
-    });
-    return response.json();
+    return this.makeRequest('/dashboard');
   }
 
   async createFromJob(jobId: string, scheduleId: string) {
-    const response = await fetch(`${this.baseUrl}/create-from-job`, {
+    return this.makeRequest('/create-from-job', {
       method: 'POST',
-      headers: this.headers,
       body: JSON.stringify({ job_id: jobId, schedule_id: scheduleId })
     });
-    return response.json();
   }
 }
 
@@ -147,29 +167,55 @@ function OxylabsSchedulerDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive' | 'unmanaged'>('all');
   const [notifications, setNotifications] = useState<Array<{ id: string; type: 'success' | 'error' | 'info'; message: string }>>([]);
+  const [debugMode, setDebugMode] = useState(true);
+  const [apiLogs, setApiLogs] = useState<string[]>([]);
+
+  // Add logging function
+  const logAPI = (message: string, data?: any) => {
+    const logEntry = `[${new Date().toISOString()}] ${message} ${data ? JSON.stringify(data, null, 2) : ''}`;
+    console.log(logEntry);
+    if (debugMode) {
+      setApiLogs(prev => [...prev.slice(-9), logEntry]);
+    }
+  };
 
   // Initialize API client
   const api = new OxylabsSchedulerAPI(
     'https://krmwphqhlzscnuxwxvkz.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtybXdwaHFobHpzY251eHd4dmt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxMzExMjUsImV4cCI6MjA2NDcwNzEyNX0.k5fDJWwqMdqd9XQgWuDGwcJbwUuL8U-mF7NhiJxY4eU'
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtybXdwaHFobHpzY251eHd4dmt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxMzExMjUsImV4cCI6MjA2NDcwNzEyNX0.k5fDJWwqMdqd9XQgWuDGwcJbwUuL8U-mF7NhiJxY4eU',
+    logAPI
   );
+
+  // Test connection function
+  const testConnection = async () => {
+    try {
+      logAPI('Testing connection...');
+      const result = await api.testConnection();
+      addNotification('success', 'Connection test successful!');
+      logAPI('Connection test result', result);
+    } catch (error) {
+      addNotification('error', `Connection test failed: ${error.message}`);
+      logAPI('Connection test failed', error);
+    }
+  };
 
   // Load dashboard data
   const loadDashboard = async () => {
     setIsLoading(true);
     try {
+      logAPI('Loading dashboard...');
       const data = await api.getDashboard();
       setSchedules(data.schedules || []);
       
       // Calculate stats
-      const totalSchedules = data.schedules.length;
-      const activeSchedules = data.schedules.filter((s: OxylabsSchedule) => s.active).length;
-      const unmanagedSchedules = data.schedules.filter((s: OxylabsSchedule) => s.management_status === 'unmanaged').length;
+      const totalSchedules = data.schedules?.length || 0;
+      const activeSchedules = data.schedules?.filter((s: OxylabsSchedule) => s.active).length || 0;
+      const unmanagedSchedules = data.schedules?.filter((s: OxylabsSchedule) => s.management_status === 'unmanaged').length || 0;
       const totalJobs24h = data.recent_runs?.length || 0;
-      const avgSuccessRate = data.schedules.reduce((acc: number, s: OxylabsSchedule) => {
+      const avgSuccessRate = totalSchedules > 0 ? data.schedules.reduce((acc: number, s: OxylabsSchedule) => {
         const successOutcome = s.stats?.job_result_outcomes?.find(o => o.status === 'done');
         return acc + (successOutcome?.ratio || 0);
-      }, 0) / (totalSchedules || 1);
+      }, 0) / totalSchedules : 0;
 
       setStats({
         total_schedules: totalSchedules,
@@ -178,8 +224,11 @@ function OxylabsSchedulerDashboard() {
         total_jobs_24h: totalJobs24h,
         avg_success_rate: avgSuccessRate
       });
+      
+      logAPI('Dashboard loaded successfully', data);
     } catch (error) {
-      addNotification('error', 'Failed to load dashboard data');
+      addNotification('error', `Failed to load dashboard: ${error.message}`);
+      logAPI('Failed to load dashboard', error);
     } finally {
       setIsLoading(false);
     }
@@ -189,11 +238,13 @@ function OxylabsSchedulerDashboard() {
   const syncSchedules = async () => {
     setIsSyncing(true);
     try {
+      logAPI('Starting sync...');
       const result = await api.syncSchedules();
-      addNotification('success', `Synced ${result.synced} schedules successfully`);
+      addNotification('success', `Synced ${result.synced || 0} schedules successfully`);
       await loadDashboard();
     } catch (error) {
-      addNotification('error', 'Failed to sync schedules');
+      addNotification('error', `Failed to sync schedules: ${error.message}`);
+      logAPI('Sync failed', error);
     } finally {
       setIsSyncing(false);
     }
@@ -202,12 +253,13 @@ function OxylabsSchedulerDashboard() {
   // Map unmanaged schedules
   const mapUnmanagedSchedules = async () => {
     try {
+      logAPI('Mapping unmanaged schedules...');
       const result = await api.mapUnmanaged();
       const mappedCount = result.mappings?.filter((m: any) => m.success).length || 0;
       addNotification('success', `Mapped ${mappedCount} unmanaged schedules`);
       await loadDashboard();
     } catch (error) {
-      addNotification('error', 'Failed to map unmanaged schedules');
+      addNotification('error', `Failed to map unmanaged schedules: ${error.message}`);
     }
   };
 
@@ -218,7 +270,7 @@ function OxylabsSchedulerDashboard() {
       addNotification('success', `Schedule ${currentState ? 'deactivated' : 'activated'} successfully`);
       await loadDashboard();
     } catch (error) {
-      addNotification('error', 'Failed to update schedule state');
+      addNotification('error', `Failed to update schedule state: ${error.message}`);
     }
   };
 
@@ -228,7 +280,7 @@ function OxylabsSchedulerDashboard() {
       const details = await api.getSchedule(scheduleId);
       setScheduleDetails(details);
     } catch (error) {
-      addNotification('error', 'Failed to load schedule details');
+      addNotification('error', `Failed to load schedule details: ${error.message}`);
     }
   };
 
@@ -241,7 +293,6 @@ function OxylabsSchedulerDashboard() {
     }, 5000);
   };
 
-  // Filter schedules
   const filteredSchedules = schedules.filter(schedule => {
     const matchesSearch = schedule.job_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          schedule.oxylabs_schedule_id.includes(searchTerm);
@@ -254,7 +305,6 @@ function OxylabsSchedulerDashboard() {
     return matchesSearch && matchesFilter;
   });
 
-  // Parse cron expression to human readable
   const parseCronExpression = (cron: string) => {
     const parts = cron.split(' ');
     if (parts.length !== 5) return cron;
@@ -270,12 +320,10 @@ function OxylabsSchedulerDashboard() {
     return cron;
   };
 
-  // Format date
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString();
   };
 
-  // Get status badge
   const getStatusBadge = (schedule: OxylabsSchedule) => {
     if (!schedule.active) {
       return { color: 'bg-gray-100 text-gray-700', icon: Pause, text: 'Inactive' };
@@ -291,6 +339,7 @@ function OxylabsSchedulerDashboard() {
   };
 
   useEffect(() => {
+    logAPI('Component mounted, loading dashboard...');
     loadDashboard();
   }, []);
 
@@ -312,6 +361,32 @@ function OxylabsSchedulerDashboard() {
         ))}
       </div>
 
+      {/* Debug Panel */}
+      {debugMode && (
+        <div className="fixed bottom-4 left-4 w-96 bg-black text-green-400 p-4 rounded-lg font-mono text-xs max-h-64 overflow-y-auto z-50">
+          <div className="flex justify-between items-center mb-2">
+            <span className="font-bold">API Debug Log</span>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => setApiLogs([])} 
+                className="text-red-400 hover:text-red-300"
+              >
+                Clear
+              </button>
+              <button 
+                onClick={() => setDebugMode(false)} 
+                className="text-gray-400 hover:text-gray-300"
+              >
+                Hide
+              </button>
+            </div>
+          </div>
+          {apiLogs.map((log, i) => (
+            <div key={i} className="mb-1 break-words">{log}</div>
+          ))}
+        </div>
+      )}
+
       {/* Header */}
       <div className="campaign-card-bg campaign-border border-b">
         <div className="px-6 py-4">
@@ -321,6 +396,13 @@ function OxylabsSchedulerDashboard() {
               <p className="text-sm campaign-secondary-text mt-1">Manage and monitor your Oxylabs scheduled scraping jobs</p>
             </div>
             <div className="flex items-center gap-3">
+              <button
+                onClick={testConnection}
+                className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors flex items-center gap-2"
+              >
+                <Activity className="w-4 h-4" />
+                Test Connection
+              </button>
               <button
                 onClick={mapUnmanagedSchedules}
                 className="px-4 py-2 campaign-button-blue text-white rounded-lg hover:campaign-button-blue transition-colors flex items-center gap-2 disabled:opacity-50"
@@ -337,11 +419,21 @@ function OxylabsSchedulerDashboard() {
                 <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
                 Sync Schedules
               </button>
+              {!debugMode && (
+                <button
+                  onClick={() => setDebugMode(true)}
+                  className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                >
+                  Show Debug
+                </button>
+              )}
             </div>
           </div>
         </div>
       </div>
 
+      
+      
       {/* Stats Cards */}
       <div className="px-6 py-6">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -397,7 +489,7 @@ function OxylabsSchedulerDashboard() {
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Filters and remaining content */}
       <div className="px-6 pb-4">
         <div className="campaign-card-bg rounded-lg p-4 campaign-border border">
           <div className="flex items-center gap-4">
@@ -429,54 +521,53 @@ function OxylabsSchedulerDashboard() {
         </div>
       </div>
 
-      {/* Schedules Table */}
+      {/* Simple table showing current state */}
       <div className="px-6 pb-6">
         <div className="campaign-card-bg rounded-lg campaign-border border overflow-hidden">
           <table className="w-full">
             <thead className="campaign-secondary-bg campaign-border border-b">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium campaign-secondary-text uppercase tracking-wider">
-                  Schedule
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium campaign-secondary-text uppercase tracking-wider">
                   Status
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium campaign-secondary-text uppercase tracking-wider">
-                  Schedule
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium campaign-secondary-text uppercase tracking-wider">
-                  Next Run
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium campaign-secondary-text uppercase tracking-wider">
-                  Performance
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium campaign-secondary-text uppercase tracking-wider">
-                  Actions
+                  Message
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y campaign-border">
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center campaign-secondary-text">
+                  <td colSpan={2} className="px-4 py-8 text-center campaign-secondary-text">
                     <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
                     Loading schedules...
                   </td>
                 </tr>
               ) : filteredSchedules.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center campaign-secondary-text">
-                    No schedules found
+                  <td className="px-4 py-4">
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
+                      <AlertCircle className="w-3 h-3" />
+                      No Data
+                    </span>
+                  </td>
+                  <td className="px-4 py-4 campaign-primary-text">
+                    No schedules found. The API might not be responding or the edge function may not be deployed.
                   </td>
                 </tr>
               ) : (
                 filteredSchedules.map((schedule) => {
                   const status = getStatusBadge(schedule);
                   const StatusIcon = status.icon;
-                  const successRate = schedule.stats?.job_result_outcomes?.find(o => o.status === 'done')?.ratio || 0;
                   
                   return (
                     <tr key={schedule.id} className="hover:campaign-secondary-bg">
+                      <td className="px-4 py-4">
+                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${status.color}`}>
+                          <StatusIcon className="w-3 h-3" />
+                          {status.text}
+                        </span>
+                      </td>
                       <td className="px-4 py-4">
                         <div>
                           <div className="font-medium campaign-primary-text">
@@ -485,97 +576,6 @@ function OxylabsSchedulerDashboard() {
                           <div className="text-sm campaign-secondary-text">
                             ID: {schedule.oxylabs_schedule_id}
                           </div>
-                          {schedule.schedule_name && (
-                            <div className="text-sm campaign-secondary-text">
-                              {schedule.schedule_name}
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                      
-                      <td className="px-4 py-4">
-                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${status.color}`}>
-                          <StatusIcon className="w-3 h-3" />
-                          {status.text}
-                        </span>
-                      </td>
-                      
-                      <td className="px-4 py-4">
-                        <div className="text-sm">
-                          <div className="font-medium campaign-primary-text">{parseCronExpression(schedule.cron_expression)}</div>
-                          <div className="campaign-secondary-text">{schedule.cron_expression}</div>
-                        </div>
-                      </td>
-                      
-                      <td className="px-4 py-4">
-                        <div className="text-sm">
-                          {schedule.next_run_at ? (
-                            <>
-                              <div className="campaign-primary-text">{formatDate(schedule.next_run_at)}</div>
-                              {schedule.end_time && (
-                                <div className="campaign-secondary-text">
-                                  Ends: {formatDate(schedule.end_time)}
-                                </div>
-                              )}
-                            </>
-                          ) : (
-                            <span className="campaign-secondary-text">-</span>
-                          )}
-                        </div>
-                      </td>
-                      
-                      <td className="px-4 py-4">
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 bg-gray-200 rounded-full h-2">
-                            <div
-                              className={`h-2 rounded-full ${
-                                successRate > 0.8 ? 'bg-green-500' :
-                                successRate > 0.5 ? 'bg-yellow-500' :
-                                'bg-red-500'
-                              }`}
-                              style={{ width: `${successRate * 100}%` }}
-                            />
-                          </div>
-                          <span className="text-sm campaign-secondary-text">
-                            {(successRate * 100).toFixed(0)}%
-                          </span>
-                        </div>
-                        <div className="text-xs campaign-secondary-text mt-1">
-                          {schedule.stats?.total_job_count || 0} total jobs
-                        </div>
-                      </td>
-                      
-                      <td className="px-4 py-4">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => {
-                              setSelectedSchedule(schedule);
-                              loadScheduleDetails(schedule.oxylabs_schedule_id);
-                            }}
-                            className="p-1 campaign-secondary-text hover:text-blue-600 transition-colors"
-                            title="View Details"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          
-                          <button
-                            onClick={() => toggleScheduleState(schedule.oxylabs_schedule_id, schedule.active)}
-                            className={`p-1 transition-colors ${
-                              schedule.active 
-                                ? 'campaign-secondary-text hover:text-red-600' 
-                                : 'campaign-secondary-text hover:text-green-600'
-                            }`}
-                            title={schedule.active ? 'Deactivate' : 'Activate'}
-                          >
-                            {schedule.active ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                          </button>
-                          
-                          <button
-                            className="p-1 campaign-secondary-text hover:campaign-primary-text transition-colors"
-                            title="More Options"
-                          >
-                            <MoreVertical className="w-4 h-4" />
-                          </button>
                         </div>
                       </td>
                     </tr>
@@ -586,130 +586,6 @@ function OxylabsSchedulerDashboard() {
           </table>
         </div>
       </div>
-
-      {/* Schedule Details Modal */}
-      {selectedSchedule && scheduleDetails && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="campaign-card-bg rounded-lg max-w-2xl w-full max-h-[80vh] overflow-hidden">
-            <div className="p-6 campaign-border border-b">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold campaign-primary-text">Schedule Details</h2>
-                <button
-                  onClick={() => {
-                    setSelectedSchedule(null);
-                    setScheduleDetails(null);
-                  }}
-                  className="p-1 hover:campaign-secondary-bg rounded"
-                >
-                  <X className="w-5 h-5 campaign-primary-text" />
-                </button>
-              </div>
-            </div>
-            
-            <div className="p-6 overflow-y-auto max-h-[calc(80vh-120px)]">
-              <div className="space-y-6">
-                {/* Basic Info */}
-                <div>
-                  <h3 className="font-semibold mb-3 campaign-primary-text">Basic Information</h3>
-                  <dl className="grid grid-cols-2 gap-4">
-                    <div>
-                      <dt className="text-sm campaign-secondary-text">Schedule ID</dt>
-                      <dd className="text-sm font-medium campaign-primary-text">{scheduleDetails.schedule.schedule_id}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-sm campaign-secondary-text">Status</dt>
-                      <dd className="text-sm font-medium campaign-primary-text">
-                        {scheduleDetails.schedule.active ? 'Active' : 'Inactive'}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-sm campaign-secondary-text">Items Count</dt>
-                      <dd className="text-sm font-medium campaign-primary-text">{scheduleDetails.schedule.items_count}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-sm campaign-secondary-text">Next Run</dt>
-                      <dd className="text-sm font-medium campaign-primary-text">
-                        {formatDate(scheduleDetails.schedule.next_run_at)}
-                      </dd>
-                    </div>
-                  </dl>
-                </div>
-                
-                {/* Recent Runs */}
-                {scheduleDetails.recent_runs && scheduleDetails.recent_runs.length > 0 && (
-                  <div>
-                    <h3 className="font-semibold mb-3 campaign-primary-text">Recent Runs</h3>
-                    <div className="space-y-2">
-                      {scheduleDetails.recent_runs.map((run: ScheduleRun) => (
-                        <div key={run.run_id} className="campaign-border border rounded-lg p-3">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <span className="text-sm font-medium campaign-primary-text">Run #{run.run_id}</span>
-                              <span className="text-sm campaign-secondary-text ml-2">
-                                {formatDate(run.created_at)}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className={`text-sm font-medium ${
-                                run.success_rate >= 0.8 ? 'text-green-600' :
-                                run.success_rate >= 0.5 ? 'text-yellow-600' :
-                                'text-red-600'
-                              }`}>
-                                {(run.success_rate * 100).toFixed(0)}% success
-                              </span>
-                              <span className="text-sm campaign-secondary-text">
-                                ({run.jobs.length} jobs)
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                {/* Performance Stats */}
-                {scheduleDetails.schedule.stats && (
-                  <div>
-                    <h3 className="font-semibold mb-3 campaign-primary-text">Performance Statistics</h3>
-                    <div className="space-y-3">
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-sm campaign-secondary-text">Total Jobs</span>
-                          <span className="text-sm font-medium campaign-primary-text">
-                            {scheduleDetails.schedule.stats.total_job_count}
-                          </span>
-                        </div>
-                      </div>
-                      
-                      {scheduleDetails.schedule.stats.job_result_outcomes?.map((outcome: any) => (
-                        <div key={outcome.status}>
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-sm campaign-secondary-text capitalize">{outcome.status}</span>
-                            <span className="text-sm font-medium campaign-primary-text">
-                              {outcome.job_count} ({(outcome.ratio * 100).toFixed(1)}%)
-                            </span>
-                          </div>
-                          <div className="bg-gray-200 rounded-full h-2">
-                            <div
-                              className={`h-2 rounded-full ${
-                                outcome.status === 'done' ? 'bg-green-500' :
-                                outcome.status === 'pending' ? 'bg-yellow-500' :
-                                'bg-red-500'
-                              }`}
-                              style={{ width: `${outcome.ratio * 100}%` }}
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
