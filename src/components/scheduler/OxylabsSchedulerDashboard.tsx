@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTheme } from 'next-themes';
 import {
@@ -287,7 +288,8 @@ const OxylabsSchedulerDashboard: React.FC = () => {
         if (action === 'activate' || action === 'deactivate') {
           await toggleScheduleState(scheduleId, action === 'deactivate');
         } else if (action === 'delete') {
-          await deleteSchedule(scheduleId, schedule.job_name || schedule.schedule_name || 'Unnamed Schedule');
+          // Skip the confirmation dialog for bulk deletes - the BulkDeleteDialog handles confirmation
+          await api.queueScheduleDelete(scheduleId);
         }
       }
       setSelectedSchedules(new Set());
