@@ -384,6 +384,49 @@ const OxylabsSchedulerDashboard: React.FC = () => {
         </div>
       </div>
 
+      {/* Queue Stats */}
+      <div className="mb-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className={`${classes.secondaryBackground} border ${classes.border} rounded p-4`}>
+          <div className="flex items-center gap-2">
+            <Clock className="w-5 h-5 text-yellow-500" />
+            <div>
+              <p className={`${classes.textSecondary} text-sm`}>Pending</p>
+              <p className={`${classes.text} text-xl font-semibold`}>{queueStats.pending}</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className={`${classes.secondaryBackground} border ${classes.border} rounded p-4`}>
+          <div className="flex items-center gap-2">
+            <Loader2 className="w-5 h-5 text-blue-500" />
+            <div>
+              <p className={`${classes.textSecondary} text-sm`}>Processing</p>
+              <p className={`${classes.text} text-xl font-semibold`}>{queueStats.processing}</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className={`${classes.secondaryBackground} border ${classes.border} rounded p-4`}>
+          <div className="flex items-center gap-2">
+            <CheckCircle className="w-5 h-5 text-green-500" />
+            <div>
+              <p className={`${classes.textSecondary} text-sm`}>Completed</p>
+              <p className={`${classes.text} text-xl font-semibold`}>{queueStats.completed}</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className={`${classes.secondaryBackground} border ${classes.border} rounded p-4`}>
+          <div className="flex items-center gap-2">
+            <XCircle className="w-5 h-5 text-red-500" />
+            <div>
+              <p className={`${classes.textSecondary} text-sm`}>Failed</p>
+              <p className={`${classes.text} text-xl font-semibold`}>{queueStats.failed}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Filters */}
       <div className="mb-4 flex items-center gap-4">
         <input
