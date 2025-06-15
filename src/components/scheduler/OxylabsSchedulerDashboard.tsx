@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, createContext, useContext } from 'react';
+import { useTheme } from 'next-themes';
 import {
   RefreshCw, Play, Pause, Trash2, CheckSquare, Square, 
   Search, ChevronLeft, ChevronRight, Clock, CheckCircle,
@@ -53,50 +54,8 @@ interface Notification {
   timestamp: number;
 }
 
-// Theme Context
-interface ThemeContextType {
-  theme: 'light' | 'dark';
-  toggleTheme: () => void;
-}
-
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
-
-const useTheme = () => {
-  const context = useContext(ThemeContext);
-  if (!context) {
-    throw new Error('useTheme must be used within a ThemeProvider');
-  }
-  return context;
-};
-
-// Theme Provider Component
-export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('theme') as 'light' | 'dark' || 'dark';
-    }
-    return 'dark';
-  });
-  
-  const toggleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(newTheme);
-    localStorage.setItem('theme', newTheme);
-  };
-  
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', theme === 'dark');
-  }, [theme]);
-  
-  return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
-      {children}
-    </ThemeContext.Provider>
-  );
-};
-
 // Theme utility function
-const getThemeClasses = (theme: 'light' | 'dark') => ({
+const getThemeClasses = (theme: string) => ({
   background: theme === 'light' ? 'bg-white' : 'bg-[#0E1117]',
   secondaryBackground: theme === 'light' ? 'bg-[#FBFCFD]' : 'bg-[#161B22]',
   tertiaryBackground: theme === 'light' ? 'bg-[#F8F9FA]' : 'bg-[#21262D]',
@@ -140,8 +99,8 @@ const getThemeClasses = (theme: 'light' | 'dark') => ({
 });
 
 const OxylabsSchedulerDashboard: React.FC = () => {
-  const { theme, toggleTheme } = useTheme();
-  const classes = getThemeClasses(theme);
+  const { theme, setTheme } = useTheme();
+  const classes = getThemeClasses(theme || 'dark');
 
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [operations, setOperations] = useState<Operation[]>([]);
@@ -260,15 +219,6 @@ const OxylabsSchedulerDashboard: React.FC = () => {
     loadDashboard();
   }, [loadDashboard]);
 
-  // Auto refresh
-  useEffect(() => {
-    if (!autoRefresh) return;
-    const interval = setInterval(() => {
-      loadDashboard();
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [autoRefresh, loadDashboard]);
-
   // Handlers
   const toggleSelectAll = () => {
     if (selectedSchedules.size === schedules.length) {
@@ -357,7 +307,7 @@ const OxylabsSchedulerDashboard: React.FC = () => {
         <h1 className={`${classes.text} text-xl font-semibold`}>Oxylabs Scheduler Dashboard</h1>
         <div className="flex items-center gap-2">
           <button
-            onClick={toggleTheme}
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             className={`p-2 rounded ${classes.secondaryBackground} hover:${classes.hoverBackground} transition-colors`}
             title="Toggle Theme"
           >
