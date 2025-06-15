@@ -32,6 +32,7 @@ import {
   Trash2,
   Minus,
 } from 'lucide-react';
+import { BulkSelectionBar } from './BulkSelectionBar';
 
 interface OxylabsSchedule {
   id: string;
@@ -265,45 +266,17 @@ export function ScheduleManagementTable({
     <div className="space-y-4">
       {/* Bulk Actions Bar */}
       {selectedSchedules.length > 0 && (
-        <div className="campaign-card-bg rounded-lg border campaign-border p-4">
-          <div className="flex items-center justify-between">
-            <span className="text-sm campaign-primary-text">
-              {selectedSchedules.length} of {allSchedules.length} schedule{selectedSchedules.length !== 1 ? 's' : ''} selected
-            </span>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleBulkAction('activate')}
-                disabled={bulkActionLoading}
-                className="flex items-center gap-1"
-              >
-                <Play className="w-3 h-3" />
-                Activate
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleBulkAction('deactivate')}
-                disabled={bulkActionLoading}
-                className="flex items-center gap-1"
-              >
-                <Pause className="w-3 h-3" />
-                Deactivate
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => handleBulkAction('delete')}
-                disabled={bulkActionLoading}
-                className="flex items-center gap-1"
-              >
-                <Trash2 className="w-3 h-3" />
-                Delete
-              </Button>
-            </div>
-          </div>
-        </div>
+        <BulkSelectionBar
+          selectedSchedules={new Set(selectedSchedules)}
+          currentPageSchedules={currentSchedules}
+          allFilteredSchedules={allSchedules}
+          statusFilter=""
+          onSelectAll={() => handleSelectAll(true)}
+          onSelectAllFiltered={() => setSelectedSchedules(allSchedules.map(s => s.oxylabs_schedule_id))}
+          onClearSelection={() => setSelectedSchedules([])}
+          onBulkAction={handleBulkAction}
+          isProcessing={bulkActionLoading}
+        />
       )}
 
       {/* Table */}
@@ -316,9 +289,10 @@ export function ScheduleManagementTable({
                   <Checkbox
                     checked={isAllSelected}
                     onCheckedChange={handleSelectAll}
+                    className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                   />
                   {isPartiallySelected && !isAllSelected && (
-                    <Minus className="w-3 h-3 absolute top-0.5 left-0.5 text-primary" />
+                    <Minus className="w-3 h-3 absolute top-0.5 left-0.5 text-primary pointer-events-none" />
                   )}
                 </div>
               </TableHead>
@@ -347,6 +321,7 @@ export function ScheduleManagementTable({
                       onCheckedChange={(checked) => 
                         handleSelectSchedule(schedule.oxylabs_schedule_id, checked as boolean)
                       }
+                      className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                     />
                   </TableCell>
                   
