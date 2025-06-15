@@ -162,6 +162,7 @@ const OxylabsSchedulerDashboard: React.FC = () => {
     },
 
     async queueScheduleDelete(scheduleId: string) {
+      console.log(`🔥 FRONTEND: Queueing delete for ${scheduleId}`);
       return this.call(`/schedule/${scheduleId}`, { method: 'DELETE' });
     },
 
@@ -312,43 +313,26 @@ const OxylabsSchedulerDashboard: React.FC = () => {
     }
   };
 
-  const deleteSchedule = async (scheduleId: string) => {
-    // Add confirmation dialog like your working example
-    const confirmed = window.confirm(`Are you sure you want to delete schedule ${scheduleId}? This action cannot be undone.`);
-    
-    if (!confirmed) {
+  const deleteSchedule = async (scheduleId: string, scheduleName: string) => {
+    if (!confirm(`Are you sure you want to delete "${scheduleName}"? This action cannot be undone.`)) {
       return;
     }
 
+    console.log(`🔥 FRONTEND: Delete schedule ${scheduleId}`);
+    
     try {
-      console.log(`🔥 FRONTEND: Deleting schedule ${scheduleId}`);
+      const result = await api.queueScheduleDelete(scheduleId);
       
-      const response = await fetch(
-        `https://krmwphqhlzscnuxwxvkz.supabase.co/functions/v1/scrapi-oxylabs-scheduler/schedule/${scheduleId}`,
-        {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtybXdwaHFobHpzY251eHd4dmt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxMzExMjUsImV4cCI6MjA2NDcwNzEyNX0.k5fDJWwqMdqd9XQgWuDGwcJbwUuL8U-mF7NhiJxY4eU`
-          }
-        }
-      );
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        console.log('Schedule deletion queued:', result.data);
-        addNotification('success', `Schedule ${scheduleId} deletion queued for processing`);
-        loadDashboard();
+      if (result.success && result.queued) {
+        addNotification('success', 'Schedule deletion queued successfully');
+        console.log(`🔥 FRONTEND: Delete queued with operation ID: ${result.operation_id}`);
+        await loadDashboard();
       } else {
-        console.error('Delete failed:', result.error);
-        addNotification('error', 'Failed to delete schedule: ' + result.error);
+        throw new Error(result.error || 'Unknown error');
       }
-      
-      return result;
     } catch (error) {
-      console.error('Delete error:', error);
-      addNotification('error', 'Error deleting schedule: ' + error.message);
+      console.error(`🔥 FRONTEND: Delete error:`, error);
+      addNotification('error', `Failed to queue deletion: ${error.message}`);
     }
   };
 
@@ -624,7 +608,10 @@ const OxylabsSchedulerDashboard: React.FC = () => {
                           </button>
                           
                           <button
-                            onClick={() => deleteSchedule(schedule.oxylabs_schedule_id)}
+                            onClick={() => deleteSchedule(
+                              schedule.oxylabs_schedule_id, 
+                              schedule.job_name || schedule.schedule_name || 'Unnamed Schedule'
+                            )}
                             className={`p-1 ${classes.textSecondary} hover:${theme === 'light' ? 'text-[#E53E3E]' : 'text-[#F85149]'} transition-colors`}
                             title="Delete Schedule"
                           >
