@@ -4,7 +4,7 @@ import {
   RefreshCw, Play, Pause, Trash2, CheckSquare, Square, 
   Search, ChevronLeft, ChevronRight, Clock, CheckCircle,
   XCircle, Loader2, AlertTriangle, Activity, Filter,
-  Users, Calendar, BarChart3, Settings, Sun, Moon
+  Users, Calendar, BarChart3, Settings, Sun, Moon, Minus
 } from 'lucide-react';
 import { parseCronExpression, formatDateWithTimezone, getCronBreakdown } from './utils/scheduleUtils';
 
@@ -254,6 +254,32 @@ const OxylabsSchedulerDashboard: React.FC = () => {
     });
   };
 
+  const handleBulkAction = async (action: 'activate' | 'deactivate' | 'delete') => {
+    if (selectedSchedules.size === 0) return;
+    
+    setIsProcessingBulk(true);
+    try {
+      for (const scheduleId of selectedSchedules) {
+        const schedule = schedules.find(s => s.oxylabs_schedule_id === scheduleId);
+        if (!schedule) continue;
+
+        if (action === 'activate' || action === 'deactivate') {
+          await toggleScheduleState(scheduleId, action === 'deactivate');
+        } else if (action === 'delete') {
+          await deleteSchedule(scheduleId, schedule.job_name || schedule.schedule_name || 'Unnamed Schedule');
+        }
+      }
+      setSelectedSchedules(new Set());
+      addNotification('success', `Bulk ${action} completed for ${selectedSchedules.size} schedules`);
+      loadDashboard();
+    } catch (error) {
+      console.error(`Failed to ${action} schedules:`, error);
+      addNotification('error', `Failed to ${action} schedules`);
+    } finally {
+      setIsProcessingBulk(false);
+    }
+  };
+
   const toggleScheduleState = async (scheduleId: string, currentState: boolean) => {
     try {
       await api.queueScheduleStateChange(scheduleId, !currentState);
@@ -315,6 +341,9 @@ const OxylabsSchedulerDashboard: React.FC = () => {
     return date.toLocaleDateString();
   };
 
+  const isAllSelected = schedules.length > 0 && selectedSchedules.size === schedules.length;
+  const isPartiallySelected = selectedSchedules.size > 0 && selectedSchedules.size < schedules.length;
+
   return (
     <div className={`p-4 ${classes.background} min-h-screen`}>
       <div className="flex justify-between items-center mb-4">
@@ -365,6 +394,43 @@ const OxylabsSchedulerDashboard: React.FC = () => {
         </label>
       </div>
 
+      {/* Bulk Actions Bar */}
+      {selectedSchedules.size > 0 && (
+        <div className={`${classes.secondaryBackground} rounded-lg border ${classes.border} p-4 mb-4`}>
+          <div className="flex items-center justify-between">
+            <span className={`text-sm ${classes.text}`}>
+              {selectedSchedules.size} of {schedules.length} schedule{selectedSchedules.size !== 1 ? 's' : ''} selected
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleBulkAction('activate')}
+                disabled={isProcessingBulk}
+                className={`px-3 py-1 rounded border ${classes.border} ${classes.text} hover:${classes.hoverBackground} flex items-center gap-1`}
+              >
+                <Play className="w-3 h-3" />
+                Activate
+              </button>
+              <button
+                onClick={() => handleBulkAction('deactivate')}
+                disabled={isProcessingBulk}
+                className={`px-3 py-1 rounded border ${classes.border} ${classes.text} hover:${classes.hoverBackground} flex items-center gap-1`}
+              >
+                <Pause className="w-3 h-3" />
+                Deactivate
+              </button>
+              <button
+                onClick={() => handleBulkAction('delete')}
+                disabled={isProcessingBulk}
+                className={`px-3 py-1 rounded border ${classes.errorBorder} ${classes.errorText} hover:${classes.errorBg} flex items-center gap-1`}
+              >
+                <Trash2 className="w-3 h-3" />
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {loading ? (
         <div className="text-center py-10">
           <Loader2 className="animate-spin mx-auto mb-2" />
@@ -376,19 +442,25 @@ const OxylabsSchedulerDashboard: React.FC = () => {
           <p className={classes.textSecondary}>No schedules found.</p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded border border-gray-300 dark:border-gray-700">
+        <div className={`overflow-x-auto rounded border ${classes.border}`}>
           <table className="min-w-full border-collapse">
             <thead className={`${classes.secondaryBackground} border-b ${classes.border}`}>
               <tr>
                 <th className="w-12 px-4 py-3 text-left">
                   <button
                     onClick={toggleSelectAll}
-                    className={`${classes.textSecondary} hover:${classes.text}`}
+                    className={`${classes.textSecondary} hover:${classes.text} relative`}
                   >
-                    {selectedSchedules.size === schedules.length && schedules.length > 0 ? 
-                      <CheckSquare className="w-4 h-4" /> : 
+                    {isAllSelected ? (
+                      <CheckSquare className="w-4 h-4" />
+                    ) : isPartiallySelected ? (
+                      <div className="relative">
+                        <Square className="w-4 h-4" />
+                        <Minus className="w-3 h-3 absolute top-0.5 left-0.5" />
+                      </div>
+                    ) : (
                       <Square className="w-4 h-4" />
-                    }
+                    )}
                   </button>
                 </th>
                 <th className={`px-4 py-3 text-left ${classes.text} font-medium text-sm`}>Schedule</th>
