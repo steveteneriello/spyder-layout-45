@@ -2,9 +2,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   RefreshCw, Play, Pause, Trash2, CheckSquare, Square, 
-  Search, ChevronLeft, ChevronRight, Clock, CheckCircle,
+  Search, Clock, CheckCircle,
   XCircle, Loader2, AlertTriangle, Activity, Filter,
-  Users, Calendar, BarChart3, Settings, Sun, Moon
+  Calendar, Sun, Moon
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
@@ -32,6 +32,7 @@ interface Operation {
   requested_at: string;
   started_at?: string;
   completed_at?: string;
+  failed_at?: string;
   retry_count: number;
   max_retries: number;
   error_message?: string;
@@ -117,10 +118,13 @@ const OxylabsSchedulerDashboard: React.FC = () => {
   const [isProcessingBulk, setIsProcessingBulk] = useState(false);
   const [activeTab, setActiveTab] = useState<'schedules' | 'queue' | 'history'>('schedules');
   
-  // Filtering only (no pagination)
+  // Filtering and loading state
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'unmanaged'>('all');
   const [totalCount, setTotalCount] = useState(0);
+  const [loadedCount, setLoadedCount] = useState(0);
+  const [isLimited, setIsLimited] = useState(false);
+  const [loadLimit, setLoadLimit] = useState(2000);
 
   // Auto-refresh
   const [autoRefresh, setAutoRefresh] = useState(true);
@@ -155,10 +159,11 @@ const OxylabsSchedulerDashboard: React.FC = () => {
       return data;
     },
 
-    async getDashboard(search = '', status = 'all') {
+    async getDashboard(search = '', status = 'all', limit = 2000) {
       const params = new URLSearchParams({
         search,
         status,
+        limit: limit.toString(),
         sortBy: 'created_at',
         sortOrder: 'desc'
       });
@@ -265,16 +270,16 @@ const OxylabsSchedulerDashboard: React.FC = () => {
     }, 5000);
   };
 
-  // Load dashboard data with unlimited records
-  const loadDashboard = useCallback(async (search = searchTerm, status = statusFilter) => {
+  // Load dashboard data with configurable limits
+  const loadDashboard = useCallback(async (search = searchTerm, status = statusFilter, limit = loadLimit) => {
     if (loading) return;
     
     try {
       setLoading(true);
-      console.log(`🔥 FRONTEND: Loading dashboard, search: "${search}", status: ${status}`);
+      console.log(`🔥 FRONTEND: Loading dashboard, search: "${search}", status: ${status}, limit: ${limit}`);
       
       const [dashboardData, operationsData] = await Promise.all([
-        api.getDashboard(search, status),
+        api.getDashboard(search, status, limit),
         api.getOperations(undefined, '7d')
       ]);
 
@@ -285,6 +290,8 @@ const OxylabsSchedulerDashboard: React.FC = () => {
       setOperations(operationsData.operations || []);
       setQueueStats(operationsData.queue_stats || { pending: 0, processing: 0, completed: 0, failed: 0 });
       setTotalCount(dashboardData.total_count || 0);
+      setLoadedCount(dashboardData.loaded_count || dashboardData.schedules?.length || 0);
+      setIsLimited(dashboardData.is_limited || false);
       
     } catch (error) {
       console.error('🔥 FRONTEND: Dashboard load error:', error);
@@ -295,10 +302,12 @@ const OxylabsSchedulerDashboard: React.FC = () => {
       setOperations([]);
       setQueueStats({ pending: 0, processing: 0, completed: 0, failed: 0 });
       setTotalCount(0);
+      setLoadedCount(0);
+      setIsLimited(false);
     } finally {
       setLoading(false);
     }
-  }, [loading, searchTerm, statusFilter]);
+  }, [loading, searchTerm, statusFilter, loadLimit]);
 
   // Handle search and filter changes
   const handleSearch = (newSearchTerm: string) => {
@@ -721,11 +730,43 @@ const OxylabsSchedulerDashboard: React.FC = () => {
                   </select>
                 </div>
 
-                {/* Summary */}
-                <div className={`px-4 py-2 ${classes.tertiaryBackground} border ${classes.border} rounded-lg`}>
+                {/* Summary and Load More */}
+                <div className={`px-4 py-2 ${classes.tertiaryBackground} border ${classes.border} rounded-lg flex items-center justify-between`}>
                   <span className={`${classes.text} text-sm font-medium`}>
-                    {totalCount} total schedules
+                    {loadedCount} of {totalCount} schedules loaded
+                    {isLimited && (
+                      <span className={`${classes.textSecondary} ml-2`}>
+                        (limited to {loadLimit})
+                      </span>
+                    )}
                   </span>
+                  
+                  {isLimited && (
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={loadLimit}
+                        onChange={(e) => {
+                          const newLimit = Number(e.target.value);
+                          setLoadLimit(newLimit);
+                          loadDashboard(searchTerm, statusFilter, newLimit);
+                        }}
+                        className={`px-3 py-1 ${classes.background} border ${classes.border} rounded text-sm ${classes.text} focus:outline-none focus:${classes.focusBorder}`}
+                      >
+                        <option value={1000}>Load 1,000</option>
+                        <option value={2000}>Load 2,000</option>
+                        <option value={5000}>Load 5,000</option>
+                        <option value={10000}>Load All (10,000+)</option>
+                      </select>
+                      
+                      <button
+                        onClick={() => loadDashboard(searchTerm, statusFilter, 10000)}
+                        className={`px-3 py-1 ${classes.primaryButton} text-white rounded text-sm font-medium transition-colors`}
+                        disabled={loading}
+                      >
+                        {loading ? 'Loading...' : 'Load All'}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -954,8 +995,13 @@ const OxylabsSchedulerDashboard: React.FC = () => {
               {/* Summary Information */}
               <div className="mt-6 text-center">
                 <div className={`${classes.textSecondary} text-sm`}>
-                  Showing all {totalCount} schedules
+                  Showing {loadedCount} of {totalCount} schedules
                   {searchTerm || statusFilter !== 'all' ? ' matching current filters' : ''}
+                  {isLimited && (
+                    <span className={`${classes.errorText} ml-2`}>
+                      • Limited view - use "Load All" to see all {totalCount} records
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -1036,7 +1082,7 @@ const OxylabsSchedulerDashboard: React.FC = () => {
                             <span>{operation.job_name} • </span>
                           )}
                           {operation.status === 'completed' ? 'Completed' : 'Failed'} {' '}
-                          {formatRelativeTime(operation.completed_at || operation.requested_at)}
+                          {formatRelativeTime(operation.completed_at || operation.failed_at || operation.requested_at)}
                           {operation.processing_duration_seconds && (
                             <span> • {operation.processing_duration_seconds.toFixed(1)}s</span>
                           )}

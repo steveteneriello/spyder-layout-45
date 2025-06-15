@@ -1461,54 +1461,60 @@ export type Database = {
       scrapi_schedule_operations: {
         Row: {
           completed_at: string | null
-          created_at: string | null
+          created_at: string
+          error_message: string | null
+          failed_at: string | null
           id: string
-          last_error: string | null
-          last_error_at: string | null
+          last_retry_at: string | null
           max_retries: number | null
+          next_retry_at: string | null
           operation_data: Json | null
           operation_type: string
-          oxylabs_schedule_id: string
-          requested_at: string | null
+          requested_at: string
           requested_by: string | null
+          result: Json | null
           retry_count: number | null
+          schedule_id: string
           started_at: string | null
-          status: string | null
-          updated_at: string | null
+          status: string
         }
         Insert: {
           completed_at?: string | null
-          created_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          failed_at?: string | null
           id?: string
-          last_error?: string | null
-          last_error_at?: string | null
+          last_retry_at?: string | null
           max_retries?: number | null
+          next_retry_at?: string | null
           operation_data?: Json | null
           operation_type: string
-          oxylabs_schedule_id: string
-          requested_at?: string | null
+          requested_at?: string
           requested_by?: string | null
+          result?: Json | null
           retry_count?: number | null
+          schedule_id: string
           started_at?: string | null
-          status?: string | null
-          updated_at?: string | null
+          status?: string
         }
         Update: {
           completed_at?: string | null
-          created_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          failed_at?: string | null
           id?: string
-          last_error?: string | null
-          last_error_at?: string | null
+          last_retry_at?: string | null
           max_retries?: number | null
+          next_retry_at?: string | null
           operation_data?: Json | null
           operation_type?: string
-          oxylabs_schedule_id?: string
-          requested_at?: string | null
+          requested_at?: string
           requested_by?: string | null
+          result?: Json | null
           retry_count?: number | null
+          schedule_id?: string
           started_at?: string | null
-          status?: string | null
-          updated_at?: string | null
+          status?: string
         }
         Relationships: []
       }
@@ -3427,50 +3433,47 @@ export type Database = {
       scrapi_operation_monitoring: {
         Row: {
           completed_at: string | null
-          duration_seconds: number | null
+          error_message: string | null
+          failed_at: string | null
           id: string | null
-          last_error: string | null
+          job_id: string | null
+          job_name: string | null
           max_retries: number | null
+          next_retry_at: string | null
           operation_type: string | null
-          oxylabs_schedule_id: string | null
+          processing_duration_seconds: number | null
           requested_at: string | null
           requested_by: string | null
+          result: Json | null
           retry_count: number | null
+          schedule_id: string | null
+          schedule_name: string | null
           started_at: string | null
           status: string | null
-          status_description: string | null
         }
-        Insert: {
-          completed_at?: string | null
-          duration_seconds?: never
-          id?: string | null
-          last_error?: string | null
-          max_retries?: number | null
-          operation_type?: string | null
-          oxylabs_schedule_id?: string | null
-          requested_at?: string | null
-          requested_by?: string | null
-          retry_count?: number | null
-          started_at?: string | null
-          status?: string | null
-          status_description?: never
-        }
-        Update: {
-          completed_at?: string | null
-          duration_seconds?: never
-          id?: string | null
-          last_error?: string | null
-          max_retries?: number | null
-          operation_type?: string | null
-          oxylabs_schedule_id?: string | null
-          requested_at?: string | null
-          requested_by?: string | null
-          retry_count?: number | null
-          started_at?: string | null
-          status?: string | null
-          status_description?: never
-        }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "scrapi_oxylabs_schedules_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "scrapi_active_jobs_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scrapi_oxylabs_schedules_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "scrapi_job_performance_metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scrapi_oxylabs_schedules_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "scrapi_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       scrapi_oxylabs_batch_info: {
         Row: {
