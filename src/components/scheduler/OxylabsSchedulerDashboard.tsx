@@ -1,12 +1,11 @@
-
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, createContext, useContext } from 'react';
 import {
   RefreshCw, Play, Pause, Trash2, CheckSquare, Square, 
-  Search, Clock, CheckCircle,
+  Search, ChevronLeft, ChevronRight, Clock, CheckCircle,
   XCircle, Loader2, AlertTriangle, Activity, Filter,
-  Calendar, Sun, Moon
+  Users, Calendar, BarChart3, Settings, Sun, Moon
 } from 'lucide-react';
-import { useTheme } from 'next-themes';
+import { parseCronExpression, formatDateWithTimezone, getCronBreakdown } from './utils/scheduleUtils';
 
 interface Schedule {
   id: string;
@@ -17,22 +16,22 @@ interface Schedule {
   items_count: number;
   cron_expression: string;
   next_run_at?: string;
+  end_time?: string;
+  created_at?: string;
   success_rate?: number;
   management_status: 'managed' | 'unmanaged' | 'deleted';
-  created_at: string;
   last_synced_at?: string;
 }
 
 interface Operation {
   id: string;
-  oxylabs_schedule_id: string;
+  schedule_id: string;
   operation_type: 'delete' | 'activate' | 'deactivate' | 'create';
   status: 'pending' | 'processing' | 'completed' | 'failed';
   requested_by: string;
   requested_at: string;
   started_at?: string;
   completed_at?: string;
-  failed_at?: string;
   retry_count: number;
   max_retries: number;
   error_message?: string;
@@ -54,29 +53,66 @@ interface Notification {
   timestamp: number;
 }
 
+// Theme Context
+interface ThemeContextType {
+  theme: 'light' | 'dark';
+  toggleTheme: () => void;
+}
+
+const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+
+const useTheme = () => {
+  const context = useContext(ThemeContext);
+  if (!context) {
+    throw new Error('useTheme must be used within a ThemeProvider');
+  }
+  return context;
+};
+
+// Theme Provider Component
+export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('theme') as 'light' | 'dark' || 'dark';
+    }
+    return 'dark';
+  });
+  
+  const toggleTheme = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
+  };
+  
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+  }, [theme]);
+  
+  return (
+    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+      {children}
+    </ThemeContext.Provider>
+  );
+};
+
 // Theme utility function
-const getThemeClasses = (theme: string | undefined) => ({
-  // Backgrounds
+const getThemeClasses = (theme: 'light' | 'dark') => ({
   background: theme === 'light' ? 'bg-white' : 'bg-[#0E1117]',
   secondaryBackground: theme === 'light' ? 'bg-[#FBFCFD]' : 'bg-[#161B22]',
   tertiaryBackground: theme === 'light' ? 'bg-[#F8F9FA]' : 'bg-[#21262D]',
   hoverBackground: theme === 'light' ? 'bg-[#F1F3F5]' : 'bg-[#30363D]',
   
-  // Borders
   border: theme === 'light' ? 'border-[#E1E8ED]' : 'border-[#30363D]',
   secondaryBorder: theme === 'light' ? 'border-[#EAEEF2]' : 'border-[#21262D]',
   focusBorder: theme === 'light' ? 'border-[#3182CE]' : 'border-[#388BFD]',
   
-  // Text
   text: theme === 'light' ? 'text-[#1A202C]' : 'text-[#F0F6FC]',
   textSecondary: theme === 'light' ? 'text-[#4A5568]' : 'text-[#7D8590]',
   textTertiary: theme === 'light' ? 'text-[#718096]' : 'text-[#656D76]',
   
-  // Buttons
   primaryButton: theme === 'light' ? 'bg-[#3182CE] hover:bg-[#2C5282]' : 'bg-[#388BFD] hover:bg-[#1F6FEB]',
   secondaryButton: theme === 'light' ? 'bg-white hover:bg-[#F1F3F5]' : 'bg-[#21262D] hover:bg-[#30363D]',
   
-  // Status colors
   successBg: theme === 'light' ? 'bg-[#C6F6D5]' : 'bg-[#1A4E2F]',
   successText: theme === 'light' ? 'text-[#22543D]' : 'text-[#3FB950]',
   successBorder: theme === 'light' ? 'border-[#38A169]' : 'border-[#2EA043]',
@@ -97,7 +133,6 @@ const getThemeClasses = (theme: string | undefined) => ({
   inactiveText: theme === 'light' ? 'text-[#4A5568]' : 'text-[#7D8590]',
   inactiveBorder: theme === 'light' ? 'border-[#E1E8ED]' : 'border-[#30363D]',
   
-  // Notifications
   notificationSuccess: theme === 'light' ? 'bg-[#F0FFF4] border-[#38A169] text-[#22543D]' : 'bg-[#0D1B0D] border-[#2EA043] text-[#3FB950]',
   notificationError: theme === 'light' ? 'bg-[#FED7D7] border-[#E53E3E] text-[#742A2A]' : 'bg-[#1C0F0F] border-[#F85149] text-[#F85149]',
   notificationWarning: theme === 'light' ? 'bg-[#FFFAF0] border-[#DD6B20] text-[#744210]' : 'bg-[#1C1611] border-[#D29922] text-[#D29922]',
@@ -105,10 +140,9 @@ const getThemeClasses = (theme: string | undefined) => ({
 });
 
 const OxylabsSchedulerDashboard: React.FC = () => {
-  const { theme, setTheme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
   const classes = getThemeClasses(theme);
 
-  // State management
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [operations, setOperations] = useState<Operation[]>([]);
   const [queueStats, setQueueStats] = useState<QueueStats>({ pending: 0, processing: 0, completed: 0, failed: 0 });
@@ -118,7 +152,6 @@ const OxylabsSchedulerDashboard: React.FC = () => {
   const [isProcessingBulk, setIsProcessingBulk] = useState(false);
   const [activeTab, setActiveTab] = useState<'schedules' | 'queue' | 'history'>('schedules');
   
-  // Filtering and loading state
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'unmanaged'>('all');
   const [totalCount, setTotalCount] = useState(0);
@@ -126,7 +159,6 @@ const OxylabsSchedulerDashboard: React.FC = () => {
   const [isLimited, setIsLimited] = useState(false);
   const [loadLimit, setLoadLimit] = useState(2000);
 
-  // Auto-refresh
   const [autoRefresh, setAutoRefresh] = useState(true);
 
   // API client with enhanced error handling
@@ -198,45 +230,110 @@ const OxylabsSchedulerDashboard: React.FC = () => {
     }
   };
 
-  // Helper functions for better time formatting
-  const formatCronExpression = (cron: string) => {
-    if (!cron) return 'N/A';
-    
-    // Common cron patterns to human readable
-    const patterns: { [key: string]: string } = {
-      '0 0 * * *': 'Daily at midnight',
-      '0 9 * * *': 'Daily at 9:00 AM',
-      '0 18 * * *': 'Daily at 6:00 PM',
-      '0 0 * * 0': 'Weekly on Sunday',
-      '0 0 1 * *': 'Monthly on 1st',
-      '*/5 * * * *': 'Every 5 minutes',
-      '*/15 * * * *': 'Every 15 minutes',
-      '0 */6 * * *': 'Every 6 hours',
-      '0 0 */7 * *': 'Every 7 days'
-    };
-    
-    return patterns[cron] || cron;
+  // Notification system
+  const addNotification = (type: Notification['type'], message: string) => {
+    const id = Date.now().toString();
+    setNotifications((prev) => [...prev, { id, type, message, timestamp: Date.now() }]);
+    setTimeout(() => {
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
+    }, 5000);
   };
 
-  const formatRelativeTime = (dateString: string) => {
-    if (!dateString) return 'N/A';
-    
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMinutes = Math.floor(diffMs / (1000 * 60));
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    
-    if (diffMinutes < 1) return 'Just now';
-    if (diffMinutes < 60) return `${diffMinutes}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    
-    return date.toLocaleDateString();
+  // Load dashboard data
+  const loadDashboard = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await api.getDashboard(searchTerm, statusFilter, loadLimit);
+      setSchedules(data.schedules || []);
+      setTotalCount(data.totalCount || 0);
+      setLoadedCount(data.schedules?.length || 0);
+      setIsLimited(data.isLimited || false);
+    } catch (error) {
+      console.error('Failed to load dashboard:', error);
+      addNotification('error', 'Failed to load schedules');
+    } finally {
+      setLoading(false);
+    }
+  }, [searchTerm, statusFilter, loadLimit]);
+
+  useEffect(() => {
+    loadDashboard();
+  }, [loadDashboard]);
+
+  // Auto refresh
+  useEffect(() => {
+    if (!autoRefresh) return;
+    const interval = setInterval(() => {
+      loadDashboard();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [autoRefresh, loadDashboard]);
+
+  // Handlers
+  const toggleSelectAll = () => {
+    if (selectedSchedules.size === schedules.length) {
+      setSelectedSchedules(new Set());
+    } else {
+      setSelectedSchedules(new Set(schedules.map(s => s.oxylabs_schedule_id)));
+    }
   };
 
-  const formatNextRun = (dateString: string) => {
+  const toggleSelectSchedule = (id: string) => {
+    setSelectedSchedules(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleScheduleState = async (scheduleId: string, currentState: boolean) => {
+    try {
+      await api.queueScheduleStateChange(scheduleId, !currentState);
+      addNotification('success', `Schedule ${!currentState ? 'activated' : 'deactivated'}`);
+      loadDashboard();
+    } catch (error) {
+      console.error('Failed to toggle schedule state:', error);
+      addNotification('error', 'Failed to update schedule state');
+    }
+  };
+
+  const deleteSchedule = async (scheduleId: string, scheduleName: string) => {
+    if (!window.confirm(`Are you sure you want to delete schedule "${scheduleName}"? This action cannot be undone.`)) {
+      return;
+    }
+    try {
+      await api.queueScheduleDelete(scheduleId);
+      addNotification('success', `Schedule "${scheduleName}" deleted`);
+      loadDashboard();
+    } catch (error) {
+      console.error('Failed to delete schedule:', error);
+      addNotification('error', 'Failed to delete schedule');
+    }
+  };
+
+  // Status badge helper
+  const getStatusBadge = (schedule: Schedule) => {
+    if (!schedule.active) {
+      return { color: 'border-gray-400 text-gray-600', text: 'Inactive', icon: <Pause className="w-3 h-3" /> };
+    }
+    if (schedule.management_status === 'unmanaged') {
+      return { color: 'border-red-500 text-red-600', text: 'Unmanaged', icon: <AlertTriangle className="w-3 h-3" /> };
+    }
+    if (schedule.management_status === 'deleted') {
+      return { color: 'border-gray-500 text-gray-500', text: 'Deleted', icon: <XCircle className="w-3 h-3" /> };
+    }
+    if (schedule.success_rate !== undefined && schedule.success_rate < 0.5) {
+      return { color: 'border-yellow-500 text-yellow-600', text: 'Poor Performance', icon: <Activity className="w-3 h-3" /> };
+    }
+    return { color: 'border-green-500 text-green-600', text: 'Healthy', icon: <CheckCircle className="w-3 h-3" /> };
+  };
+
+  // Format next run time
+  const formatNextRun = (dateString?: string) => {
     if (!dateString) return 'N/A';
     
     const date = new Date(dateString);
@@ -254,869 +351,247 @@ const OxylabsSchedulerDashboard: React.FC = () => {
     return date.toLocaleDateString();
   };
 
-  // Notification system
-  const addNotification = (type: Notification['type'], message: string) => {
-    const notification: Notification = {
-      id: Math.random().toString(36).substr(2, 9),
-      type,
-      message,
-      timestamp: Date.now(),
-    };
-    setNotifications(prev => [notification, ...prev.slice(0, 4)]);
-    
-    // Auto-remove after 5 seconds
-    setTimeout(() => {
-      setNotifications(prev => prev.filter(n => n.id !== notification.id));
-    }, 5000);
-  };
-
-  // Load dashboard data with configurable limits
-  const loadDashboard = useCallback(async (search = searchTerm, status = statusFilter, limit = loadLimit) => {
-    if (loading) return;
-    
-    try {
-      setLoading(true);
-      console.log(`🔥 FRONTEND: Loading dashboard, search: "${search}", status: ${status}, limit: ${limit}`);
-      
-      const [dashboardData, operationsData] = await Promise.all([
-        api.getDashboard(search, status, limit),
-        api.getOperations(undefined, '7d')
-      ]);
-
-      console.log('🔥 FRONTEND: Dashboard data loaded:', dashboardData);
-      console.log('🔥 FRONTEND: Operations data loaded:', operationsData);
-
-      setSchedules(dashboardData.schedules || []);
-      setOperations(operationsData.operations || []);
-      setQueueStats(operationsData.queue_stats || { pending: 0, processing: 0, completed: 0, failed: 0 });
-      setTotalCount(dashboardData.total_count || 0);
-      setLoadedCount(dashboardData.loaded_count || dashboardData.schedules?.length || 0);
-      setIsLimited(dashboardData.is_limited || false);
-      
-    } catch (error) {
-      console.error('🔥 FRONTEND: Dashboard load error:', error);
-      addNotification('error', `Failed to load dashboard: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      
-      // Set empty data on error to prevent UI issues
-      setSchedules([]);
-      setOperations([]);
-      setQueueStats({ pending: 0, processing: 0, completed: 0, failed: 0 });
-      setTotalCount(0);
-      setLoadedCount(0);
-      setIsLimited(false);
-    } finally {
-      setLoading(false);
-    }
-  }, [loading, searchTerm, statusFilter, loadLimit]);
-
-  // Handle search and filter changes
-  const handleSearch = (newSearchTerm: string) => {
-    setSearchTerm(newSearchTerm);
-    loadDashboard(newSearchTerm, statusFilter);
-  };
-
-  const handleStatusFilter = (newStatus: typeof statusFilter) => {
-    setStatusFilter(newStatus);
-    loadDashboard(searchTerm, newStatus);
-  };
-
-  // All schedules are displayed (no pagination)
-  const filteredSchedules = schedules;
-
-  // Individual operations with enhanced error handling
-  const toggleScheduleState = async (scheduleId: string, currentState: boolean) => {
-    console.log(`🔥 FRONTEND: Toggle state for ${scheduleId}, current: ${currentState}`);
-    
-    try {
-      const result = await api.queueScheduleStateChange(scheduleId, !currentState);
-      
-      if (result.success) {
-        addNotification('success', `Schedule ${!currentState ? 'activation' : 'deactivation'} queued successfully`);
-        console.log(`🔥 FRONTEND: State change queued`);
-        setTimeout(() => loadDashboard(), 1000);
-      } else {
-        throw new Error(result.error || 'Unknown error');
-      }
-    } catch (error) {
-      console.error(`🔥 FRONTEND: State change error:`, error);
-      addNotification('error', `Failed to queue state change: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  };
-
-  const deleteSchedule = async (scheduleId: string, scheduleName: string) => {
-    if (!confirm(`Are you sure you want to delete "${scheduleName}"? This action cannot be undone.`)) {
-      return;
-    }
-
-    console.log(`🔥 FRONTEND: Delete schedule ${scheduleId}`);
-    
-    try {
-      const result = await api.queueScheduleDelete(scheduleId);
-      
-      if (result.success) {
-        addNotification('success', 'Schedule deletion queued successfully');
-        console.log(`🔥 FRONTEND: Delete queued`);
-        setTimeout(() => loadDashboard(), 1000);
-      } else {
-        throw new Error(result.error || 'Unknown error');
-      }
-    } catch (error) {
-      console.error(`🔥 FRONTEND: Delete error:`, error);
-      addNotification('error', `Failed to queue deletion: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  };
-
-  // Enhanced bulk operations with better error handling
-  const bulkActivate = async () => {
-    if (selectedSchedules.size === 0) return;
-    
-    console.log(`🔥 FRONTEND: Bulk activate ${selectedSchedules.size} schedules`);
-    setIsProcessingBulk(true);
-    
-    try {
-      const results = await Promise.allSettled(
-        Array.from(selectedSchedules).map(scheduleId => 
-          api.queueScheduleStateChange(scheduleId, true)
-        )
-      );
-
-      const succeeded = results.filter(r => r.status === 'fulfilled').length;
-      const failed = results.filter(r => r.status === 'rejected').length;
-
-      if (succeeded > 0) {
-        addNotification('success', `${succeeded} schedule activations queued successfully`);
-      }
-      if (failed > 0) {
-        addNotification('error', `${failed} schedule activations failed`);
-      }
-
-      setSelectedSchedules(new Set());
-      setTimeout(() => loadDashboard(), 1000);
-    } catch (error) {
-      console.error('🔥 FRONTEND: Bulk activate error:', error);
-      addNotification('error', 'Bulk activation failed');
-    } finally {
-      setIsProcessingBulk(false);
-    }
-  };
-
-  const bulkDeactivate = async () => {
-    if (selectedSchedules.size === 0) return;
-    
-    console.log(`🔥 FRONTEND: Bulk deactivate ${selectedSchedules.size} schedules`);
-    setIsProcessingBulk(true);
-    
-    try {
-      const results = await Promise.allSettled(
-        Array.from(selectedSchedules).map(scheduleId => 
-          api.queueScheduleStateChange(scheduleId, false)
-        )
-      );
-
-      const succeeded = results.filter(r => r.status === 'fulfilled').length;
-      const failed = results.filter(r => r.status === 'rejected').length;
-
-      if (succeeded > 0) {
-        addNotification('success', `${succeeded} schedule deactivations queued successfully`);
-      }
-      if (failed > 0) {
-        addNotification('error', `${failed} schedule deactivations failed`);
-      }
-
-      setSelectedSchedules(new Set());
-      setTimeout(() => loadDashboard(), 1000);
-    } catch (error) {
-      console.error('🔥 FRONTEND: Bulk deactivate error:', error);
-      addNotification('error', 'Bulk deactivation failed');
-    } finally {
-      setIsProcessingBulk(false);
-    }
-  };
-
-  const bulkDelete = async () => {
-    if (selectedSchedules.size === 0) return;
-
-    if (!confirm(`Are you sure you want to delete ${selectedSchedules.size} schedules? This action cannot be undone.`)) {
-      return;
-    }
-    
-    console.log(`🔥 FRONTEND: Bulk delete ${selectedSchedules.size} schedules`);
-    setIsProcessingBulk(true);
-    
-    try {
-      const results = await Promise.allSettled(
-        Array.from(selectedSchedules).map(scheduleId => 
-          api.queueScheduleDelete(scheduleId)
-        )
-      );
-
-      const succeeded = results.filter(r => r.status === 'fulfilled').length;
-      const failed = results.filter(r => r.status === 'rejected').length;
-
-      if (succeeded > 0) {
-        addNotification('success', `${succeeded} schedule deletions queued successfully`);
-      }
-      if (failed > 0) {
-        addNotification('error', `${failed} schedule deletions failed`);
-      }
-
-      setSelectedSchedules(new Set());
-      setTimeout(() => loadDashboard(), 1000);
-    } catch (error) {
-      console.error('🔥 FRONTEND: Bulk delete error:', error);
-      addNotification('error', 'Bulk deletion failed');
-    } finally {
-      setIsProcessingBulk(false);
-    }
-  };
-
-  // Selection management with true "select all"
-  const toggleSelectAll = () => {
-    if (selectedSchedules.size === filteredSchedules.length && filteredSchedules.length > 0) {
-      setSelectedSchedules(new Set()); // Deselect all
-    } else {
-      setSelectedSchedules(new Set(filteredSchedules.map(s => s.oxylabs_schedule_id))); // Select ALL schedules
-    }
-  };
-
-  const selectAllVisible = () => {
-    setSelectedSchedules(new Set(filteredSchedules.map(s => s.oxylabs_schedule_id)));
-  };
-
-  const selectAllMatching = async () => {
-    // Select all schedules that match current filters (even those not visible)
-    try {
-      const allMatchingData = await api.getDashboard(searchTerm, statusFilter);
-      const allMatchingIds = allMatchingData.schedules?.map((s: Schedule) => s.oxylabs_schedule_id) || [];
-      setSelectedSchedules(new Set(allMatchingIds));
-      addNotification('info', `Selected ${allMatchingIds.length} schedules matching current filters`);
-    } catch (error) {
-      addNotification('error', 'Failed to select all matching schedules');
-    }
-  };
-
-  const toggleSelectSchedule = (scheduleId: string) => {
-    const newSelection = new Set(selectedSchedules);
-    if (newSelection.has(scheduleId)) {
-      newSelection.delete(scheduleId);
-    } else {
-      newSelection.add(scheduleId);
-    }
-    setSelectedSchedules(newSelection);
-  };
-
-  // Status helpers
-  const getStatusBadge = (schedule: Schedule) => {
-    // Check if there's a pending operation for this schedule
-    const pendingOp = operations.find(op => 
-      op.oxylabs_schedule_id === schedule.oxylabs_schedule_id && 
-      ['pending', 'processing'].includes(op.status)
-    );
-
-    if (pendingOp) {
-      if (pendingOp.status === 'pending') {
-        return {
-          color: `${classes.warningBg} ${classes.warningText} ${classes.warningBorder}`,
-          text: `${pendingOp.operation_type} pending`,
-          icon: <Clock className="w-3 h-3" />
-        };
-      } else {
-        return {
-          color: `${classes.processingBg} ${classes.processingText} ${classes.processingBorder}`,
-          text: `${pendingOp.operation_type} processing`,
-          icon: <Loader2 className="w-3 h-3 animate-spin" />
-        };
-      }
-    }
-
-    // Regular status
-    if (schedule.active) {
-      return {
-        color: `${classes.successBg} ${classes.successText} ${classes.successBorder}`,
-        text: 'Active',
-        icon: <CheckCircle className="w-3 h-3" />
-      };
-    } else {
-      return {
-        color: `${classes.inactiveBg} ${classes.inactiveText} ${classes.inactiveBorder}`,
-        text: 'Inactive',
-        icon: <Pause className="w-3 h-3" />
-      };
-    }
-  };
-
-  const getOperationStatusIcon = (status: string) => {
-    const iconClass = "w-4 h-4";
-    switch (status) {
-      case 'pending': return <Clock className={`${iconClass} ${theme === 'light' ? 'text-[#DD6B20]' : 'text-[#D29922]'}`} />;
-      case 'processing': return <Loader2 className={`${iconClass} ${theme === 'light' ? 'text-[#3182CE]' : 'text-[#388BFD]'} animate-spin`} />;
-      case 'completed': return <CheckCircle className={`${iconClass} ${theme === 'light' ? 'text-[#38A169]' : 'text-[#3FB950]'}`} />;
-      case 'failed': return <XCircle className={`${iconClass} ${theme === 'light' ? 'text-[#E53E3E]' : 'text-[#F85149]'}`} />;
-      default: return <AlertTriangle className={`${iconClass} ${classes.textTertiary}`} />;
-    }
-  };
-
-  // Auto-refresh effect
-  useEffect(() => {
-    loadDashboard();
-    
-    if (autoRefresh) {
-      const interval = setInterval(() => loadDashboard(), 30000); // Refresh every 30 seconds
-      return () => clearInterval(interval);
-    }
-  }, [autoRefresh, loadDashboard]);
-
   return (
-    <div className={`min-h-screen ${classes.background} ${classes.text}`}>
-      <div className="container mx-auto px-6 py-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className={`text-3xl font-bold ${classes.text}`}>Oxylabs Scheduler</h1>
-            <p className={`${classes.textSecondary} mt-1`}>Manage your scraping schedules with queue-based operations</p>
-          </div>
-          
-          <div className="flex items-center gap-4">
-            {/* Theme Toggle */}
-            <button
-              onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-              className={`p-2 rounded-lg border transition-colors ${classes.secondaryButton} ${classes.border} ${classes.textSecondary} hover:${classes.text}`}
-              title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-            >
-              {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
-            </button>
-
-            <button
-              onClick={() => setAutoRefresh(!autoRefresh)}
-              className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
-                autoRefresh 
-                  ? `${classes.successBg} ${classes.successBorder} ${classes.successText}` 
-                  : `${classes.secondaryButton} ${classes.border} ${classes.textSecondary} hover:${classes.text}`
-              }`}
-            >
-              <Activity className="w-4 h-4 inline mr-2" />
-              Auto-refresh {autoRefresh ? 'ON' : 'OFF'}
-            </button>
-            
-            <button
-              onClick={() => loadDashboard()}
-              disabled={loading}
-              className={`px-4 py-2 ${classes.primaryButton} rounded-lg border ${classes.focusBorder} text-white text-sm font-medium transition-colors disabled:opacity-50`}
-            >
-              <RefreshCw className={`w-4 h-4 inline mr-2 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
-            </button>
-          </div>
+    <div className={`p-4 ${classes.background} min-h-screen`}>
+      <div className="flex justify-between items-center mb-4">
+        <h1 className={`${classes.text} text-xl font-semibold`}>Oxylabs Scheduler Dashboard</h1>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggleTheme}
+            className={`p-2 rounded ${classes.secondaryBackground} hover:${classes.hoverBackground} transition-colors`}
+            title="Toggle Theme"
+          >
+            {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+          </button>
+          <button
+            onClick={loadDashboard}
+            className={`p-2 rounded ${classes.secondaryBackground} hover:${classes.hoverBackground} transition-colors`}
+            title="Refresh"
+          >
+            <RefreshCw className="w-5 h-5" />
+          </button>
         </div>
+      </div>
 
-        {/* Notifications */}
-        {notifications.length > 0 && (
-          <div className="mb-6 space-y-2">
-            {notifications.map(notification => (
-              <div
-                key={notification.id}
-                className={`p-4 rounded-lg border ${
-                  notification.type === 'success' ? classes.notificationSuccess :
-                  notification.type === 'error' ? classes.notificationError :
-                  notification.type === 'warning' ? classes.notificationWarning :
-                  classes.notificationInfo
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">{notification.message}</span>
+      <div className="mb-4 flex items-center gap-4">
+        <input
+          type="text"
+          placeholder="Search schedules..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className={`px-3 py-2 rounded border ${classes.border} ${classes.text} ${classes.background} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+        />
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value as any)}
+          className={`px-3 py-2 rounded border ${classes.border} ${classes.text} ${classes.background} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+        >
+          <option value="all">All Statuses</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+          <option value="unmanaged">Unmanaged</option>
+        </select>
+        <label className={`${classes.text} flex items-center gap-1 select-none`}>
+          <input
+            type="checkbox"
+            checked={autoRefresh}
+            onChange={() => setAutoRefresh(!autoRefresh)}
+          />
+          Auto Refresh
+        </label>
+      </div>
+
+      {loading ? (
+        <div className="text-center py-10">
+          <Loader2 className="animate-spin mx-auto mb-2" />
+          <p className={classes.textSecondary}>Loading schedules...</p>
+        </div>
+      ) : schedules.length === 0 ? (
+        <div className="text-center py-10">
+          <AlertTriangle className="mx-auto mb-2 w-10 h-10 text-yellow-500" />
+          <p className={classes.textSecondary}>No schedules found.</p>
+        </div>
+      ) : (
+        <div className="overflow-x-auto rounded border border-gray-300 dark:border-gray-700">
+          <table className="min-w-full border-collapse">
+            <thead className={`${classes.secondaryBackground} border-b ${classes.border}`}>
+              <tr>
+                <th className="w-12 px-4 py-3 text-left">
                   <button
-                    onClick={() => setNotifications(prev => prev.filter(n => n.id !== notification.id))}
-                    className="ml-4 text-current opacity-70 hover:opacity-100"
+                    onClick={toggleSelectAll}
+                    className={`${classes.textSecondary} hover:${classes.text}`}
                   >
-                    <XCircle className="w-4 h-4" />
+                    {selectedSchedules.size === schedules.length && schedules.length > 0 ? 
+                      <CheckSquare className="w-4 h-4" /> : 
+                      <Square className="w-4 h-4" />
+                    }
                   </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Queue Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className={`${classes.secondaryBackground} border ${classes.border} rounded-lg p-6`}>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className={`${classes.textSecondary} text-sm font-medium`}>Pending</p>
-                <p className={`text-2xl font-bold ${theme === 'light' ? 'text-[#DD6B20]' : 'text-[#D29922]'}`}>{queueStats.pending}</p>
-              </div>
-              <Clock className={`w-8 h-8 ${theme === 'light' ? 'text-[#DD6B20]' : 'text-[#D29922]'}`} />
-            </div>
-          </div>
-          
-          <div className={`${classes.secondaryBackground} border ${classes.border} rounded-lg p-6`}>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className={`${classes.textSecondary} text-sm font-medium`}>Processing</p>
-                <p className={`text-2xl font-bold ${theme === 'light' ? 'text-[#3182CE]' : 'text-[#388BFD]'}`}>{queueStats.processing}</p>
-              </div>
-              <Loader2 className={`w-8 h-8 ${theme === 'light' ? 'text-[#3182CE]' : 'text-[#388BFD]'} animate-spin`} />
-            </div>
-          </div>
-          
-          <div className={`${classes.secondaryBackground} border ${classes.border} rounded-lg p-6`}>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className={`${classes.textSecondary} text-sm font-medium`}>Completed</p>
-                <p className={`text-2xl font-bold ${theme === 'light' ? 'text-[#38A169]' : 'text-[#3FB950]'}`}>{queueStats.completed}</p>
-              </div>
-              <CheckCircle className={`w-8 h-8 ${theme === 'light' ? 'text-[#38A169]' : 'text-[#3FB950]'}`} />
-            </div>
-          </div>
-          
-          <div className={`${classes.secondaryBackground} border ${classes.border} rounded-lg p-6`}>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className={`${classes.textSecondary} text-sm font-medium`}>Failed</p>
-                <p className={`text-2xl font-bold ${theme === 'light' ? 'text-[#E53E3E]' : 'text-[#F85149]'}`}>{queueStats.failed}</p>
-              </div>
-              <XCircle className={`w-8 h-8 ${theme === 'light' ? 'text-[#E53E3E]' : 'text-[#F85149]'}`} />
-            </div>
-          </div>
-        </div>
-
-        {/* Main Content Area */}
-        <div className={`${classes.secondaryBackground} border ${classes.border} rounded-lg`}>
-          {/* Tab Navigation */}
-          <div className={`flex border-b ${classes.border}`}>
-            {(['schedules', 'queue', 'history'] as const).map(tab => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-6 py-4 text-sm font-medium capitalize transition-colors ${
-                  activeTab === tab 
-                    ? `${classes.text} border-b-2 ${classes.focusBorder} ${classes.tertiaryBackground}` 
-                    : `${classes.textSecondary} hover:${classes.text} hover:${classes.tertiaryBackground}`
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
-
-          {/* Schedules Tab */}
-          {activeTab === 'schedules' && (
-            <div className="p-6">
-              {/* Controls Row */}
-              <div className="flex flex-col lg:flex-row gap-4 mb-6">
-                {/* Search */}
-                <div className="relative flex-1">
-                  <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 ${classes.textSecondary}`} />
-                  <input
-                    type="text"
-                    placeholder="Search schedules..."
-                    value={searchTerm}
-                    onChange={(e) => handleSearch(e.target.value)}
-                    className={`w-full pl-10 pr-4 py-2 ${classes.background} border ${classes.border} rounded-lg ${classes.text} placeholder-${classes.textTertiary} focus:outline-none focus:${classes.focusBorder}`}
-                  />
-                </div>
-
-                {/* Status Filter */}
-                <div className="relative">
-                  <Filter className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 ${classes.textSecondary}`} />
-                  <select
-                    value={statusFilter}
-                    onChange={(e) => handleStatusFilter(e.target.value as any)}
-                    className={`pl-10 pr-8 py-2 ${classes.background} border ${classes.border} rounded-lg ${classes.text} focus:outline-none focus:${classes.focusBorder} appearance-none`}
-                  >
-                    <option value="all">All Status</option>
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                    <option value="unmanaged">Unmanaged</option>
-                  </select>
-                </div>
-
-                {/* Summary and Load More */}
-                <div className={`px-4 py-2 ${classes.tertiaryBackground} border ${classes.border} rounded-lg flex items-center justify-between`}>
-                  <span className={`${classes.text} text-sm font-medium`}>
-                    {loadedCount} of {totalCount} schedules loaded
-                    {isLimited && (
-                      <span className={`${classes.textSecondary} ml-2`}>
-                        (limited to {loadLimit})
-                      </span>
-                    )}
-                  </span>
-                  
-                  {isLimited && (
-                    <div className="flex items-center gap-2">
-                      <select
-                        value={loadLimit}
-                        onChange={(e) => {
-                          const newLimit = Number(e.target.value);
-                          setLoadLimit(newLimit);
-                          loadDashboard(searchTerm, statusFilter, newLimit);
-                        }}
-                        className={`px-3 py-1 ${classes.background} border ${classes.border} rounded text-sm ${classes.text} focus:outline-none focus:${classes.focusBorder}`}
-                      >
-                        <option value={1000}>Load 1,000</option>
-                        <option value={2000}>Load 2,000</option>
-                        <option value={5000}>Load 5,000</option>
-                        <option value={10000}>Load All (10,000+)</option>
-                      </select>
-                      
-                      <button
-                        onClick={() => loadDashboard(searchTerm, statusFilter, 10000)}
-                        className={`px-3 py-1 ${classes.primaryButton} text-white rounded text-sm font-medium transition-colors`}
-                        disabled={loading}
-                      >
-                        {loading ? 'Loading...' : 'Load All'}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Enhanced Bulk Actions */}
-              {selectedSchedules.size > 0 && (
-                <div className={`mb-6 p-4 ${classes.tertiaryBackground} border ${classes.border} rounded-lg`}>
-                  <div className="flex flex-col gap-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <span className={`${classes.text} font-medium`}>
-                          {selectedSchedules.size} schedule{selectedSchedules.size !== 1 ? 's' : ''} selected
-                        </span>
-                        <button
-                          onClick={() => setSelectedSchedules(new Set())}
-                          className={`${classes.textSecondary} hover:${classes.text} text-sm`}
-                        >
-                          Clear selection
-                        </button>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={bulkActivate}
-                          disabled={isProcessingBulk}
-                          className={`px-3 py-1.5 ${classes.successBg} hover:${classes.successBg}/80 ${classes.successText} border ${classes.successBorder} rounded text-sm font-medium transition-colors disabled:opacity-50`}
-                        >
-                          <Play className="w-4 h-4 inline mr-1" />
-                          Activate
-                        </button>
-                        
-                        <button
-                          onClick={bulkDeactivate}
-                          disabled={isProcessingBulk}
-                          className={`px-3 py-1.5 ${classes.secondaryButton} ${classes.textSecondary} border ${classes.border} rounded text-sm font-medium transition-colors disabled:opacity-50`}
-                        >
-                          <Pause className="w-4 h-4 inline mr-1" />
-                          Deactivate
-                        </button>
-                        
-                        <button
-                          onClick={bulkDelete}
-                          disabled={isProcessingBulk}
-                          className={`px-3 py-1.5 ${classes.errorBg} hover:${classes.errorBg}/80 ${classes.errorText} border ${classes.errorBorder} rounded text-sm font-medium transition-colors disabled:opacity-50`}
-                        >
-                          <Trash2 className="w-4 h-4 inline mr-1" />
-                          Delete All Selected
-                        </button>
-                      </div>
-                    </div>
-                    
-                    {/* Additional selection options */}
-                    <div className="flex items-center gap-2 text-sm">
-                      <button
-                        onClick={selectAllVisible}
-                        className={`${classes.textSecondary} hover:${classes.text} underline`}
-                      >
-                        Select all visible ({filteredSchedules.length})
-                      </button>
-                      <span className={classes.textSecondary}>•</span>
-                      <button
-                        onClick={selectAllMatching}
-                        className={`${classes.textSecondary} hover:${classes.text} underline`}
-                      >
-                        Select all matching filters ({totalCount})
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Schedules Table */}
-              <div className={`border ${classes.border} rounded-lg overflow-hidden`}>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className={`${classes.secondaryBackground} border-b ${classes.border}`}>
-                      <tr>
-                        <th className="w-12 px-4 py-3 text-left">
-                          <button
-                            onClick={toggleSelectAll}
-                            className={`${classes.textSecondary} hover:${classes.text}`}
-                          >
-                            {selectedSchedules.size === filteredSchedules.length && filteredSchedules.length > 0 ? 
-                              <CheckSquare className="w-4 h-4" /> : 
-                              <Square className="w-4 h-4" />
-                            }
-                          </button>
-                        </th>
-                        <th className={`px-4 py-3 text-left ${classes.text} font-medium text-sm`}>Schedule</th>
-                        <th className={`px-4 py-3 text-left ${classes.text} font-medium text-sm`}>Status</th>
-                        <th className={`px-4 py-3 text-left ${classes.text} font-medium text-sm`}>Items</th>
-                        <th className={`px-4 py-3 text-left ${classes.text} font-medium text-sm`}>Cron</th>
-                        <th className={`px-4 py-3 text-left ${classes.text} font-medium text-sm`}>Next Run</th>
-                        <th className={`px-4 py-3 text-left ${classes.text} font-medium text-sm`}>Success Rate</th>
-                        <th className={`px-4 py-3 text-center ${classes.text} font-medium text-sm`}>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className={`${classes.background} divide-y ${classes.secondaryBorder}`}>
-                      {filteredSchedules.map(schedule => {
-                        const status = getStatusBadge(schedule);
-                        const isSelected = selectedSchedules.has(schedule.oxylabs_schedule_id);
-                        
-                        return (
-                          <tr
-                            key={schedule.oxylabs_schedule_id}
-                            className={`hover:${classes.secondaryBackground} transition-colors ${
-                              isSelected ? `${classes.secondaryBackground} border-l-2 ${classes.focusBorder}` : ''
-                            }`}
-                          >
-                            <td className="px-4 py-4">
-                              <button
-                                onClick={() => toggleSelectSchedule(schedule.oxylabs_schedule_id)}
-                                className={`${classes.textSecondary} hover:${classes.text}`}
-                              >
-                                {isSelected ? 
-                                  <CheckSquare className="w-4 h-4" /> : 
-                                  <Square className="w-4 h-4" />
-                                }
-                              </button>
-                            </td>
-                            <td className="px-4 py-4">
-                              <div className="flex flex-col">
-                                <span className={`${classes.text} font-medium text-sm`}>
-                                  {schedule.job_name || schedule.schedule_name || 'Unnamed Schedule'}
-                                </span>
-                                <span className={`${classes.textSecondary} text-xs`}>
-                                  ID: {schedule.oxylabs_schedule_id}
-                                </span>
-                              </div>
-                            </td>
-                            <td className="px-4 py-4">
-                              <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${status.color}`}>
-                                {status.icon && <span className="w-3 h-3">{status.icon}</span>}
-                                {status.text}
-                              </span>
-                            </td>
-                            <td className="px-4 py-4">
-                              <span className={`${classes.text} text-sm`}>
-                                {schedule.items_count || 0}
-                              </span>
-                            </td>
-                            <td className="px-4 py-4">
-                              <div className="flex flex-col">
-                                <span className={`${classes.textSecondary} text-sm font-mono`}>
-                                  {formatCronExpression(schedule.cron_expression)}
-                                </span>
-                                {schedule.cron_expression && formatCronExpression(schedule.cron_expression) !== schedule.cron_expression && (
-                                  <span className={`${classes.textTertiary} text-xs`}>
-                                    {schedule.cron_expression}
-                                  </span>
-                                )}
-                              </div>
-                            </td>
-                            <td className="px-4 py-4">
-                              <div className="flex flex-col">
-                                <span className={`${classes.textSecondary} text-sm`}>
-                                  {formatNextRun(schedule.next_run_at)}
-                                </span>
-                                {schedule.next_run_at && (
-                                  <span className={`${classes.textTertiary} text-xs`}>
-                                    {new Date(schedule.next_run_at).toLocaleString()}
-                                  </span>
-                                )}
-                              </div>
-                            </td>
-                            <td className="px-4 py-4">
-                              <span className={`${classes.text} text-sm`}>
-                                {schedule.success_rate ? 
-                                  `${(schedule.success_rate * 100).toFixed(1)}%` : 
-                                  'N/A'
-                                }
-                              </span>
-                            </td>
-                            <td className="px-4 py-4">
-                              <div className="flex items-center justify-center gap-2">
-                                <button
-                                  onClick={() => toggleScheduleState(schedule.oxylabs_schedule_id, schedule.active)}
-                                  className={`p-1 ${classes.textSecondary} hover:${classes.text} transition-colors`}
-                                  title={schedule.active ? 'Deactivate' : 'Activate'}
-                                >
-                                  {schedule.active ? 
-                                    <Pause className="w-4 h-4" /> : 
-                                    <Play className="w-4 h-4" />
-                                  }
-                                </button>
-                                
-                                <button
-                                  onClick={() => deleteSchedule(
-                                    schedule.oxylabs_schedule_id, 
-                                    schedule.job_name || schedule.schedule_name || 'Unnamed Schedule'
-                                  )}
-                                  className={`p-1 ${classes.textSecondary} hover:${theme === 'light' ? 'text-[#E53E3E]' : 'text-[#F85149]'} transition-colors`}
-                                  title="Delete Schedule"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-
-                {filteredSchedules.length === 0 && !loading && (
-                  <div className="p-12 text-center">
-                    <Calendar className={`w-12 h-12 ${classes.textSecondary} mx-auto mb-4`} />
-                    <h3 className={`${classes.text} font-medium mb-2`}>No schedules found</h3>
-                    <p className={`${classes.textSecondary} text-sm`}>
-                      {searchTerm || statusFilter !== 'all' ? 
-                        'Try adjusting your search criteria.' : 
-                        'Create your first schedule to get started.'
-                      }
-                    </p>
-                  </div>
-                )}
-
-                {loading && (
-                  <div className="p-12 text-center">
-                    <Loader2 className={`w-8 h-8 ${classes.textSecondary} mx-auto mb-2 animate-spin`} />
-                    <p className={`${classes.textSecondary} text-sm`}>Loading schedules...</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Summary Information */}
-              <div className="mt-6 text-center">
-                <div className={`${classes.textSecondary} text-sm`}>
-                  Showing {loadedCount} of {totalCount} schedules
-                  {searchTerm || statusFilter !== 'all' ? ' matching current filters' : ''}
-                  {isLimited && (
-                    <span className={`${classes.errorText} ml-2`}>
-                      • Limited view - use "Load All" to see all {totalCount} records
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Queue Tab */}
-          {activeTab === 'queue' && (
-            <div className="p-6">
-              <h3 className={`${classes.text} font-medium mb-4`}>Pending & Processing Operations</h3>
-              
-              <div className="space-y-4">
-                {operations
-                  .filter(op => ['pending', 'processing'].includes(op.status))
-                  .map(operation => (
-                  <div key={operation.id} className={`p-4 flex items-center justify-between ${classes.tertiaryBackground} border ${classes.border} rounded-lg`}>
-                    <div className="flex items-center gap-4">
-                      {getOperationStatusIcon(operation.status)}
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className={`${classes.text} font-medium capitalize`}>{operation.operation_type}</span>
-                          <span className={classes.textSecondary}>•</span>
-                          <span className={`${classes.textSecondary} text-sm`}>{operation.oxylabs_schedule_id}</span>
-                        </div>
-                        <div className={`${classes.textSecondary} text-sm`}>
-                          {operation.job_name && (
-                            <span>{operation.job_name} • </span>
-                          )}
-                          Requested {formatRelativeTime(operation.requested_at)}
-                          {operation.retry_count > 0 && (
-                            <span> • Retry {operation.retry_count}/{operation.max_retries}</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        operation.status === 'pending' 
-                          ? `${classes.warningBg} ${classes.warningText} border ${classes.warningBorder}`
-                          : `${classes.processingBg} ${classes.processingText} border ${classes.processingBorder}`
-                      }`}>
-                        {operation.status}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                </th>
+                <th className={`px-4 py-3 text-left ${classes.text} font-medium text-sm`}>Schedule</th>
+                <th className={`px-4 py-3 text-left ${classes.text} font-medium text-sm`}>Status</th>
+                <th className={`px-4 py-3 text-left ${classes.text} font-medium text-sm`}>Items</th>
+                <th className={`px-4 py-3 text-left ${classes.text} font-medium text-sm`}>Schedule Details</th>
+                <th className={`px-4 py-3 text-left ${classes.text} font-medium text-sm`}>Next Run</th>
+                <th className={`px-4 py-3 text-left ${classes.text} font-medium text-sm`}>Start Date</th>
+                <th className={`px-4 py-3 text-left ${classes.text} font-medium text-sm`}>End Date</th>
+                <th className={`px-4 py-3 text-left ${classes.text} font-medium text-sm`}>Success Rate</th>
+                <th className={`px-4 py-3 text-center ${classes.text} font-medium text-sm`}>Actions</th>
+              </tr>
+            </thead>
+            <tbody className={`${classes.background} divide-y ${classes.secondaryBorder}`}>
+              {schedules.map(schedule => {
+                const status = getStatusBadge(schedule);
+                const isSelected = selectedSchedules.has(schedule.oxylabs_schedule_id);
+                const cronBreakdown = getCronBreakdown(schedule.cron_expression);
                 
-                {operations.filter(op => ['pending', 'processing'].includes(op.status)).length === 0 && (
-                  <div className="p-8 text-center">
-                    <CheckCircle className={`w-8 h-8 ${theme === 'light' ? 'text-[#38A169]' : 'text-[#3FB950]'} mx-auto mb-2`} />
-                    <p className={`${classes.text} font-medium`}>All caught up!</p>
-                    <p className={`${classes.textSecondary} text-sm`}>No pending operations in the queue</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* History Tab */}
-          {activeTab === 'history' && (
-            <div className="p-6">
-              <h3 className={`${classes.text} font-medium mb-4`}>Recent Operations</h3>
-              
-              <div className="space-y-4">
-                {operations
-                  .filter(op => ['completed', 'failed'].includes(op.status))
-                  .map(operation => (
-                  <div key={operation.id} className={`p-4 flex items-center justify-between ${classes.tertiaryBackground} border ${classes.border} rounded-lg`}>
-                    <div className="flex items-center gap-4">
-                      {getOperationStatusIcon(operation.status)}
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className={`${classes.text} font-medium capitalize`}>{operation.operation_type}</span>
-                          <span className={classes.textSecondary}>•</span>
-                          <span className={`${classes.textSecondary} text-sm`}>{operation.oxylabs_schedule_id}</span>
-                        </div>
-                        <div className={`${classes.textSecondary} text-sm`}>
-                          {operation.job_name && (
-                            <span>{operation.job_name} • </span>
-                          )}
-                          {operation.status === 'completed' ? 'Completed' : 'Failed'} {' '}
-                          {formatRelativeTime(operation.completed_at || operation.failed_at || operation.requested_at)}
-                          {operation.processing_duration_seconds && (
-                            <span> • {operation.processing_duration_seconds.toFixed(1)}s</span>
-                          )}
-                        </div>
-                        {operation.error_message && (
-                          <div className={`${theme === 'light' ? 'text-[#E53E3E]' : 'text-[#F85149]'} text-sm mt-1`}>
-                            Error: {operation.error_message}
-                          </div>
+                return (
+                  <tr
+                    key={schedule.oxylabs_schedule_id}
+                    className={`hover:${classes.secondaryBackground} transition-colors ${
+                      isSelected ? `${classes.secondaryBackground} border-l-2 ${classes.focusBorder}` : ''
+                    }`}
+                  >
+                    <td className="px-4 py-4">
+                      <button
+                        onClick={() => toggleSelectSchedule(schedule.oxylabs_schedule_id)}
+                        className={`${classes.textSecondary} hover:${classes.text}`}
+                      >
+                        {isSelected ? 
+                          <CheckSquare className="w-4 h-4" /> : 
+                          <Square className="w-4 h-4" />
+                        }
+                      </button>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex flex-col">
+                        <span className={`${classes.text} font-medium text-sm`}>
+                          {schedule.job_name || schedule.schedule_name || 'Unnamed Schedule'}
+                        </span>
+                        <span className={`${classes.textSecondary} text-xs`}>
+                          ID: {schedule.oxylabs_schedule_id}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${status.color}`}>
+                        {status.icon && <span className="w-3 h-3">{status.icon}</span>}
+                        {status.text}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className={`${classes.text} text-sm`}>
+                        {schedule.items_count || 0}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex flex-col">
+                        <span className={`${classes.text} text-sm font-medium`}>
+                          {cronBreakdown?.frequency || 'Unknown'}
+                        </span>
+                        {cronBreakdown?.dayOfWeek && (
+                          <span className={`${classes.textSecondary} text-xs`}>
+                            {cronBreakdown.dayOfWeek}
+                          </span>
+                        )}
+                        {cronBreakdown?.dayOfMonth && (
+                          <span className={`${classes.textSecondary} text-xs`}>
+                            {cronBreakdown.dayOfMonth} of month
+                          </span>
+                        )}
+                        {cronBreakdown?.time && (
+                          <span className={`${classes.textSecondary} text-xs`}>
+                            at {cronBreakdown.time}
+                          </span>
+                        )}
+                        <span className={`${classes.textTertiary} text-xs font-mono mt-1`}>
+                          {schedule.cron_expression}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex flex-col">
+                        <span className={`${classes.textSecondary} text-sm`}>
+                          {formatNextRun(schedule.next_run_at)}
+                        </span>
+                        {schedule.next_run_at && (
+                          <span className={`${classes.textTertiary} text-xs`}>
+                            {new Date(schedule.next_run_at).toLocaleDateString()}
+                          </span>
                         )}
                       </div>
-                    </div>
-                    <div className="text-right">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        operation.status === 'completed' 
-                          ? `${classes.successBg} ${classes.successText} border ${classes.successBorder}`
-                          : `${classes.errorBg} ${classes.errorText} border ${classes.errorBorder}`
-                      }`}>
-                        {operation.status}
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className={`${classes.textSecondary} text-sm`}>
+                        {schedule.created_at ? 
+                          new Date(schedule.created_at).toLocaleDateString() : 
+                          'N/A'
+                        }
                       </span>
-                    </div>
-                  </div>
-                ))}
-                
-                {operations.filter(op => ['completed', 'failed'].includes(op.status)).length === 0 && (
-                  <div className="p-8 text-center">
-                    <Activity className={`w-8 h-8 ${classes.textSecondary} mx-auto mb-2`} />
-                    <p className={`${classes.text} font-medium`}>No operation history</p>
-                    <p className={`${classes.textSecondary} text-sm`}>Operations will appear here once they complete</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className={`${classes.textSecondary} text-sm`}>
+                        {schedule.end_time ? 
+                          new Date(schedule.end_time).toLocaleDateString() : 
+                          'No end date'
+                        }
+                      </span>
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className={`${classes.text} text-sm`}>
+                        {schedule.success_rate !== undefined ? 
+                          `${(schedule.success_rate * 100).toFixed(1)}%` : 
+                          'N/A'
+                        }
+                      </span>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => toggleScheduleState(schedule.oxylabs_schedule_id, schedule.active)}
+                          className={`p-1 ${classes.textSecondary} hover:${classes.text} transition-colors`}
+                          title={schedule.active ? 'Deactivate' : 'Activate'}
+                        >
+                          {schedule.active ? 
+                            <Pause className="w-4 h-4" /> : 
+                            <Play className="w-4 h-4" />
+                          }
+                        </button>
+                        
+                        <button
+                          onClick={() => deleteSchedule(
+                            schedule.oxylabs_schedule_id, 
+                            schedule.job_name || schedule.schedule_name || 'Unnamed Schedule'
+                          )}
+                          className={`p-1 ${classes.textSecondary} hover:${theme === 'light' ? 'text-[#E53E3E]' : 'text-[#F85149]'} transition-colors`}
+                          title="Delete Schedule"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
+      )}
+
+      {/* Notifications */}
+      <div className="fixed bottom-4 right-4 flex flex-col gap-2 z-50">
+        {notifications.map((note) => (
+          <div
+            key={note.id}
+            className={`max-w-xs rounded p-3 shadow-lg border ${
+              note.type === 'success' ? classes.notificationSuccess :
+              note.type === 'error' ? classes.notificationError :
+              note.type === 'warning' ? classes.notificationWarning :
+              classes.notificationInfo
+            }`}
+          >
+            {note.message}
+          </div>
+        ))}
       </div>
     </div>
   );

@@ -53,6 +53,71 @@ export const parseCronExpression = (cron: string, timezone?: string) => {
   }
 };
 
+// New function to get detailed cron breakdown
+export const getCronBreakdown = (cron: string) => {
+  if (!cron) return null;
+  
+  try {
+    const parts = cron.split(' ');
+    if (parts.length !== 5) return null;
+    
+    const [minute, hour, dayOfMonth, month, dayOfWeek] = parts;
+    
+    const breakdown = {
+      time: null as string | null,
+      dayOfWeek: null as string | null,
+      dayOfMonth: null as string | null,
+      frequency: null as string | null
+    };
+
+    // Parse time
+    if (hour !== '*' && minute !== '*') {
+      const hourNum = parseInt(hour);
+      const minuteNum = parseInt(minute);
+      const time = new Date();
+      time.setHours(hourNum, minuteNum, 0, 0);
+      breakdown.time = time.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+    }
+
+    // Parse day of week
+    if (dayOfWeek !== '*') {
+      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      breakdown.dayOfWeek = days[parseInt(dayOfWeek)] || `Day ${dayOfWeek}`;
+    }
+
+    // Parse day of month
+    if (dayOfMonth !== '*') {
+      const dayNum = parseInt(dayOfMonth);
+      const suffix = getDaySuffix(dayNum);
+      breakdown.dayOfMonth = `${dayNum}${suffix}`;
+    }
+
+    // Determine frequency
+    if (dayOfMonth === '*' && month === '*' && dayOfWeek === '*') {
+      if (minute === '*' && hour === '*') {
+        breakdown.frequency = 'Every minute';
+      } else if (minute === '0' && hour === '*') {
+        breakdown.frequency = 'Hourly';
+      } else {
+        breakdown.frequency = 'Daily';
+      }
+    } else if (dayOfWeek !== '*') {
+      breakdown.frequency = 'Weekly';
+    } else if (dayOfMonth !== '*') {
+      breakdown.frequency = 'Monthly';
+    }
+
+    return breakdown;
+  } catch (error) {
+    console.error('Error parsing cron breakdown:', error);
+    return null;
+  }
+};
+
 const getDaySuffix = (day: number) => {
   if (day >= 11 && day <= 13) return 'th';
   switch (day % 10) {
