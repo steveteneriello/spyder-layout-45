@@ -11,9 +11,8 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     <NextThemesProvider
       attribute="class"
       defaultTheme="light"
-      enableSystem={false}
-      disableTransitionOnChange={false}
-      storageKey="theme"
+      enableSystem={true}
+      disableTransitionOnChange
     >
       {children}
     </NextThemesProvider>
