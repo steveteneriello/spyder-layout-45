@@ -111,7 +111,7 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
       }
 
       let query = supabase
-        .from('location_data')
+        .from('location_data' as any)
         .select('*');
 
       if (selectedCountyDetails.length === 1) {
@@ -137,7 +137,7 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
         return;
       }
 
-      const filteredData = data?.filter(city => 
+      const filteredData = data?.filter((city: any) => 
         selectedCountyDetails.some(county => 
           city.county_name === county.county_name && city.state_name === county.state_name
         )
@@ -328,7 +328,7 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
     try {
       // Create the location list
       const { data: listData, error: listError } = await supabase
-        .from('location_lists')
+        .from('location_lists' as any)
         .insert({
           name: listName.trim(),
           description: listDescription.trim() || null,
@@ -358,7 +358,7 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
       }));
 
       const { error: itemsError } = await supabase
-        .from('location_list_items')
+        .from('location_list_items' as any)
         .insert(locationItems);
 
       if (itemsError) throw itemsError;

@@ -418,6 +418,419 @@ export type Database = {
           },
         ]
       }
+      location_data: {
+        Row: {
+          age_10_to_19: string | null
+          age_18_to_24: string | null
+          age_20s: string | null
+          age_30s: string | null
+          age_40s: string | null
+          age_50s: string | null
+          age_60s: string | null
+          age_70s: string | null
+          age_median: string | null
+          age_over_18: string | null
+          age_over_65: string | null
+          age_over_80: string | null
+          age_under_10: string | null
+          batch_id: string | null
+          batch_label: string | null
+          cbsa_fips: string | null
+          cbsa_metro: boolean | null
+          cdp: boolean | null
+          city: string | null
+          city_alt: string | null
+          city_ascii: string | null
+          city_class: string | null
+          commute_time: string | null
+          Country: string
+          county_assignment: string | null
+          county_fips: number | null
+          county_fips_all: string | null
+          county_name: string | null
+          county_name_all: string | null
+          csa_fips: string | null
+          csa_name: string | null
+          data_cid: string | null
+          density: string | null
+          disabled: string | null
+          divorced: string | null
+          education_bachelors: string | null
+          education_college_or_above: string | null
+          education_graduate: string | null
+          education_highschool: string | null
+          education_less_highschool: string | null
+          education_some_college: string | null
+          education_stem_degree: string | null
+          family_dual_income: string | null
+          family_size: string | null
+          female: string | null
+          google_geo_location_id: string | null
+          health_uninsured: string | null
+          hispanic: string | null
+          home_ownership: string | null
+          home_value: string | null
+          housing_units: string | null
+          id: number
+          income_household_10_to_15: string | null
+          income_household_100_to_150: string | null
+          income_household_15_to_20: string | null
+          income_household_150_over: string | null
+          income_household_20_to_25: string | null
+          income_household_25_to_35: string | null
+          income_household_35_to_50: string | null
+          income_household_5_to_10: string | null
+          income_household_50_to_75: string | null
+          income_household_75_to_100: string | null
+          income_household_median: string | null
+          income_household_six_figure: string | null
+          income_household_under_5: string | null
+          income_individual_median: string | null
+          income_tier: number | null
+          incorporated: boolean | null
+          labor_force_participation: string | null
+          latitude: number | null
+          limited_english: string | null
+          longitude: number | null
+          male: string | null
+          market: string | null
+          married: string | null
+          military: boolean | null
+          never_married: string | null
+          population: string | null
+          population_proper: string | null
+          postal_code: string | null
+          poverty: string | null
+          race_asian: string | null
+          race_black: string | null
+          race_multiple: string | null
+          race_native: string | null
+          race_other: string | null
+          race_pacific: string | null
+          race_white: string | null
+          ranking: number | null
+          rent_burden: string | null
+          rent_median: string | null
+          sales_territory: string | null
+          source: string | null
+          state_id: string | null
+          state_name: string | null
+          timezone: string | null
+          township: boolean | null
+          unemployment_rate: string | null
+          veteran: string | null
+          widowed: string | null
+          zone: string | null
+        }
+        Insert: {
+          age_10_to_19?: string | null
+          age_18_to_24?: string | null
+          age_20s?: string | null
+          age_30s?: string | null
+          age_40s?: string | null
+          age_50s?: string | null
+          age_60s?: string | null
+          age_70s?: string | null
+          age_median?: string | null
+          age_over_18?: string | null
+          age_over_65?: string | null
+          age_over_80?: string | null
+          age_under_10?: string | null
+          batch_id?: string | null
+          batch_label?: string | null
+          cbsa_fips?: string | null
+          cbsa_metro?: boolean | null
+          cdp?: boolean | null
+          city?: string | null
+          city_alt?: string | null
+          city_ascii?: string | null
+          city_class?: string | null
+          commute_time?: string | null
+          Country?: string
+          county_assignment?: string | null
+          county_fips?: number | null
+          county_fips_all?: string | null
+          county_name?: string | null
+          county_name_all?: string | null
+          csa_fips?: string | null
+          csa_name?: string | null
+          data_cid?: string | null
+          density?: string | null
+          disabled?: string | null
+          divorced?: string | null
+          education_bachelors?: string | null
+          education_college_or_above?: string | null
+          education_graduate?: string | null
+          education_highschool?: string | null
+          education_less_highschool?: string | null
+          education_some_college?: string | null
+          education_stem_degree?: string | null
+          family_dual_income?: string | null
+          family_size?: string | null
+          female?: string | null
+          google_geo_location_id?: string | null
+          health_uninsured?: string | null
+          hispanic?: string | null
+          home_ownership?: string | null
+          home_value?: string | null
+          housing_units?: string | null
+          id: number
+          income_household_10_to_15?: string | null
+          income_household_100_to_150?: string | null
+          income_household_15_to_20?: string | null
+          income_household_150_over?: string | null
+          income_household_20_to_25?: string | null
+          income_household_25_to_35?: string | null
+          income_household_35_to_50?: string | null
+          income_household_5_to_10?: string | null
+          income_household_50_to_75?: string | null
+          income_household_75_to_100?: string | null
+          income_household_median?: string | null
+          income_household_six_figure?: string | null
+          income_household_under_5?: string | null
+          income_individual_median?: string | null
+          income_tier?: number | null
+          incorporated?: boolean | null
+          labor_force_participation?: string | null
+          latitude?: number | null
+          limited_english?: string | null
+          longitude?: number | null
+          male?: string | null
+          market?: string | null
+          married?: string | null
+          military?: boolean | null
+          never_married?: string | null
+          population?: string | null
+          population_proper?: string | null
+          postal_code?: string | null
+          poverty?: string | null
+          race_asian?: string | null
+          race_black?: string | null
+          race_multiple?: string | null
+          race_native?: string | null
+          race_other?: string | null
+          race_pacific?: string | null
+          race_white?: string | null
+          ranking?: number | null
+          rent_burden?: string | null
+          rent_median?: string | null
+          sales_territory?: string | null
+          source?: string | null
+          state_id?: string | null
+          state_name?: string | null
+          timezone?: string | null
+          township?: boolean | null
+          unemployment_rate?: string | null
+          veteran?: string | null
+          widowed?: string | null
+          zone?: string | null
+        }
+        Update: {
+          age_10_to_19?: string | null
+          age_18_to_24?: string | null
+          age_20s?: string | null
+          age_30s?: string | null
+          age_40s?: string | null
+          age_50s?: string | null
+          age_60s?: string | null
+          age_70s?: string | null
+          age_median?: string | null
+          age_over_18?: string | null
+          age_over_65?: string | null
+          age_over_80?: string | null
+          age_under_10?: string | null
+          batch_id?: string | null
+          batch_label?: string | null
+          cbsa_fips?: string | null
+          cbsa_metro?: boolean | null
+          cdp?: boolean | null
+          city?: string | null
+          city_alt?: string | null
+          city_ascii?: string | null
+          city_class?: string | null
+          commute_time?: string | null
+          Country?: string
+          county_assignment?: string | null
+          county_fips?: number | null
+          county_fips_all?: string | null
+          county_name?: string | null
+          county_name_all?: string | null
+          csa_fips?: string | null
+          csa_name?: string | null
+          data_cid?: string | null
+          density?: string | null
+          disabled?: string | null
+          divorced?: string | null
+          education_bachelors?: string | null
+          education_college_or_above?: string | null
+          education_graduate?: string | null
+          education_highschool?: string | null
+          education_less_highschool?: string | null
+          education_some_college?: string | null
+          education_stem_degree?: string | null
+          family_dual_income?: string | null
+          family_size?: string | null
+          female?: string | null
+          google_geo_location_id?: string | null
+          health_uninsured?: string | null
+          hispanic?: string | null
+          home_ownership?: string | null
+          home_value?: string | null
+          housing_units?: string | null
+          id?: number
+          income_household_10_to_15?: string | null
+          income_household_100_to_150?: string | null
+          income_household_15_to_20?: string | null
+          income_household_150_over?: string | null
+          income_household_20_to_25?: string | null
+          income_household_25_to_35?: string | null
+          income_household_35_to_50?: string | null
+          income_household_5_to_10?: string | null
+          income_household_50_to_75?: string | null
+          income_household_75_to_100?: string | null
+          income_household_median?: string | null
+          income_household_six_figure?: string | null
+          income_household_under_5?: string | null
+          income_individual_median?: string | null
+          income_tier?: number | null
+          incorporated?: boolean | null
+          labor_force_participation?: string | null
+          latitude?: number | null
+          limited_english?: string | null
+          longitude?: number | null
+          male?: string | null
+          market?: string | null
+          married?: string | null
+          military?: boolean | null
+          never_married?: string | null
+          population?: string | null
+          population_proper?: string | null
+          postal_code?: string | null
+          poverty?: string | null
+          race_asian?: string | null
+          race_black?: string | null
+          race_multiple?: string | null
+          race_native?: string | null
+          race_other?: string | null
+          race_pacific?: string | null
+          race_white?: string | null
+          ranking?: number | null
+          rent_burden?: string | null
+          rent_median?: string | null
+          sales_territory?: string | null
+          source?: string | null
+          state_id?: string | null
+          state_name?: string | null
+          timezone?: string | null
+          township?: boolean | null
+          unemployment_rate?: string | null
+          veteran?: string | null
+          widowed?: string | null
+          zone?: string | null
+        }
+        Relationships: []
+      }
+      location_list_items: {
+        Row: {
+          city: string
+          country: string
+          county_name: string | null
+          created_at: string
+          distance_miles: number | null
+          id: string
+          latitude: number | null
+          list_id: string | null
+          location_data_id: string
+          longitude: number | null
+          postal_code: string | null
+          state_name: string
+        }
+        Insert: {
+          city: string
+          country: string
+          county_name?: string | null
+          created_at?: string
+          distance_miles?: number | null
+          id?: string
+          latitude?: number | null
+          list_id?: string | null
+          location_data_id: string
+          longitude?: number | null
+          postal_code?: string | null
+          state_name: string
+        }
+        Update: {
+          city?: string
+          country?: string
+          county_name?: string | null
+          created_at?: string
+          distance_miles?: number | null
+          id?: string
+          latitude?: number | null
+          list_id?: string | null
+          location_data_id?: string
+          longitude?: number | null
+          postal_code?: string | null
+          state_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "location_list_items_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "location_lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      location_lists: {
+        Row: {
+          center_city: string
+          center_latitude: number
+          center_longitude: number
+          created_at: string
+          created_by: string | null
+          description: string | null
+          filters: Json | null
+          id: string
+          last_accessed_at: string | null
+          location_count: number | null
+          name: string
+          radius_miles: number
+          updated_at: string
+        }
+        Insert: {
+          center_city: string
+          center_latitude: number
+          center_longitude: number
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          filters?: Json | null
+          id?: string
+          last_accessed_at?: string | null
+          location_count?: number | null
+          name: string
+          radius_miles: number
+          updated_at?: string
+        }
+        Update: {
+          center_city?: string
+          center_latitude?: number
+          center_longitude?: number
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          filters?: Json | null
+          id?: string
+          last_accessed_at?: string | null
+          location_count?: number | null
+          name?: string
+          radius_miles?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       scrapi_advertisers: {
         Row: {
           address: string | null
