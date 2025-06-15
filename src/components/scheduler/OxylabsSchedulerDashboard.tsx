@@ -1,12 +1,14 @@
-import React, { useState, useEffect, useCallback, createContext, useContext } from 'react';
+
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTheme } from 'next-themes';
 import {
   RefreshCw, Play, Pause, Trash2, CheckSquare, Square, 
-  Search, ChevronLeft, ChevronRight, Clock, CheckCircle,
-  XCircle, Loader2, AlertTriangle, Activity, Filter,
-  Users, Calendar, BarChart3, Settings, Sun, Moon, Minus
+  Search, Clock, CheckCircle, XCircle, Loader2, AlertTriangle, 
+  Activity, Sun, Moon, Minus
 } from 'lucide-react';
 import { parseCronExpression, formatDateWithTimezone, getCronBreakdown } from './utils/scheduleUtils';
+import { SchedulerPagination } from './SchedulerPagination';
+import { BulkSelectionBar } from './BulkSelectionBar';
 
 interface Schedule {
   id: string;
@@ -53,6 +55,8 @@ interface Notification {
   message: string;
   timestamp: number;
 }
+
+const ITEMS_PER_PAGE = 25;
 
 // Theme utility function
 const getThemeClasses = (theme: string) => ({
@@ -103,24 +107,20 @@ const OxylabsSchedulerDashboard: React.FC = () => {
   const classes = getThemeClasses(theme || 'dark');
 
   const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [allSchedules, setAllSchedules] = useState<Schedule[]>([]);
   const [operations, setOperations] = useState<Operation[]>([]);
   const [queueStats, setQueueStats] = useState<QueueStats>({ pending: 0, processing: 0, completed: 0, failed: 0 });
   const [loading, setLoading] = useState(false);
   const [selectedSchedules, setSelectedSchedules] = useState<Set<string>>(new Set());
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isProcessingBulk, setIsProcessingBulk] = useState(false);
-  const [activeTab, setActiveTab] = useState<'schedules' | 'queue' | 'history'>('schedules');
   
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'unmanaged'>('all');
-  const [totalCount, setTotalCount] = useState(0);
-  const [loadedCount, setLoadedCount] = useState(0);
-  const [isLimited, setIsLimited] = useState(false);
-  const [loadLimit, setLoadLimit] = useState(2000);
-
+  const [currentPage, setCurrentPage] = useState(1);
   const [autoRefresh, setAutoRefresh] = useState(true);
 
-  // API client with enhanced error handling
+  // API client
   const api = {
     async call(endpoint: string, options: RequestInit = {}) {
       console.log(`🔥 FRONTEND: Calling ${endpoint}`);
@@ -137,17 +137,12 @@ const OxylabsSchedulerDashboard: React.FC = () => {
         }
       );
 
-      console.log(`🔥 FRONTEND: Response status: ${response.status}`);
-      
       if (!response.ok) {
         const errorText = await response.text();
-        console.log(`🔥 FRONTEND: Error response: ${errorText}`);
         throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
 
-      const data = await response.json();
-      console.log(`🔥 FRONTEND: Response data:`, data);
-      return data;
+      return await response.json();
     },
 
     async getDashboard(search = '', status = 'all', limit = 2000) {
@@ -168,24 +163,14 @@ const OxylabsSchedulerDashboard: React.FC = () => {
     },
 
     async queueScheduleDelete(scheduleId: string) {
-      console.log(`🔥 FRONTEND: Queueing delete for ${scheduleId}`);
       return this.call(`/schedule/${scheduleId}`, { method: 'DELETE' });
     },
 
     async queueScheduleStateChange(scheduleId: string, active: boolean) {
-      console.log(`🔥 FRONTEND: Queueing state change for ${scheduleId}, active: ${active}`);
       return this.call(`/schedule/${scheduleId}/state`, {
         method: 'PUT',
         body: JSON.stringify({ active }),
       });
-    },
-
-    async syncSchedules() {
-      return this.call('/sync');
-    },
-
-    async healthCheck() {
-      return this.call('/health');
     }
   };
 
@@ -198,18 +183,26 @@ const OxylabsSchedulerDashboard: React.FC = () => {
     }, 5000);
   };
 
-  // Load dashboard data and operations
+  // Load dashboard data
   const loadDashboard = useCallback(async () => {
     setLoading(true);
     try {
-      // Load schedules
-      const dashboardData = await api.getDashboard(searchTerm, statusFilter, loadLimit);
-      setSchedules(dashboardData.schedules || []);
-      setTotalCount(dashboardData.total_count || 0);
-      setLoadedCount(dashboardData.schedules?.length || 0);
-      setIsLimited(dashboardData.schedules?.length >= loadLimit && dashboardData.total_count > loadLimit);
+      const dashboardData = await api.getDashboard(searchTerm, statusFilter, 2000);
+      const allSchedulesData = dashboardData.schedules || [];
+      setAllSchedules(allSchedulesData);
+      
+      // Apply filters
+      let filteredSchedules = allSchedulesData;
+      if (searchTerm) {
+        filteredSchedules = filteredSchedules.filter(schedule =>
+          (schedule.job_name || schedule.schedule_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+          schedule.oxylabs_schedule_id.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+      }
+      
+      setSchedules(filteredSchedules);
+      setCurrentPage(1); // Reset to first page when data changes
 
-      // Load operations
       const operationsData = await api.getOperations();
       setOperations(operationsData.operations || []);
       setQueueStats(operationsData.queue_stats || { pending: 0, processing: 0, completed: 0, failed: 0 });
@@ -219,7 +212,7 @@ const OxylabsSchedulerDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [searchTerm, statusFilter, loadLimit]);
+  }, [searchTerm, statusFilter]);
 
   useEffect(() => {
     loadDashboard();
@@ -234,21 +227,50 @@ const OxylabsSchedulerDashboard: React.FC = () => {
     return () => clearInterval(interval);
   }, [autoRefresh, loadDashboard]);
 
-  const toggleSelectAll = () => {
-    if (selectedSchedules.size === schedules.length) {
-      setSelectedSchedules(new Set());
+  // Pagination
+  const totalPages = Math.ceil(schedules.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const currentPageSchedules = schedules.slice(startIndex, endIndex);
+
+  // Selection logic
+  const handleSelectAll = () => {
+    const currentPageIds = currentPageSchedules.map(s => s.oxylabs_schedule_id);
+    const isAllCurrentPageSelected = currentPageIds.every(id => selectedSchedules.has(id));
+    
+    if (isAllCurrentPageSelected) {
+      // Deselect all current page items
+      setSelectedSchedules(prev => {
+        const newSet = new Set(prev);
+        currentPageIds.forEach(id => newSet.delete(id));
+        return newSet;
+      });
     } else {
-      setSelectedSchedules(new Set(schedules.map(s => s.oxylabs_schedule_id)));
+      // Select all current page items
+      setSelectedSchedules(prev => {
+        const newSet = new Set(prev);
+        currentPageIds.forEach(id => newSet.add(id));
+        return newSet;
+      });
     }
   };
 
-  const toggleSelectSchedule = (id: string) => {
+  const handleSelectAllFiltered = () => {
+    const allFilteredIds = schedules.map(s => s.oxylabs_schedule_id);
+    setSelectedSchedules(new Set(allFilteredIds));
+  };
+
+  const handleClearSelection = () => {
+    setSelectedSchedules(new Set());
+  };
+
+  const handleSelectSchedule = (scheduleId: string) => {
     setSelectedSchedules(prev => {
       const newSet = new Set(prev);
-      if (newSet.has(id)) {
-        newSet.delete(id);
+      if (newSet.has(scheduleId)) {
+        newSet.delete(scheduleId);
       } else {
-        newSet.add(id);
+        newSet.add(scheduleId);
       }
       return newSet;
     });
@@ -260,7 +282,7 @@ const OxylabsSchedulerDashboard: React.FC = () => {
     setIsProcessingBulk(true);
     try {
       for (const scheduleId of selectedSchedules) {
-        const schedule = schedules.find(s => s.oxylabs_schedule_id === scheduleId);
+        const schedule = allSchedules.find(s => s.oxylabs_schedule_id === scheduleId);
         if (!schedule) continue;
 
         if (action === 'activate' || action === 'deactivate') {
@@ -341,11 +363,9 @@ const OxylabsSchedulerDashboard: React.FC = () => {
     return date.toLocaleDateString();
   };
 
-  const isAllSelected = schedules.length > 0 && selectedSchedules.size === schedules.length;
-  const isPartiallySelected = selectedSchedules.size > 0 && selectedSchedules.size < schedules.length;
-
   return (
     <div className={`p-4 ${classes.background} min-h-screen`}>
+      {/* Header */}
       <div className="flex justify-between items-center mb-4">
         <h1 className={`${classes.text} text-xl font-semibold`}>Oxylabs Scheduler Dashboard</h1>
         <div className="flex items-center gap-2">
@@ -366,6 +386,7 @@ const OxylabsSchedulerDashboard: React.FC = () => {
         </div>
       </div>
 
+      {/* Filters */}
       <div className="mb-4 flex items-center gap-4">
         <input
           type="text"
@@ -394,43 +415,20 @@ const OxylabsSchedulerDashboard: React.FC = () => {
         </label>
       </div>
 
-      {/* Bulk Actions Bar */}
-      {selectedSchedules.size > 0 && (
-        <div className={`${classes.secondaryBackground} rounded-lg border ${classes.border} p-4 mb-4`}>
-          <div className="flex items-center justify-between">
-            <span className={`text-sm ${classes.text}`}>
-              {selectedSchedules.size} of {schedules.length} schedule{selectedSchedules.size !== 1 ? 's' : ''} selected
-            </span>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => handleBulkAction('activate')}
-                disabled={isProcessingBulk}
-                className={`px-3 py-1 rounded border ${classes.border} ${classes.text} hover:${classes.hoverBackground} flex items-center gap-1`}
-              >
-                <Play className="w-3 h-3" />
-                Activate
-              </button>
-              <button
-                onClick={() => handleBulkAction('deactivate')}
-                disabled={isProcessingBulk}
-                className={`px-3 py-1 rounded border ${classes.border} ${classes.text} hover:${classes.hoverBackground} flex items-center gap-1`}
-              >
-                <Pause className="w-3 h-3" />
-                Deactivate
-              </button>
-              <button
-                onClick={() => handleBulkAction('delete')}
-                disabled={isProcessingBulk}
-                className={`px-3 py-1 rounded border ${classes.errorBorder} ${classes.errorText} hover:${classes.errorBg} flex items-center gap-1`}
-              >
-                <Trash2 className="w-3 h-3" />
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Bulk Selection Bar */}
+      <BulkSelectionBar
+        selectedSchedules={selectedSchedules}
+        currentPageSchedules={currentPageSchedules}
+        allFilteredSchedules={schedules}
+        statusFilter={statusFilter}
+        onSelectAll={handleSelectAll}
+        onSelectAllFiltered={handleSelectAllFiltered}
+        onClearSelection={handleClearSelection}
+        onBulkAction={handleBulkAction}
+        isProcessing={isProcessingBulk}
+      />
 
+      {/* Table */}
       {loading ? (
         <div className="text-center py-10">
           <Loader2 className="animate-spin mx-auto mb-2" />
@@ -442,175 +440,162 @@ const OxylabsSchedulerDashboard: React.FC = () => {
           <p className={classes.textSecondary}>No schedules found.</p>
         </div>
       ) : (
-        <div className={`overflow-x-auto rounded border ${classes.border}`}>
-          <table className="min-w-full border-collapse">
-            <thead className={`${classes.secondaryBackground} border-b ${classes.border}`}>
-              <tr>
-                <th className="w-12 px-4 py-3 text-left">
-                  <button
-                    onClick={toggleSelectAll}
-                    className={`${classes.textSecondary} hover:${classes.text} relative`}
-                  >
-                    {isAllSelected ? (
-                      <CheckSquare className="w-4 h-4" />
-                    ) : isPartiallySelected ? (
-                      <div className="relative">
-                        <Square className="w-4 h-4" />
-                        <Minus className="w-3 h-3 absolute top-0.5 left-0.5" />
-                      </div>
-                    ) : (
-                      <Square className="w-4 h-4" />
-                    )}
-                  </button>
-                </th>
-                <th className={`px-4 py-3 text-left ${classes.text} font-medium text-sm`}>Schedule</th>
-                <th className={`px-4 py-3 text-left ${classes.text} font-medium text-sm`}>Status</th>
-                <th className={`px-4 py-3 text-left ${classes.text} font-medium text-sm`}>Items</th>
-                <th className={`px-4 py-3 text-left ${classes.text} font-medium text-sm`}>Schedule Details</th>
-                <th className={`px-4 py-3 text-left ${classes.text} font-medium text-sm`}>Next Run</th>
-                <th className={`px-4 py-3 text-left ${classes.text} font-medium text-sm`}>Start Date</th>
-                <th className={`px-4 py-3 text-left ${classes.text} font-medium text-sm`}>End Date</th>
-                <th className={`px-4 py-3 text-left ${classes.text} font-medium text-sm`}>Success Rate</th>
-                <th className={`px-4 py-3 text-center ${classes.text} font-medium text-sm`}>Actions</th>
-              </tr>
-            </thead>
-            <tbody className={`${classes.background} divide-y ${classes.secondaryBorder}`}>
-              {schedules.map(schedule => {
-                const status = getStatusBadge(schedule);
-                const isSelected = selectedSchedules.has(schedule.oxylabs_schedule_id);
-                const cronBreakdown = getCronBreakdown(schedule.cron_expression);
-                
-                return (
-                  <tr
-                    key={schedule.oxylabs_schedule_id}
-                    className={`hover:${classes.secondaryBackground} transition-colors ${
-                      isSelected ? `${classes.secondaryBackground} border-l-2 ${classes.focusBorder}` : ''
-                    }`}
-                  >
-                    <td className="px-4 py-4">
-                      <button
-                        onClick={() => toggleSelectSchedule(schedule.oxylabs_schedule_id)}
-                        className={`${classes.textSecondary} hover:${classes.text}`}
-                      >
-                        {isSelected ? 
-                          <CheckSquare className="w-4 h-4" /> : 
+        <>
+          <div className={`overflow-x-auto rounded border ${classes.border}`}>
+            <table className="min-w-full border-collapse">
+              <thead className={`${classes.secondaryBackground} border-b ${classes.border}`}>
+                <tr>
+                  <th className="w-12 px-4 py-3 text-left">
+                    <button
+                      onClick={handleSelectAll}
+                      className={`${classes.textSecondary} hover:${classes.text} relative`}
+                    >
+                      {currentPageSchedules.length > 0 && currentPageSchedules.every(s => selectedSchedules.has(s.oxylabs_schedule_id)) ? (
+                        <CheckSquare className="w-4 h-4" />
+                      ) : selectedSchedules.size > 0 ? (
+                        <div className="relative">
                           <Square className="w-4 h-4" />
-                        }
-                      </button>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex flex-col">
-                        <span className={`${classes.text} font-medium text-sm`}>
-                          {schedule.job_name || schedule.schedule_name || 'Unnamed Schedule'}
-                        </span>
-                        <span className={`${classes.textSecondary} text-xs`}>
-                          ID: {schedule.oxylabs_schedule_id}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${status.color}`}>
-                        {status.icon && <span className="w-3 h-3">{status.icon}</span>}
-                        {status.text}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4">
-                      <span className={`${classes.text} text-sm`}>
-                        {schedule.items_count || 0}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex flex-col">
-                        <span className={`${classes.text} text-sm font-medium`}>
-                          {cronBreakdown?.frequency || 'Unknown'}
-                        </span>
-                        {cronBreakdown?.dayOfWeek && (
-                          <span className={`${classes.textSecondary} text-xs`}>
-                            {cronBreakdown.dayOfWeek}
-                          </span>
-                        )}
-                        {cronBreakdown?.dayOfMonth && (
-                          <span className={`${classes.textSecondary} text-xs`}>
-                            {cronBreakdown.dayOfMonth} of month
-                          </span>
-                        )}
-                        {cronBreakdown?.time && (
-                          <span className={`${classes.textSecondary} text-xs`}>
-                            at {cronBreakdown.time}
-                          </span>
-                        )}
-                        <span className={`${classes.textTertiary} text-xs font-mono mt-1`}>
-                          {schedule.cron_expression}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex flex-col">
-                        <span className={`${classes.textSecondary} text-sm`}>
-                          {formatNextRun(schedule.next_run_at)}
-                        </span>
-                        {schedule.next_run_at && (
-                          <span className={`${classes.textTertiary} text-xs`}>
-                            {new Date(schedule.next_run_at).toLocaleDateString()}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <span className={`${classes.textSecondary} text-sm`}>
-                        {schedule.created_at ? 
-                          new Date(schedule.created_at).toLocaleDateString() : 
-                          'N/A'
-                        }
-                      </span>
-                    </td>
-                    <td className="px-4 py-4">
-                      <span className={`${classes.textSecondary} text-sm`}>
-                        {schedule.end_time ? 
-                          new Date(schedule.end_time).toLocaleDateString() : 
-                          'No end date'
-                        }
-                      </span>
-                    </td>
-                    <td className="px-4 py-4">
-                      <span className={`${classes.text} text-sm`}>
-                        {schedule.success_rate !== undefined ? 
-                          `${(schedule.success_rate * 100).toFixed(1)}%` : 
-                          'N/A'
-                        }
-                      </span>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center justify-center gap-2">
+                          <Minus className="w-3 h-3 absolute top-0.5 left-0.5" />
+                        </div>
+                      ) : (
+                        <Square className="w-4 h-4" />
+                      )}
+                    </button>
+                  </th>
+                  <th className={`px-4 py-3 text-left ${classes.text} font-medium text-sm`}>Schedule</th>
+                  <th className={`px-4 py-3 text-left ${classes.text} font-medium text-sm`}>Status</th>
+                  <th className={`px-4 py-3 text-left ${classes.text} font-medium text-sm`}>Items</th>
+                  <th className={`px-4 py-3 text-left ${classes.text} font-medium text-sm`}>Schedule Details</th>
+                  <th className={`px-4 py-3 text-left ${classes.text} font-medium text-sm`}>Next Run</th>
+                  <th className={`px-4 py-3 text-left ${classes.text} font-medium text-sm`}>Success Rate</th>
+                  <th className={`px-4 py-3 text-center ${classes.text} font-medium text-sm`}>Actions</th>
+                </tr>
+              </thead>
+              <tbody className={`${classes.background} divide-y ${classes.secondaryBorder}`}>
+                {currentPageSchedules.map(schedule => {
+                  const status = getStatusBadge(schedule);
+                  const isSelected = selectedSchedules.has(schedule.oxylabs_schedule_id);
+                  const cronBreakdown = getCronBreakdown(schedule.cron_expression);
+                  
+                  return (
+                    <tr
+                      key={schedule.oxylabs_schedule_id}
+                      className={`hover:${classes.secondaryBackground} transition-colors ${
+                        isSelected ? `${classes.secondaryBackground} border-l-2 ${classes.focusBorder}` : ''
+                      }`}
+                    >
+                      <td className="px-4 py-4">
                         <button
-                          onClick={() => toggleScheduleState(schedule.oxylabs_schedule_id, schedule.active)}
-                          className={`p-1 ${classes.textSecondary} hover:${classes.text} transition-colors`}
-                          title={schedule.active ? 'Deactivate' : 'Activate'}
+                          onClick={() => handleSelectSchedule(schedule.oxylabs_schedule_id)}
+                          className={`${classes.textSecondary} hover:${classes.text}`}
                         >
-                          {schedule.active ? 
-                            <Pause className="w-4 h-4" /> : 
-                            <Play className="w-4 h-4" />
+                          {isSelected ? 
+                            <CheckSquare className="w-4 h-4" /> : 
+                            <Square className="w-4 h-4" />
                           }
                         </button>
-                        
-                        <button
-                          onClick={() => deleteSchedule(
-                            schedule.oxylabs_schedule_id, 
-                            schedule.job_name || schedule.schedule_name || 'Unnamed Schedule'
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="flex flex-col">
+                          <span className={`${classes.text} font-medium text-sm`}>
+                            {schedule.job_name || schedule.schedule_name || 'Unnamed Schedule'}
+                          </span>
+                          <span className={`${classes.textSecondary} text-xs`}>
+                            ID: {schedule.oxylabs_schedule_id}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${status.color}`}>
+                          {status.icon}
+                          {status.text}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4">
+                        <span className={`${classes.text} text-sm`}>
+                          {schedule.items_count || 0}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="flex flex-col">
+                          <span className={`${classes.text} text-sm font-medium`}>
+                            {cronBreakdown?.frequency || 'Unknown'}
+                          </span>
+                          {cronBreakdown?.time && (
+                            <span className={`${classes.textSecondary} text-xs`}>
+                              at {cronBreakdown.time}
+                            </span>
                           )}
-                          className={`p-1 ${classes.textSecondary} hover:${theme === 'light' ? 'text-[#E53E3E]' : 'text-[#F85149]'} transition-colors`}
-                          title="Delete Schedule"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                          <span className={`${classes.textTertiary} text-xs font-mono mt-1`}>
+                            {schedule.cron_expression}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="flex flex-col">
+                          <span className={`${classes.textSecondary} text-sm`}>
+                            {formatNextRun(schedule.next_run_at)}
+                          </span>
+                          {schedule.next_run_at && (
+                            <span className={`${classes.textTertiary} text-xs`}>
+                              {new Date(schedule.next_run_at).toLocaleDateString()}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <span className={`${classes.text} text-sm`}>
+                          {schedule.success_rate !== undefined ? 
+                            `${(schedule.success_rate * 100).toFixed(1)}%` : 
+                            'N/A'
+                          }
+                        </span>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={() => toggleScheduleState(schedule.oxylabs_schedule_id, schedule.active)}
+                            className={`p-1 ${classes.textSecondary} hover:${classes.text} transition-colors`}
+                            title={schedule.active ? 'Deactivate' : 'Activate'}
+                          >
+                            {schedule.active ? 
+                              <Pause className="w-4 h-4" /> : 
+                              <Play className="w-4 h-4" />
+                            }
+                          </button>
+                          
+                          <button
+                            onClick={() => deleteSchedule(
+                              schedule.oxylabs_schedule_id, 
+                              schedule.job_name || schedule.schedule_name || 'Unnamed Schedule'
+                            )}
+                            className={`p-1 ${classes.textSecondary} hover:${theme === 'light' ? 'text-[#E53E3E]' : 'text-[#F85149]'} transition-colors`}
+                            title="Delete Schedule"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          <div className="mt-4">
+            <SchedulerPagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={schedules.length}
+              itemsPerPage={ITEMS_PER_PAGE}
+              onPageChange={setCurrentPage}
+              startIndex={startIndex}
+              endIndex={endIndex}
+            />
+          </div>
+        </>
       )}
 
       {/* Notifications */}
