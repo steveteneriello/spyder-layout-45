@@ -198,18 +198,24 @@ const OxylabsSchedulerDashboard: React.FC = () => {
     }, 5000);
   };
 
-  // Load dashboard data
+  // Load dashboard data and operations
   const loadDashboard = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await api.getDashboard(searchTerm, statusFilter, loadLimit);
-      setSchedules(data.schedules || []);
-      setTotalCount(data.totalCount || 0);
-      setLoadedCount(data.schedules?.length || 0);
-      setIsLimited(data.isLimited || false);
+      // Load schedules
+      const dashboardData = await api.getDashboard(searchTerm, statusFilter, loadLimit);
+      setSchedules(dashboardData.schedules || []);
+      setTotalCount(dashboardData.total_count || 0);
+      setLoadedCount(dashboardData.schedules?.length || 0);
+      setIsLimited(dashboardData.schedules?.length >= loadLimit && dashboardData.total_count > loadLimit);
+
+      // Load operations
+      const operationsData = await api.getOperations();
+      setOperations(operationsData.operations || []);
+      setQueueStats(operationsData.queue_stats || { pending: 0, processing: 0, completed: 0, failed: 0 });
     } catch (error) {
       console.error('Failed to load dashboard:', error);
-      addNotification('error', 'Failed to load schedules');
+      addNotification('error', 'Failed to load schedules and operations');
     } finally {
       setLoading(false);
     }
@@ -219,7 +225,15 @@ const OxylabsSchedulerDashboard: React.FC = () => {
     loadDashboard();
   }, [loadDashboard]);
 
-  // Handlers
+  // Auto refresh
+  useEffect(() => {
+    if (!autoRefresh) return;
+    const interval = setInterval(() => {
+      loadDashboard();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [autoRefresh, loadDashboard]);
+
   const toggleSelectAll = () => {
     if (selectedSchedules.size === schedules.length) {
       setSelectedSchedules(new Set());
