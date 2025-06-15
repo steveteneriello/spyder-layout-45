@@ -144,7 +144,7 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
       ) || [];
 
       setCities(filteredData as CityData[]);
-      setCurrentPage(1); // Reset to first page when new data loads
+      setCurrentPage(1);
       console.log(`Loaded ${filteredData.length} cities from ${selectedCounties.size} selected counties`);
 
     } catch (error) {

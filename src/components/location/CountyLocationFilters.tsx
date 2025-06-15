@@ -9,7 +9,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { ChevronDown, Search, MapPin, Settings, X, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import CityAutocomplete from '../location/CityAutocomplete';
+import CityAutocomplete from './CityAutocomplete';
 
 interface CountyLocationFiltersProps {
   onSearchResults: (results: any[], centerCoords: {lat: number; lng: number} | null) => void;
@@ -367,7 +367,7 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({ onSearchR
     try {
       console.log('Looking up ZIP code in database:', filters.centerZipCode);
       const { data: zipData, error: zipError } = await supabase
-        .from('location_data')
+        .from('location_data' as any)
         .select('city, state_name, latitude, longitude, postal_code')
         .eq('postal_code', filters.centerZipCode.trim())
         .not('latitude', 'is', null)
@@ -395,14 +395,15 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({ onSearchR
 
       setFilters(prev => ({ ...prev, centerCoords }));
 
-      const { data: locationsData, error: locationsError } = await supabase.rpc(
-        'get_cities_within_radius',
-        {
-          input_lat: centerCoords.lat,
-          input_lng: centerCoords.lng,
-          input_radius_miles: filters.radiusMiles
-        }
-      );
+      // Use a simpler approach for the radius search
+      const { data: locationsData, error: locationsError } = await supabase
+        .from('location_data' as any)
+        .select('*')
+        .gte('latitude', centerCoords.lat - (filters.radiusMiles / 69))
+        .lte('latitude', centerCoords.lat + (filters.radiusMiles / 69))
+        .gte('longitude', centerCoords.lng - (filters.radiusMiles / 69))
+        .lte('longitude', centerCoords.lng + (filters.radiusMiles / 69))
+        .gt('population', 0);
 
       if (locationsError) {
         console.error('Error searching cities within radius:', locationsError);
@@ -419,32 +420,8 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({ onSearchR
         return;
       }
 
-      const cityNames = locationsData.map(r => r.city);
-      const stateNames = locationsData.map(r => r.state);
-
-      let query = supabase
-        .from('location_data')
-        .select(`
-          id, city, state_name, state_id, county_name, postal_code, 
-          latitude, longitude, population, age_median, 
-          income_household_median, housing_units, home_value, 
-          home_ownership, veteran
-        `)
-        .in('city', cityNames)
-        .in('state_name', stateNames)
-        .gt('population', 0);
-
-      const { data: fullLocationData, error: fullDataError } = await query;
-
-      if (fullDataError) {
-        console.error('Error getting full location data:', fullDataError);
-        throw fullDataError;
-      }
-
-      console.log('Full location data retrieved:', fullLocationData?.length || 0, 'records');
-
-      const allCitiesProcessed = (fullLocationData || [])
-        .map(location => {
+      const allCitiesProcessed = (locationsData || [])
+        .map((location: any) => {
           const distance = calculateDistance(
             centerCoords.lat,
             centerCoords.lng,
@@ -473,75 +450,19 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({ onSearchR
             veteran: normalizeValue(location.veteran)
           };
         })
-        .filter(location => location.distance_miles <= filters.radiusMiles && location.population >= 1)
-        .sort((a, b) => a.distance_miles - b.distance_miles);
+        .filter((location: any) => location.distance_miles <= filters.radiusMiles && location.population >= 1)
+        .sort((a: any, b: any) => a.distance_miles - b.distance_miles);
 
       console.log(`All cities in radius: ${allCitiesProcessed.length} cities`);
       
-      // Aggregate cities into counties (keep existing aggregation logic)
+      // Aggregate cities into counties
       const countyResults = aggregateCountyData(allCitiesProcessed);
       console.log(`Aggregated into ${countyResults.length} counties`);
       
-      // Now fetch the corresponding location_counties data to enrich the results
-      const countyKeys = countyResults.map(county => ({
-        county_name: county.county_name,
-        state_name: county.state_name
-      }));
-
-      // Get unique county/state combinations for the query
-      const uniqueCountyQueries = Array.from(
-        new Map(countyKeys.map(key => [`${key.county_name}-${key.state_name}`, key])).values()
-      );
-
-      let enrichedCounties = [...countyResults];
-
-      if (uniqueCountyQueries.length > 0) {
-        // Query location_counties for matching counties
-        const orConditions = uniqueCountyQueries.map(key => 
-          `and(county_name.eq.${key.county_name},state_name.eq.${key.state_name})`
-        );
-        
-        const { data: locationCountiesData, error: locationCountiesError } = await supabase
-          .from('location_counties')
-          .select('*')
-          .or(orConditions.join(','));
-
-        if (!locationCountiesError && locationCountiesData) {
-          console.log(`Found ${locationCountiesData.length} matching location_counties records`);
-          
-          // Merge the location_counties data with the aggregated results
-          enrichedCounties = countyResults.map(county => {
-            const locationCounty = locationCountiesData.find(lc => 
-              lc.county_name === county.county_name && lc.state_name === county.state_name
-            );
-            
-            if (locationCounty) {
-              // Use location_counties data for demographics, keep aggregated data for search-specific fields
-              return {
-                ...county, // Keep search-derived fields like distance_miles, cities, etc.
-                ...locationCounty, // Override with location_counties demographic data
-                // Preserve search-specific fields
-                center_lat: county.center_lat,
-                center_lng: county.center_lng,
-                distance_miles: county.distance_miles,
-                cities: county.cities,
-                city_count: county.city_count,
-                total_population: county.total_population,
-                total_housing_units: county.total_housing_units
-              };
-            }
-            
-            return county;
-          });
-        } else {
-          console.warn('Error fetching location_counties data:', locationCountiesError);
-        }
-      }
+      setAllCountiesInRadius(countyResults);
       
-      setAllCountiesInRadius(enrichedCounties);
-      
-      // Apply filters to get final results and send them to both results panel and map
-      const filteredResults = applyFiltersToResults(enrichedCounties);
+      // Apply filters to get final results
+      const filteredResults = applyFiltersToResults(countyResults);
       console.log('Sending filtered county results to map and results:', filteredResults.length);
       onSearchResults(filteredResults, centerCoords);
       
@@ -553,7 +474,7 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({ onSearchR
         });
       }
 
-      const statesInResults = [...new Set(enrichedCounties.map(county => county.state_id))];
+      const statesInResults = [...new Set(countyResults.map(county => county.state_id))];
       if (filters.selectedStates.length === 0) {
         setFilters(prev => ({ ...prev, selectedStates: statesInResults }));
       }

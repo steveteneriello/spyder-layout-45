@@ -3,11 +3,11 @@ import { Plus, MapPin, Building2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
-import CountyLocationFilters from "@/components/county/CountyLocationFilters";
-import CountyLocationResults from "@/components/county/CountyLocationResults";
-import CountyLocationMap from "@/components/county/CountyLocationMap";
-import CountySavedLists from "@/components/county/CountySavedLists";
-import CountyCitiesTable from "@/components/county/CountyCitiesTable";
+import CountyLocationFilters from "@/components/location/CountyLocationFilters";
+import CountyLocationResults from "@/components/location/CountyLocationResults";
+import CountyLocationMap from "@/components/location/CountyLocationMap";
+import CountySavedLists from "@/components/location/CountySavedLists";
+import CountyCitiesTable from "@/components/location/CountyCitiesTable";
 
 interface CountyLocationList {
   id: string;
