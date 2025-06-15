@@ -16,7 +16,7 @@ export default function SchedulerDashboard() {
     <SidebarLayout
       nav={
         <div className="flex items-center justify-between w-full px-4">
-          <h1 className="text-lg font-semibold text-white">Scheduler Dashboard</h1>
+          {/* Logo area - title moved to main content */}
         </div>
       }
       category={
@@ -27,7 +27,10 @@ export default function SchedulerDashboard() {
       }
       menuItems={menuItems}
     >
-      <OxylabsSchedulerDashboard />
+      <div className="p-6">
+        <h1 className="text-2xl font-bold mb-6">Scheduler Dashboard</h1>
+        <OxylabsSchedulerDashboard />
+      </div>
     </SidebarLayout>
   );
 }
