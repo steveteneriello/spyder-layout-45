@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTheme } from 'next-themes';
 import {
@@ -120,7 +119,7 @@ const OxylabsSchedulerDashboard: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [autoRefresh, setAutoRefresh] = useState(true);
 
-  // API client
+  // API client with direct fetch for delete operations
   const api = {
     async call(endpoint: string, options: RequestInit = {}) {
       console.log(`🔥 FRONTEND: Calling ${endpoint}`);
@@ -314,14 +313,42 @@ const OxylabsSchedulerDashboard: React.FC = () => {
   };
 
   const deleteSchedule = async (scheduleId: string) => {
+    // Add confirmation dialog like your working example
+    const confirmed = window.confirm(`Are you sure you want to delete schedule ${scheduleId}? This action cannot be undone.`);
+    
+    if (!confirmed) {
+      return;
+    }
+
     try {
       console.log(`🔥 FRONTEND: Deleting schedule ${scheduleId}`);
-      await api.queueScheduleDelete(scheduleId);
-      addNotification('success', `Schedule queued for deletion`);
-      loadDashboard();
+      
+      const response = await fetch(
+        `https://krmwphqhlzscnuxwxvkz.supabase.co/functions/v1/scrapi-oxylabs-scheduler/schedule/${scheduleId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtybXdwaHFobHpzY251eHd4dmt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxMzExMjUsImV4cCI6MjA2NDcwNzEyNX0.k5fDJWwqMdqd9XQgWuDGwcJbwUuL8U-mF7NhiJxY4eU`
+          }
+        }
+      );
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        console.log('Schedule deletion queued:', result.data);
+        addNotification('success', `Schedule ${scheduleId} deletion queued for processing`);
+        loadDashboard();
+      } else {
+        console.error('Delete failed:', result.error);
+        addNotification('error', 'Failed to delete schedule: ' + result.error);
+      }
+      
+      return result;
     } catch (error) {
-      console.error('Failed to delete schedule:', error);
-      addNotification('error', 'Failed to delete schedule');
+      console.error('Delete error:', error);
+      addNotification('error', 'Error deleting schedule: ' + error.message);
     }
   };
 
