@@ -288,7 +288,6 @@ const OxylabsSchedulerDashboard: React.FC = () => {
         if (action === 'activate' || action === 'deactivate') {
           await toggleScheduleState(scheduleId, action === 'deactivate');
         } else if (action === 'delete') {
-          // Skip the confirmation dialog for bulk deletes - the BulkDeleteDialog handles confirmation
           await api.queueScheduleDelete(scheduleId);
         }
       }
@@ -314,11 +313,11 @@ const OxylabsSchedulerDashboard: React.FC = () => {
     }
   };
 
-  const deleteSchedule = async (scheduleId: string, scheduleName: string) => {
-    // No browser confirmation - let the UI handle confirmations
+  const deleteSchedule = async (scheduleId: string) => {
     try {
+      console.log(`🔥 FRONTEND: Deleting schedule ${scheduleId}`);
       await api.queueScheduleDelete(scheduleId);
-      addNotification('success', `Schedule "${scheduleName}" queued for deletion`);
+      addNotification('success', `Schedule queued for deletion`);
       loadDashboard();
     } catch (error) {
       console.error('Failed to delete schedule:', error);
@@ -326,29 +325,13 @@ const OxylabsSchedulerDashboard: React.FC = () => {
     }
   };
 
-  // Status badge helper with corrected logic
+  // Simple status badge - just Active/Inactive
   const getStatusBadge = (schedule: Schedule) => {
-    // First check if schedule is inactive
-    if (!schedule.active) {
+    if (schedule.active) {
+      return { color: 'border-green-500 text-green-600', text: 'Active', icon: <CheckCircle className="w-3 h-3" /> };
+    } else {
       return { color: 'border-gray-400 text-gray-600', text: 'Inactive', icon: <Pause className="w-3 h-3" /> };
     }
-    
-    // Then check management status
-    if (schedule.management_status === 'unmanaged') {
-      return { color: 'border-red-500 text-red-600', text: 'Unmanaged', icon: <AlertTriangle className="w-3 h-3" /> };
-    }
-    
-    if (schedule.management_status === 'deleted') {
-      return { color: 'border-gray-500 text-gray-500', text: 'Deleted', icon: <XCircle className="w-3 h-3" /> };
-    }
-    
-    // For active, managed schedules - check performance
-    if (schedule.success_rate !== undefined && schedule.success_rate < 0.5) {
-      return { color: 'border-yellow-500 text-yellow-600', text: 'Poor Performance', icon: <Activity className="w-3 h-3" /> };
-    }
-    
-    // Active and healthy
-    return { color: 'border-green-500 text-green-600', text: 'Healthy', icon: <CheckCircle className="w-3 h-3" /> };
   };
 
   // Format next run time
@@ -614,10 +597,7 @@ const OxylabsSchedulerDashboard: React.FC = () => {
                           </button>
                           
                           <button
-                            onClick={() => deleteSchedule(
-                              schedule.oxylabs_schedule_id, 
-                              schedule.job_name || schedule.schedule_name || 'Unnamed Schedule'
-                            )}
+                            onClick={() => deleteSchedule(schedule.oxylabs_schedule_id)}
                             className={`p-1 ${classes.textSecondary} hover:${theme === 'light' ? 'text-[#E53E3E]' : 'text-[#F85149]'} transition-colors`}
                             title="Delete Schedule"
                           >
