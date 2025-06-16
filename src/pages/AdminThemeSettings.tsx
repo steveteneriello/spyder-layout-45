@@ -201,6 +201,9 @@ export default function AdminThemeSettings() {
     { id: 'preview', label: 'Live Preview', icon: Eye },
   ];
 
+  // Debug: Log sections array
+  console.log('Sections defined:', sections.length, sections.map(s => s.id));
+
   const resetColors = () => {
     // Reset to default colors for current theme
     const defaultColors = {
@@ -278,8 +281,13 @@ export default function AdminThemeSettings() {
             </CardHeader>
             <CardContent>
               <nav className="space-y-2">
+                {/* Debug: Show all sections */}
+                <div className="text-xs text-gray-500 mb-2">
+                  Sections ({sections.length}): {sections.map(s => s.id).join(', ')}
+                </div>
                 {sections.map((section) => {
                   const Icon = section.icon;
+                  console.log('Rendering section:', section.id, section.label);
                   return (
                     <Button
                       key={section.id}
