@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -68,18 +69,35 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
   };
 
   const applyFilters = () => {
+    console.log('=== APPLYING FILTERS ===');
+    console.log('Filter ranges:', { populationRange, incomeRange, homeValueRange });
+    
     const filtered = allCities.filter(city => {
       const population = city.population || 0;
       const income = city.income_household_median || 0;
       const homeValue = city.home_value || 0;
 
-      return (
-        population >= populationRange[0] && population <= populationRange[1] &&
-        income >= incomeRange[0] && income <= incomeRange[1] &&
-        homeValue >= homeValueRange[0] && homeValue <= homeValueRange[1]
-      );
+      console.log(`City: ${city.city}`, {
+        population: { raw: city.population, parsed: population },
+        income: { raw: city.income_household_median, parsed: income },
+        homeValue: { raw: city.home_value, parsed: homeValue }
+      });
+
+      const passesPopulation = population >= populationRange[0] && population <= populationRange[1];
+      const passesIncome = income >= incomeRange[0] && income <= incomeRange[1];
+      const passesHomeValue = homeValue >= homeValueRange[0] && homeValue <= homeValueRange[1];
+
+      console.log(`${city.city} filter results:`, {
+        passesPopulation,
+        passesIncome,
+        passesHomeValue,
+        overallPass: passesPopulation && passesIncome && passesHomeValue
+      });
+
+      return passesPopulation && passesIncome && passesHomeValue;
     });
 
+    console.log(`Filtered ${filtered.length} cities from ${allCities.length} total`);
     setFilteredCities(filtered);
     
     // Update selected cities to only include filtered ones
@@ -149,6 +167,15 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
         }
       }
 
+      console.log('=== RAW CITY DATA SAMPLE ===');
+      cityData.slice(0, 5).forEach(city => {
+        console.log(`${city.city}:`, {
+          population: city.population,
+          income_household_median: city.income_household_median,
+          home_value: city.home_value
+        });
+      });
+
       const formattedCities: CityData[] = cityData.map(city => ({
         id: city.id,
         city: city.city,
@@ -163,6 +190,25 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
         age_median: parseNumber(city.age_median),
         home_value: parseNumber(city.home_value)
       }));
+
+      console.log('=== PARSED CITY DATA SAMPLE ===');
+      formattedCities.slice(0, 5).forEach(city => {
+        console.log(`${city.city}:`, {
+          population: city.population,
+          income_household_median: city.income_household_median,
+          home_value: city.home_value
+        });
+      });
+
+      // Find min/max values for debugging
+      const populations = formattedCities.map(c => c.population).filter(p => p !== null);
+      const incomes = formattedCities.map(c => c.income_household_median).filter(i => i !== null);
+      const homeValues = formattedCities.map(c => c.home_value).filter(h => h !== null);
+
+      console.log('=== DATA RANGES ===');
+      console.log('Population range:', { min: Math.min(...populations), max: Math.max(...populations) });
+      console.log('Income range:', { min: Math.min(...incomes), max: Math.max(...incomes) });
+      console.log('Home value range:', { min: Math.min(...homeValues), max: Math.max(...homeValues) });
 
       const uniqueCities = formattedCities.filter((city, index, self) => 
         index === self.findIndex((c) => 
