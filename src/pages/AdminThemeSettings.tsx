@@ -207,9 +207,10 @@ const AdminThemeSettings = () => {
       return null;
     }
     
-    const r = parseInt(cleanHex.substr(0, 2), 16);
-    const g = parseInt(cleanHex.substr(2, 2), 16);
-    const b = parseInt(cleanHex.substr(4, 2), 16);
+    // Fix: Use substring instead of substr
+    const r = parseInt(cleanHex.substring(0, 2), 16);
+    const g = parseInt(cleanHex.substring(2, 4), 16);
+    const b = parseInt(cleanHex.substring(4, 6), 16);
     
     const result = `${r} ${g} ${b}`;
     console.log(`Converted ${hex} to RGB: ${result}`);
@@ -459,425 +460,6 @@ const AdminThemeSettings = () => {
     applyTypographySettings();
   }, [actualTheme]);
 
-  const renderThemeSection = () => (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Monitor className="h-5 w-5" />
-          Theme Preference
-        </CardTitle>
-        <CardDescription>
-          Choose how the application should appear. Your selection will be saved and applied across all sessions.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="grid gap-4">
-          {themeOptions.map((option) => {
-            const Icon = option.icon;
-            const isActive = themeMode === option.id;
-            
-            return (
-              <div
-                key={option.id}
-                className={`relative p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 ${
-                  isActive
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20 shadow-md'
-                    : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800/50'
-                }`}
-                onClick={() => handleThemeChange(option.id)}
-              >
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0">
-                    <ThemePreview mode={option.preview} />
-                  </div>
-                  
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Icon className={`h-5 w-5 ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400'}`} />
-                      <h3 className={`font-semibold ${isActive ? 'text-blue-900 dark:text-blue-100' : 'text-slate-900 dark:text-slate-100'}`}>
-                        {option.title}
-                      </h3>
-                    </div>
-                    <p className={`text-sm ${isActive ? 'text-blue-700 dark:text-blue-300' : 'text-slate-600 dark:text-slate-400'}`}>
-                      {option.description}
-                    </p>
-                  </div>
-                  
-                  <div className="flex-shrink-0">
-                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                      isActive 
-                        ? 'border-blue-500 bg-blue-500' 
-                        : 'border-slate-300 dark:border-slate-600'
-                    }`}>
-                      {isActive && <div className="w-2 h-2 bg-white rounded-full" />}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </CardContent>
-    </Card>
-  );
-
-  const renderColorsSection = () => (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Palette className="h-5 w-5" />
-          Color Customization
-        </CardTitle>
-        <CardDescription>
-          Customize theme colors for both light and dark modes.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="flex flex-wrap gap-2 mb-4">
-          {Object.entries(colorGroupLabels).map(([key, label]) => (
-            <Button
-              key={key}
-              variant={activeColorGroup === key ? "default" : "outline"}
-              size="sm"
-              onClick={() => setActiveColorGroup(key)}
-              className="text-xs"
-            >
-              {label}
-            </Button>
-          ))}
-        </div>
-
-        <div className="space-y-4 max-h-96 overflow-y-auto">
-          {colorGroups[activeColorGroup as keyof typeof colorGroups]?.map((colorKey) => (
-            <div key={colorKey} className="p-3 border rounded-lg">
-              <Label className="text-sm font-medium mb-2 block capitalize">
-                {colorKey.replace(/-/g, ' ')}
-              </Label>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-xs text-slate-500 mb-1 block">Light Mode</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      type="color"
-                      value={rgbToHex(colors[colorKey]?.light || '255 255 255')}
-                      onChange={(e) => handleColorChange(colorKey, 'light', e.target.value)}
-                      className="w-12 h-8 p-1 rounded"
-                    />
-                    <Input
-                      type="text"
-                      value={rgbToHex(colors[colorKey]?.light || '255 255 255')}
-                      onChange={(e) => handleColorChange(colorKey, 'light', e.target.value)}
-                      className="text-xs flex-1"
-                      placeholder="#ffffff"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label className="text-xs text-slate-500 mb-1 block">Dark Mode</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      type="color"
-                      value={rgbToHex(colors[colorKey]?.dark || '14 17 23')}
-                      onChange={(e) => handleColorChange(colorKey, 'dark', e.target.value)}
-                      className="w-12 h-8 p-1 rounded"
-                    />
-                    <Input
-                      type="text"
-                      value={rgbToHex(colors[colorKey]?.dark || '14 17 23')}
-                      onChange={(e) => handleColorChange(colorKey, 'dark', e.target.value)}
-                      className="text-xs flex-1"
-                      placeholder="#0e1117"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="flex gap-2 mt-4 pt-4 border-t">
-          <Button onClick={applyColors} size="sm" className="flex-1">
-            Apply Colors
-          </Button>
-          <Button onClick={resetColors} variant="outline" size="sm" className="flex items-center gap-1">
-            <RotateCcw className="h-4 w-4" />
-            Reset
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
-
-  const renderHeaderSection = () => (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Image className="h-5 w-5" />
-          Header & Logo Settings
-        </CardTitle>
-        <CardDescription>
-          Configure the header appearance and logo for both light and dark modes.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-6">
-          {(['light', 'dark'] as const).map((mode) => (
-            <div key={mode} className="p-4 border rounded-lg">
-              <h4 className="font-medium mb-4 capitalize">{mode} Mode Header</h4>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm mb-2 block">Logo Type</Label>
-                  <Select
-                    value={headerSettings[mode].logoType}
-                    onValueChange={(value: 'text' | 'image') => handleHeaderSettingChange(mode, 'logoType', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="text">Text Logo</SelectItem>
-                      <SelectItem value="image">Image Logo</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {headerSettings[mode].logoType === 'text' ? (
-                  <div>
-                    <Label className="text-sm mb-2 block">Logo Text</Label>
-                    <Input
-                      value={headerSettings[mode].logoText}
-                      onChange={(e) => handleHeaderSettingChange(mode, 'logoText', e.target.value)}
-                      placeholder="Your App Name"
-                    />
-                  </div>
-                ) : (
-                  <div>
-                    <Label className="text-sm mb-2 block">Logo Image URL</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        value={headerSettings[mode].logoImage}
-                        onChange={(e) => handleHeaderSettingChange(mode, 'logoImage', e.target.value)}
-                        placeholder="https://example.com/logo.png"
-                        className="flex-1"
-                      />
-                      <Button variant="outline" size="sm">
-                        <Upload className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                <div>
-                  <Label className="text-sm mb-2 block">Background Color</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      type="color"
-                      value={headerSettings[mode].backgroundColor}
-                      onChange={(e) => handleHeaderSettingChange(mode, 'backgroundColor', e.target.value)}
-                      className="w-12 h-8 p-1 rounded"
-                    />
-                    <Input
-                      value={headerSettings[mode].backgroundColor}
-                      onChange={(e) => handleHeaderSettingChange(mode, 'backgroundColor', e.target.value)}
-                      className="flex-1"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label className="text-sm mb-2 block">Text Color</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      type="color"
-                      value={headerSettings[mode].textColor}
-                      onChange={(e) => handleHeaderSettingChange(mode, 'textColor', e.target.value)}
-                      className="w-12 h-8 p-1 rounded"
-                    />
-                    <Input
-                      value={headerSettings[mode].textColor}
-                      onChange={(e) => handleHeaderSettingChange(mode, 'textColor', e.target.value)}
-                      className="flex-1"
-                    />
-                  </div>
-                </div>
-
-                <div className="md:col-span-2">
-                  <Label className="text-sm mb-2 block">Border Color</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      type="color"
-                      value={headerSettings[mode].borderColor}
-                      onChange={(e) => handleHeaderSettingChange(mode, 'borderColor', e.target.value)}
-                      className="w-12 h-8 p-1 rounded"
-                    />
-                    <Input
-                      value={headerSettings[mode].borderColor}
-                      onChange={(e) => handleHeaderSettingChange(mode, 'borderColor', e.target.value)}
-                      className="flex-1"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-
-          <div className="flex gap-2 pt-4 border-t">
-            <Button onClick={applyAllSettings} size="sm" className="flex-1">
-              Apply Header Settings
-            </Button>
-            <Button onClick={resetHeaderSettings} variant="outline" size="sm" className="flex items-center gap-1">
-              <RotateCcw className="h-4 w-4" />
-              Reset
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-
-  const renderTypographySection = () => (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Type className="h-5 w-5" />
-          Typography Settings
-        </CardTitle>
-        <CardDescription>
-          Configure fonts, page titles, and text styling.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label className="text-sm mb-2 block">Heading Font</Label>
-              <Select
-                value={typographySettings.headingFont}
-                onValueChange={(value) => handleTypographyChange('headingFont', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {fontOptions.map((font) => (
-                    <SelectItem key={font} value={font}>{font}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label className="text-sm mb-2 block">Body Font</Label>
-              <Select
-                value={typographySettings.bodyFont}
-                onValueChange={(value) => handleTypographyChange('bodyFont', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {fontOptions.map((font) => (
-                    <SelectItem key={font} value={font}>{font}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="border rounded-lg p-4">
-            <h4 className="font-medium mb-4">Page Title Settings</h4>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label className="text-sm mb-2 block">Font Size</Label>
-                <Select
-                  value={typographySettings.pageTitleSize}
-                  onValueChange={(value) => handleTypographyChange('pageTitleSize', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="18px">18px</SelectItem>
-                    <SelectItem value="20px">20px</SelectItem>
-                    <SelectItem value="24px">24px</SelectItem>
-                    <SelectItem value="28px">28px</SelectItem>
-                    <SelectItem value="32px">32px</SelectItem>
-                    <SelectItem value="36px">36px</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label className="text-sm mb-2 block">Font Weight</Label>
-                <Select
-                  value={typographySettings.pageTitleWeight}
-                  onValueChange={(value) => handleTypographyChange('pageTitleWeight', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="400">Normal (400)</SelectItem>
-                    <SelectItem value="500">Medium (500)</SelectItem>
-                    <SelectItem value="600">Semi Bold (600)</SelectItem>
-                    <SelectItem value="700">Bold (700)</SelectItem>
-                    <SelectItem value="800">Extra Bold (800)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label className="text-sm mb-2 block">Light Mode Color</Label>
-                <div className="flex gap-2">
-                  <Input
-                    type="color"
-                    value={typographySettings.pageTitleColor.light}
-                    onChange={(e) => handlePageTitleColorChange('light', e.target.value)}
-                    className="w-12 h-8 p-1 rounded"
-                  />
-                  <Input
-                    value={typographySettings.pageTitleColor.light}
-                    onChange={(e) => handlePageTitleColorChange('light', e.target.value)}
-                    className="flex-1"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-sm mb-2 block">Dark Mode Color</Label>
-                <div className="flex gap-2">
-                  <Input
-                    type="color"
-                    value={typographySettings.pageTitleColor.dark}
-                    onChange={(e) => handlePageTitleColorChange('dark', e.target.value)}
-                    className="w-12 h-8 p-1 rounded"
-                  />
-                  <Input
-                    value={typographySettings.pageTitleColor.dark}
-                    onChange={(e) => handlePageTitleColorChange('dark', e.target.value)}
-                    className="flex-1"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex gap-2 pt-4 border-t">
-            <Button onClick={applyAllSettings} size="sm" className="flex-1">
-              Apply Typography
-            </Button>
-            <Button onClick={resetTypography} variant="outline" size="sm" className="flex items-center gap-1">
-              <RotateCcw className="h-4 w-4" />
-              Reset
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-
   return (
     <SidebarLayout
       menuItems={menuItems}
@@ -946,10 +528,424 @@ const AdminThemeSettings = () => {
 
         {/* Main content */}
         <div className="p-6 max-w-6xl">
-          {activeSection === 'theme' && renderThemeSection()}
-          {activeSection === 'colors' && renderColorsSection()}
-          {activeSection === 'header' && renderHeaderSection()}
-          {activeSection === 'typography' && renderTypographySection()}
+          {activeSection === 'theme' && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Monitor className="h-5 w-5" />
+                  Theme Preference
+                </CardTitle>
+                <CardDescription>
+                  Choose how the application should appear. Your selection will be saved and applied across all sessions.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4">
+                  {themeOptions.map((option) => {
+                    const Icon = option.icon;
+                    const isActive = themeMode === option.id;
+                    
+                    return (
+                      <div
+                        key={option.id}
+                        className={`relative p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 ${
+                          isActive
+                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20 shadow-md'
+                            : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                        }`}
+                        onClick={() => handleThemeChange(option.id)}
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className="flex-shrink-0">
+                            <ThemePreview mode={option.preview} />
+                          </div>
+                          
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Icon className={`h-5 w-5 ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400'}`} />
+                              <h3 className={`font-semibold ${isActive ? 'text-blue-900 dark:text-blue-100' : 'text-slate-900 dark:text-slate-100'}`}>
+                                {option.title}
+                              </h3>
+                            </div>
+                            <p className={`text-sm ${isActive ? 'text-blue-700 dark:text-blue-300' : 'text-slate-600 dark:text-slate-400'}`}>
+                              {option.description}
+                            </p>
+                          </div>
+                          
+                          <div className="flex-shrink-0">
+                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                              isActive 
+                                ? 'border-blue-500 bg-blue-500' 
+                                : 'border-slate-300 dark:border-slate-600'
+                            }`}>
+                              {isActive && <div className="w-2 h-2 bg-white rounded-full" />}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {activeSection === 'colors' && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Palette className="h-5 w-5" />
+                  Color Customization
+                </CardTitle>
+                <CardDescription>
+                  Customize theme colors for both light and dark modes.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {Object.entries(colorGroupLabels).map(([key, label]) => (
+                    <Button
+                      key={key}
+                      variant={activeColorGroup === key ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setActiveColorGroup(key)}
+                      className="text-xs"
+                    >
+                      {label}
+                    </Button>
+                  ))}
+                </div>
+
+                <div className="space-y-4 max-h-96 overflow-y-auto">
+                  {colorGroups[activeColorGroup as keyof typeof colorGroups]?.map((colorKey) => (
+                    <div key={colorKey} className="p-3 border rounded-lg">
+                      <Label className="text-sm font-medium mb-2 block capitalize">
+                        {colorKey.replace(/-/g, ' ')}
+                      </Label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-xs text-slate-500 mb-1 block">Light Mode</Label>
+                          <div className="flex gap-2">
+                            <Input
+                              type="color"
+                              value={rgbToHex(colors[colorKey]?.light || '255 255 255')}
+                              onChange={(e) => handleColorChange(colorKey, 'light', e.target.value)}
+                              className="w-12 h-8 p-1 rounded"
+                            />
+                            <Input
+                              type="text"
+                              value={rgbToHex(colors[colorKey]?.light || '255 255 255')}
+                              onChange={(e) => handleColorChange(colorKey, 'light', e.target.value)}
+                              className="text-xs flex-1"
+                              placeholder="#ffffff"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <Label className="text-xs text-slate-500 mb-1 block">Dark Mode</Label>
+                          <div className="flex gap-2">
+                            <Input
+                              type="color"
+                              value={rgbToHex(colors[colorKey]?.dark || '14 17 23')}
+                              onChange={(e) => handleColorChange(colorKey, 'dark', e.target.value)}
+                              className="w-12 h-8 p-1 rounded"
+                            />
+                            <Input
+                              type="text"
+                              value={rgbToHex(colors[colorKey]?.dark || '14 17 23')}
+                              onChange={(e) => handleColorChange(colorKey, 'dark', e.target.value)}
+                              className="text-xs flex-1"
+                              placeholder="#0e1117"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex gap-2 mt-4 pt-4 border-t">
+                  <Button onClick={applyColors} size="sm" className="flex-1">
+                    Apply Colors
+                  </Button>
+                  <Button onClick={resetColors} variant="outline" size="sm" className="flex items-center gap-1">
+                    <RotateCcw className="h-4 w-4" />
+                    Reset
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {activeSection === 'header' && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Image className="h-5 w-5" />
+                  Header & Logo Settings
+                </CardTitle>
+                <CardDescription>
+                  Configure the header appearance and logo for both light and dark modes.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  {(['light', 'dark'] as const).map((mode) => (
+                    <div key={mode} className="p-4 border rounded-lg">
+                      <h4 className="font-medium mb-4 capitalize">{mode} Mode Header</h4>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-sm mb-2 block">Logo Type</Label>
+                          <Select
+                            value={headerSettings[mode].logoType}
+                            onValueChange={(value: 'text' | 'image') => handleHeaderSettingChange(mode, 'logoType', value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="text">Text Logo</SelectItem>
+                              <SelectItem value="image">Image Logo</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {headerSettings[mode].logoType === 'text' ? (
+                          <div>
+                            <Label className="text-sm mb-2 block">Logo Text</Label>
+                            <Input
+                              value={headerSettings[mode].logoText}
+                              onChange={(e) => handleHeaderSettingChange(mode, 'logoText', e.target.value)}
+                              placeholder="Your App Name"
+                            />
+                          </div>
+                        ) : (
+                          <div>
+                            <Label className="text-sm mb-2 block">Logo Image URL</Label>
+                            <div className="flex gap-2">
+                              <Input
+                                value={headerSettings[mode].logoImage}
+                                onChange={(e) => handleHeaderSettingChange(mode, 'logoImage', e.target.value)}
+                                placeholder="https://example.com/logo.png"
+                                className="flex-1"
+                              />
+                              <Button variant="outline" size="sm">
+                                <Upload className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+
+                        <div>
+                          <Label className="text-sm mb-2 block">Background Color</Label>
+                          <div className="flex gap-2">
+                            <Input
+                              type="color"
+                              value={headerSettings[mode].backgroundColor}
+                              onChange={(e) => handleHeaderSettingChange(mode, 'backgroundColor', e.target.value)}
+                              className="w-12 h-8 p-1 rounded"
+                            />
+                            <Input
+                              value={headerSettings[mode].backgroundColor}
+                              onChange={(e) => handleHeaderSettingChange(mode, 'backgroundColor', e.target.value)}
+                              className="flex-1"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label className="text-sm mb-2 block">Text Color</Label>
+                          <div className="flex gap-2">
+                            <Input
+                              type="color"
+                              value={headerSettings[mode].textColor}
+                              onChange={(e) => handleHeaderSettingChange(mode, 'textColor', e.target.value)}
+                              className="w-12 h-8 p-1 rounded"
+                            />
+                            <Input
+                              value={headerSettings[mode].textColor}
+                              onChange={(e) => handleHeaderSettingChange(mode, 'textColor', e.target.value)}
+                              className="flex-1"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="md:col-span-2">
+                          <Label className="text-sm mb-2 block">Border Color</Label>
+                          <div className="flex gap-2">
+                            <Input
+                              type="color"
+                              value={headerSettings[mode].borderColor}
+                              onChange={(e) => handleHeaderSettingChange(mode, 'borderColor', e.target.value)}
+                              className="w-12 h-8 p-1 rounded"
+                            />
+                            <Input
+                              value={headerSettings[mode].borderColor}
+                              onChange={(e) => handleHeaderSettingChange(mode, 'borderColor', e.target.value)}
+                              className="flex-1"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  <div className="flex gap-2 pt-4 border-t">
+                    <Button onClick={applyAllSettings} size="sm" className="flex-1">
+                      Apply Header Settings
+                    </Button>
+                    <Button onClick={resetHeaderSettings} variant="outline" size="sm" className="flex items-center gap-1">
+                      <RotateCcw className="h-4 w-4" />
+                      Reset
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {activeSection === 'typography' && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Type className="h-5 w-5" />
+                  Typography Settings
+                </CardTitle>
+                <CardDescription>
+                  Configure fonts, page titles, and text styling.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sm mb-2 block">Heading Font</Label>
+                      <Select
+                        value={typographySettings.headingFont}
+                        onValueChange={(value) => handleTypographyChange('headingFont', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {fontOptions.map((font) => (
+                            <SelectItem key={font} value={font}>{font}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label className="text-sm mb-2 block">Body Font</Label>
+                      <Select
+                        value={typographySettings.bodyFont}
+                        onValueChange={(value) => handleTypographyChange('bodyFont', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {fontOptions.map((font) => (
+                            <SelectItem key={font} value={font}>{font}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="border rounded-lg p-4">
+                    <h4 className="font-medium mb-4">Page Title Settings</h4>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-sm mb-2 block">Font Size</Label>
+                        <Select
+                          value={typographySettings.pageTitleSize}
+                          onValueChange={(value) => handleTypographyChange('pageTitleSize', value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="18px">18px</SelectItem>
+                            <SelectItem value="20px">20px</SelectItem>
+                            <SelectItem value="24px">24px</SelectItem>
+                            <SelectItem value="28px">28px</SelectItem>
+                            <SelectItem value="32px">32px</SelectItem>
+                            <SelectItem value="36px">36px</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm mb-2 block">Font Weight</Label>
+                        <Select
+                          value={typographySettings.pageTitleWeight}
+                          onValueChange={(value) => handleTypographyChange('pageTitleWeight', value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="400">Normal (400)</SelectItem>
+                            <SelectItem value="500">Medium (500)</SelectItem>
+                            <SelectItem value="600">Semi Bold (600)</SelectItem>
+                            <SelectItem value="700">Bold (700)</SelectItem>
+                            <SelectItem value="800">Extra Bold (800)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm mb-2 block">Light Mode Color</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            type="color"
+                            value={typographySettings.pageTitleColor.light}
+                            onChange={(e) => handlePageTitleColorChange('light', e.target.value)}
+                            className="w-12 h-8 p-1 rounded"
+                          />
+                          <Input
+                            value={typographySettings.pageTitleColor.light}
+                            onChange={(e) => handlePageTitleColorChange('light', e.target.value)}
+                            className="flex-1"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm mb-2 block">Dark Mode Color</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            type="color"
+                            value={typographySettings.pageTitleColor.dark}
+                            onChange={(e) => handlePageTitleColorChange('dark', e.target.value)}
+                            className="w-12 h-8 p-1 rounded"
+                          />
+                          <Input
+                            value={typographySettings.pageTitleColor.dark}
+                            onChange={(e) => handlePageTitleColorChange('dark', e.target.value)}
+                            className="flex-1"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 pt-4 border-t">
+                    <Button onClick={applyAllSettings} size="sm" className="flex-1">
+                      Apply Typography
+                    </Button>
+                    <Button onClick={resetTypography} variant="outline" size="sm" className="flex items-center gap-1">
+                      <RotateCcw className="h-4 w-4" />
+                      Reset
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Global Actions */}
           <Card className="mt-6">
