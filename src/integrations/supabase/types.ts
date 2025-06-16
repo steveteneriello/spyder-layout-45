@@ -4326,6 +4326,12 @@ export type Database = {
         Args: { geom1: unknown; geom2: unknown }
         Returns: boolean
       }
+      execute_sql: {
+        Args: { sql_query: string; sql_params?: Json }
+        Returns: {
+          result: Json
+        }[]
+      }
       extract_domain: {
         Args: { input_url: string }
         Returns: string

@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import CityFilters from "./CityFilters";
+import CityDemographicsDrawer from "./CityDemographicsDrawer";
 
 interface CityData {
   id: string;
@@ -36,6 +38,8 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
   const [selectedCities, setSelectedCities] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [selectedCityForDrawer, setSelectedCityForDrawer] = useState<CityData | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   
   // Dynamic filter ranges
   const [maxPopulation, setMaxPopulation] = useState(1000000);
@@ -260,6 +264,16 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
     }
   };
 
+  const handleCityInfoClick = (city: CityData) => {
+    setSelectedCityForDrawer(city);
+    setDrawerOpen(true);
+  };
+
+  const handleDrawerClose = () => {
+    setDrawerOpen(false);
+    setSelectedCityForDrawer(null);
+  };
+
   const handleCitySelection = (cityId: string, checked: boolean) => {
     const newSelected = new Set(selectedCities);
     if (checked) {
@@ -365,9 +379,19 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
                     <h4 className="font-medium text-slate-900 truncate">{city.city}</h4>
-                    <span className="text-sm text-slate-500 ml-2">
-                      {city.population?.toLocaleString() || 'N/A'}
-                    </span>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-slate-500">
+                        {city.population?.toLocaleString() || 'N/A'}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleCityInfoClick(city)}
+                        className="h-6 w-6 p-0 hover:bg-blue-100"
+                      >
+                        <Info className="h-4 w-4 text-blue-600" />
+                      </Button>
+                    </div>
                   </div>
                   <p className="text-sm text-slate-600">
                     {city.county_name}, {city.state_name}
@@ -415,6 +439,12 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
           </p>
         </div>
       )}
+
+      <CityDemographicsDrawer
+        isOpen={drawerOpen}
+        onClose={handleDrawerClose}
+        city={selectedCityForDrawer}
+      />
     </div>
   );
 };
