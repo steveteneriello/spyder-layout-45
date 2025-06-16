@@ -1,0 +1,100 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Default Tailwind/shadcn variables - will be overridden by theme system */
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --radius: 0.5rem;
+
+    /* Theme system variables - will be set by GlobalThemeProvider */
+    --bg-primary: 255 255 255;
+    --bg-secondary: 251 252 253;
+    --bg-tertiary: 248 249 250;
+    --bg-hover: 241 243 245;
+    --bg-active: 233 236 239;
+    --bg-selected: 227 242 253;
+    --text-primary: 26 32 44;
+    --text-secondary: 74 85 104;
+    --text-tertiary: 113 128 150;
+    --text-inverse: 255 255 255;
+    --accent-primary: 49 130 206;
+    --accent-primary-hover: 44 82 130;
+    --accent-primary-active: 42 67 101;
+    --success: 56 161 105;
+    --warning: 221 107 32;
+    --error: 229 62 62;
+    --border-primary: 226 232 240;
+    --border-secondary: 241 243 245;
+    --border-focus: 49 130 206;
+  }
+
+  * {
+    @apply border-border;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+
+  /* Ensure proper theme application */
+  #root {
+    min-height: 100vh;
+  }
+}
+
+/* Utility classes for theme-aware styling */
+@layer utilities {
+  .theme-bg-primary {
+    background-color: rgb(var(--bg-primary)) !important;
+  }
+
+  .theme-bg-secondary {
+    background-color: rgb(var(--bg-secondary)) !important;
+  }
+
+  .theme-text-primary {
+    color: rgb(var(--text-primary)) !important;
+  }
+
+  .theme-text-secondary {
+    color: rgb(var(--text-secondary)) !important;
+  }
+
+  .theme-border-primary {
+    border-color: rgb(var(--border-primary)) !important;
+  }
+
+  .theme-accent-primary {
+    background-color: rgb(var(--accent-primary)) !important;
+  }
+}
+
+/* Ensure smooth transitions for theme changes */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}

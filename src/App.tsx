@@ -10,8 +10,9 @@ import SchedulerDashboard from "./pages/SchedulerDashboard";
 import CreateSchedule from "./pages/CreateSchedule";
 import LocationBuilder from "./pages/LocationBuilder";
 import Theme from "./pages/Theme";
-import AdminThemeSettings from "./pages/AdminThemeSettings";
+import AdminThemeSettings from "./pages/admin/ThemeSettings";
 import NotFound from "./pages/NotFound";
+import './styles/globals.css';
 
 const queryClient = new QueryClient();
 
