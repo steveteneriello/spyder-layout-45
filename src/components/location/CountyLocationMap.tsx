@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { Wrapper, Status } from "@googlemaps/react-wrapper";
 import { Button } from "@/components/ui/button";
@@ -355,8 +356,10 @@ const CountyLocationMap: React.FC<CountyLocationMapProps> = ({
     <div className="h-full w-full relative">
       {/* Top Controls Bar */}
       <div className="absolute top-4 left-4 right-4 z-10 flex items-center justify-between">
-        {/* Left side - Saved Lists Button */}
-        <SavedListsButton onListSelect={onListSelect} />
+        {/* Left side - Saved Lists Button - moved down slightly */}
+        <div className="mt-12">
+          <SavedListsButton onListSelect={onListSelect} />
+        </div>
         
         {/* Center - Toggle Controls */}
         <div className="bg-white rounded-lg shadow-lg p-2">
@@ -389,11 +392,11 @@ const CountyLocationMap: React.FC<CountyLocationMapProps> = ({
         <div></div>
       </div>
 
-      {/* State Filter Tags */}
+      {/* State Filter Tags - with toggle behavior */}
       {searchResults.length > 0 && (
         <div className="absolute top-20 left-4 right-4 z-10">
           <div className="bg-white rounded-lg shadow-lg p-3">
-            <div className="text-xs font-semibold text-slate-800 mb-2">Filter by State</div>
+            <div className="text-xs font-semibold text-slate-800 mb-2">Filter by State (Toggle)</div>
             <StateFilterTags
               searchResults={searchResults}
               selectedStates={selectedStates}
