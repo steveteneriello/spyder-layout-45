@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Search, MapPin, Plus, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -175,12 +176,24 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
       let locationsWithinRadius = 0;
       
       locationData.forEach(location => {
+        // Ensure coordinates are numbers
+        const locationLat = typeof location.latitude === 'number' ? location.latitude : parseFloat(location.latitude);
+        const locationLng = typeof location.longitude === 'number' ? location.longitude : parseFloat(location.longitude);
+        
+        // Skip if coordinates are invalid
+        if (isNaN(locationLat) || isNaN(locationLng)) {
+          console.log('Skipping location with invalid coordinates:', location);
+          return;
+        }
+
         const distance = calculateDistance(
           searchCoords.lat,
           searchCoords.lng,
-          location.latitude,
-          location.longitude
+          locationLat,
+          locationLng
         );
+
+        console.log(`Distance from ${location.city}, ${location.county_name}: ${distance.toFixed(2)} miles`);
 
         // Only process locations within the actual search radius
         if (distance <= radiusMiles) {
@@ -203,8 +216,8 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
               id: countyKey,
               county_name: location.county_name,
               state_name: location.state_name,
-              center_lat: location.latitude,
-              center_lng: location.longitude,
+              center_lat: locationLat,
+              center_lng: locationLng,
               distance_miles: Math.round(distance * 10) / 10,
               total_population: parseNumber(location.population) || 0,
               avg_income_household_median: parseNumber(location.income_household_median),
@@ -235,8 +248,8 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
             if (distance < county.min_distance) {
               county.min_distance = distance;
               county.distance_miles = Math.round(distance * 10) / 10;
-              county.center_lat = location.latitude;
-              county.center_lng = location.longitude;
+              county.center_lat = locationLat;
+              county.center_lng = locationLng;
             }
             
             // Update averages
@@ -258,8 +271,7 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
           const { total_population_sum, income_sum, home_value_sum, location_count_for_avg, min_distance, ...cleanCounty } = county;
           return cleanCounty;
         })
-        .sort((a, b) => a.distance_miles - b.distance_miles) // Sort by distance, closest first
-        ;
+        .sort((a, b) => a.distance_miles - b.distance_miles); // Sort by distance, closest first
 
       console.log('Final search results:', results.length, 'counties found');
       console.log('Sample counties:', results.slice(0, 3).map(c => ({ name: c.county_name, state: c.state_name, distance: c.distance_miles, cities: c.city_count })));
