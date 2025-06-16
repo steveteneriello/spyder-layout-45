@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -36,6 +35,7 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
   const [filteredCities, setFilteredCities] = useState<CityData[]>([]);
   const [selectedCities, setSelectedCities] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   
   // Filter states
   const [populationRange, setPopulationRange] = useState<[number, number]>([0, 1000000]);
@@ -252,16 +252,20 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
       </div>
 
       {/* Filters */}
-      <div className="p-4 border-b border-slate-200">
-        <CityFilters
-          populationRange={populationRange}
-          incomeRange={incomeRange}
-          homeValueRange={homeValueRange}
-          onPopulationChange={setPopulationRange}
-          onIncomeChange={setIncomeRange}
-          onHomeValueChange={setHomeValueRange}
-          onClearFilters={clearFilters}
-        />
+      <div className="border-b border-slate-200">
+        <div className="p-4">
+          <CityFilters
+            populationRange={populationRange}
+            incomeRange={incomeRange}
+            homeValueRange={homeValueRange}
+            onPopulationChange={setPopulationRange}
+            onIncomeChange={setIncomeRange}
+            onHomeValueChange={setHomeValueRange}
+            onClearFilters={clearFilters}
+            isOpen={filtersOpen}
+            onToggle={() => setFiltersOpen(!filtersOpen)}
+          />
+        </div>
       </div>
 
       <div className="flex-1 overflow-auto">
