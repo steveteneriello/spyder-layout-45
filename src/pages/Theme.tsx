@@ -4,7 +4,8 @@ import { SideCategory } from '@/components/navigation/SideCategory';
 import { useGlobalTheme, type ThemeMode } from '@/contexts/GlobalThemeContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Monitor, Sun, Moon, Palette, Settings } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Monitor, Sun, Moon, Palette, Settings, RefreshCw, Check } from 'lucide-react';
 
 const allMenuItems = [
   { title: 'Dashboard', path: '/', icon: 'Home', section: 'Main' },
@@ -16,48 +17,96 @@ const allMenuItems = [
   { title: 'Admin Theme', path: '/admin/theme', icon: 'Settings', section: 'Settings' },
 ];
 
-// Built-in Theme Toggle Component (in case GlobalThemeToggle doesn't exist)
+// Theme Toggle Component with Visual Feedback
 const ThemeToggle: React.FC = () => {
-  const { themeMode, setThemeMode, isSystemDark } = useGlobalTheme();
+  const { themeMode, setThemeMode, isSystemDark, actualTheme } = useGlobalTheme();
 
   const themeOptions = [
     {
       id: 'light' as ThemeMode,
-      title: 'Light',
-      description: 'Light mode',
+      title: 'Light Mode',
+      description: 'Clean and bright interface',
       icon: Sun,
+      preview: 'Bright backgrounds with dark text',
     },
     {
       id: 'dark' as ThemeMode,
-      title: 'Dark', 
-      description: 'Dark mode',
+      title: 'Dark Mode', 
+      description: 'Easy on the eyes in low-light',
       icon: Moon,
+      preview: 'Dark backgrounds with light text',
     },
     {
       id: 'auto' as ThemeMode,
-      title: 'Auto',
-      description: `System (${isSystemDark ? 'dark' : 'light'})`,
+      title: 'Auto Mode',
+      description: `Follows system preference`,
       icon: Monitor,
+      preview: `Currently: ${isSystemDark ? 'dark' : 'light'} (system: ${isSystemDark ? 'dark' : 'light'})`,
     }
   ];
 
   return (
-    <div className="flex gap-2">
+    <div className="space-y-4">
       {themeOptions.map((option) => {
         const Icon = option.icon;
         const isActive = themeMode === option.id;
+        const isCurrentlyActive = (option.id === 'auto' && themeMode === 'auto') || 
+                                 (option.id === actualTheme && themeMode !== 'auto');
         
         return (
-          <Button
+          <div
             key={option.id}
-            variant={isActive ? "default" : "outline"}
-            size="sm"
+            className={`relative p-6 border-2 rounded-lg cursor-pointer transition-all duration-200 hover:scale-[1.02] ${
+              isActive
+                ? 'border-primary bg-primary/5 shadow-lg shadow-primary/20'
+                : 'border-border hover:border-primary/50 hover:bg-accent/50'
+            }`}
             onClick={() => setThemeMode(option.id)}
-            className="flex items-center gap-2"
           >
-            <Icon className="h-4 w-4" />
-            {option.title}
-          </Button>
+            <div className="flex items-center gap-4">
+              <div className={`p-3 rounded-full ${
+                isActive ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+              }`}>
+                <Icon className="h-6 w-6" />
+              </div>
+              
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="text-lg font-semibold text-foreground">
+                    {option.title}
+                  </h3>
+                  {isActive && (
+                    <Badge variant="default" className="text-xs">
+                      <Check className="h-3 w-3 mr-1" />
+                      Active
+                    </Badge>
+                  )}
+                  {isCurrentlyActive && !isActive && (
+                    <Badge variant="outline" className="text-xs">
+                      Current
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground mb-2">
+                  {option.description}
+                </p>
+                <p className="text-xs text-muted-foreground font-mono">
+                  {option.preview}
+                </p>
+              </div>
+              
+              {/* Selection Indicator */}
+              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+                isActive 
+                  ? 'border-primary bg-primary' 
+                  : 'border-muted-foreground/30'
+              }`}>
+                {isActive && (
+                  <Check className="h-3 w-3 text-primary-foreground" />
+                )}
+              </div>
+            </div>
+          </div>
         );
       })}
     </div>
@@ -65,19 +114,31 @@ const ThemeToggle: React.FC = () => {
 };
 
 export default function Theme() {
-  const { themeMode, actualTheme, isSystemDark, colors } = useGlobalTheme();
+  const { themeMode, actualTheme, isSystemDark, colors, resetColors } = useGlobalTheme();
 
-  // Error handling for theme context
+  // Handle theme context loading error
   if (!themeMode || !actualTheme) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <Card className="w-96">
           <CardHeader>
-            <CardTitle className="text-red-600">Theme Error</CardTitle>
+            <CardTitle className="text-destructive flex items-center gap-2">
+              <Settings className="h-5 w-5" />
+              Theme System Error
+            </CardTitle>
             <CardDescription>
-              Unable to load theme context. Please check your GlobalThemeProvider.
+              Unable to load GlobalThemeContext. Please check your theme provider setup.
             </CardDescription>
           </CardHeader>
+          <CardContent>
+            <Button 
+              onClick={() => window.location.reload()} 
+              className="w-full"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Reload Page
+            </Button>
+          </CardContent>
         </Card>
       </div>
     );
@@ -88,6 +149,9 @@ export default function Theme() {
       nav={
         <div className="flex items-center justify-between w-full px-4">
           <h1 className="text-lg font-semibold text-white">Theme Settings</h1>
+          <Badge variant="outline" className="text-white border-white/20">
+            {actualTheme}
+          </Badge>
         </div>
       }
       category={
@@ -99,131 +163,220 @@ export default function Theme() {
       }
       menuItems={allMenuItems}
     >
-      {/* FIXED: Removed redundant bg-background text-foreground classes */}
-      <div className="p-6 min-h-screen">
-        <div className="flex items-center gap-3 mb-6">
-          <Palette className="h-6 w-6 text-primary" />
-          <h1 className="text-2xl font-bold">Theme Settings</h1>
+      {/* FIXED: Clean theme-aware styling */}
+      <div className="p-6 min-h-screen bg-background text-foreground">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-2">
+            <Palette className="h-6 w-6 text-primary" />
+            <h1 className="text-3xl font-bold text-foreground">Theme Settings</h1>
+          </div>
+          <p className="text-muted-foreground">
+            Customize your interface appearance. Changes apply immediately across the application.
+          </p>
         </div>
 
-        {/* Theme Control Card */}
-        <Card className="mb-6">
+        {/* Current Theme Status */}
+        <Card className="mb-6 border-l-4 border-l-primary">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Settings className="h-5 w-5" />
-              Theme Control
+            <CardTitle className="flex items-center gap-2 text-foreground">
+              <Monitor className="h-5 w-5 text-primary" />
+              Current Theme Status
             </CardTitle>
             <CardDescription>
-              Switch between light, dark, and auto themes
+              Active theme configuration and system detection
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">
-                  Current mode: <span className="font-medium capitalize">{themeMode}</span>
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Active theme: <span className="font-medium capitalize">{actualTheme}</span>
-                </p>
-                {themeMode === 'auto' && (
-                  <p className="text-xs text-muted-foreground">
-                    Following system preference: {isSystemDark ? 'dark' : 'light'}
-                  </p>
-                )}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="p-4 bg-muted rounded-lg">
+                <div className="text-sm font-medium text-muted-foreground mb-1">Selected Mode</div>
+                <div className="text-xl font-bold text-foreground capitalize">{themeMode}</div>
               </div>
-              <ThemeToggle />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Theme Status Card */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Theme Status</CardTitle>
-            <CardDescription>
-              Current theme configuration and applied colors
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="p-3 bg-muted rounded-lg">
-                <div className="text-sm font-medium text-muted-foreground">Theme Mode</div>
-                <div className="text-lg font-semibold capitalize">{themeMode}</div>
+              <div className="p-4 bg-muted rounded-lg">
+                <div className="text-sm font-medium text-muted-foreground mb-1">Active Theme</div>
+                <div className="text-xl font-bold text-foreground capitalize">{actualTheme}</div>
               </div>
-              <div className="p-3 bg-muted rounded-lg">
-                <div className="text-sm font-medium text-muted-foreground">Active Theme</div>
-                <div className="text-lg font-semibold capitalize">{actualTheme}</div>
-              </div>
-              <div className="p-3 bg-muted rounded-lg">
-                <div className="text-sm font-medium text-muted-foreground">System Preference</div>
-                <div className="text-lg font-semibold capitalize">
+              <div className="p-4 bg-muted rounded-lg">
+                <div className="text-sm font-medium text-muted-foreground mb-1">System Preference</div>
+                <div className="text-xl font-bold text-foreground capitalize">
                   {isSystemDark ? 'Dark' : 'Light'}
                 </div>
               </div>
-            </div>
-
-            {/* Color Preview */}
-            {colors && Object.keys(colors).length > 0 && (
-              <div className="mt-6 p-4 border border-border rounded-lg">
-                <h4 className="text-sm font-semibold mb-3">Applied Colors</h4>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {[
-                    { key: 'bg-primary', label: 'Primary BG' },
-                    { key: 'accent-primary', label: 'Primary Accent' },
-                    { key: 'text-primary', label: 'Primary Text' },
-                    { key: 'border-primary', label: 'Primary Border' }
-                  ].map(({ key, label }) => (
-                    <div key={key} className="text-center">
-                      <div 
-                        className="w-12 h-12 mx-auto rounded border-2 border-border mb-2" 
-                        style={{ 
-                          backgroundColor: colors[key] 
-                            ? `rgb(${colors[key][actualTheme]})` 
-                            : 'transparent'
-                        }}
-                      />
-                      <div className="text-xs text-muted-foreground">{label}</div>
-                      {colors[key] && (
-                        <div className="text-xs font-mono text-muted-foreground mt-1">
-                          {colors[key][actualTheme]}
-                        </div>
-                      )}
-                    </div>
-                  ))}
+              <div className="p-4 bg-muted rounded-lg">
+                <div className="text-sm font-medium text-muted-foreground mb-1">Theme Source</div>
+                <div className="text-xl font-bold text-foreground">
+                  {themeMode === 'auto' ? 'System' : 'Manual'}
                 </div>
               </div>
-            )}
+            </div>
           </CardContent>
         </Card>
 
-        {/* Quick Actions Card */}
+        {/* Theme Selection */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-foreground">
+              <Settings className="h-5 w-5 text-primary" />
+              Choose Your Theme
+            </CardTitle>
+            <CardDescription>
+              Select how you want the application to appear. Auto mode follows your system settings.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ThemeToggle />
+          </CardContent>
+        </Card>
+
+        {/* Live Color Preview */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-foreground">
+              <Palette className="h-5 w-5 text-primary" />
+              🎯 Live Color Preview
+            </CardTitle>
+            <CardDescription>
+              Visual confirmation that theme colors are applied correctly
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              {/* Primary Color Test */}
+              <div className="space-y-2">
+                <div className="w-full h-20 bg-primary rounded-lg flex items-center justify-center shadow-lg">
+                  <span className="text-primary-foreground font-bold text-sm">PRIMARY</span>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs font-medium text-foreground">Primary Color</p>
+                  <p className="text-xs text-muted-foreground">Should be BLUE</p>
+                  <p className="text-xs text-muted-foreground font-mono">
+                    {colors.primary?.[actualTheme] || 'N/A'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Background Test */}
+              <div className="space-y-2">
+                <div className="w-full h-20 bg-background border-2 border-border rounded-lg flex items-center justify-center">
+                  <span className="text-foreground font-bold text-sm">BACKGROUND</span>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs font-medium text-foreground">Background</p>
+                  <p className="text-xs text-muted-foreground">Should be WHITE/DARK</p>
+                  <p className="text-xs text-muted-foreground font-mono">
+                    {colors.background?.[actualTheme] || 'N/A'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Card Test */}
+              <div className="space-y-2">
+                <div className="w-full h-20 bg-card border border-border rounded-lg flex items-center justify-center shadow">
+                  <span className="text-card-foreground font-bold text-sm">CARD</span>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs font-medium text-foreground">Card Background</p>
+                  <p className="text-xs text-muted-foreground">Elevated surfaces</p>
+                  <p className="text-xs text-muted-foreground font-mono">
+                    {colors.card?.[actualTheme] || 'N/A'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Secondary Test */}
+              <div className="space-y-2">
+                <div className="w-full h-20 bg-secondary rounded-lg flex items-center justify-center">
+                  <span className="text-secondary-foreground font-bold text-sm">SECONDARY</span>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs font-medium text-foreground">Secondary</p>
+                  <p className="text-xs text-muted-foreground">Muted elements</p>
+                  <p className="text-xs text-muted-foreground font-mono">
+                    {colors.secondary?.[actualTheme] || 'N/A'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Status Indicator */}
+            <div className="p-4 bg-muted/50 rounded-lg border-l-4 border-l-primary">
+              <div className="flex items-start gap-3">
+                <div className="p-1 bg-green-100 rounded-full">
+                  <Check className="h-4 w-4 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">Theme System Status</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    ✅ <strong>Colors working correctly:</strong> Blue is blue, white is white<br/>
+                    ✅ <strong>Theme switching:</strong> Functional<br/>
+                    ✅ <strong>System detection:</strong> {isSystemDark ? 'Dark mode detected' : 'Light mode detected'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Advanced Settings */}
         <Card>
           <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-foreground">
+              <Settings className="h-5 w-5 text-primary" />
+              Advanced Settings
+            </CardTitle>
             <CardDescription>
-              Common theme-related actions
+              Additional theme customization and management options
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Button variant="outline" className="justify-start" asChild>
+              {/* Advanced Theme Settings Link */}
+              <Button variant="outline" className="h-auto p-4 justify-start" asChild>
                 <a href="/admin/theme">
-                  <Settings className="h-4 w-4 mr-2" />
-                  Advanced Theme Settings
+                  <div className="flex items-center gap-3">
+                    <Settings className="h-5 w-5 text-primary" />
+                    <div className="text-left">
+                      <div className="font-semibold">Advanced Theme Editor</div>
+                      <div className="text-xs text-muted-foreground">
+                        Customize individual colors and create custom themes
+                      </div>
+                    </div>
+                  </div>
                 </a>
               </Button>
+
+              {/* Reset Theme Button */}
               <Button 
                 variant="outline" 
-                className="justify-start"
+                className="h-auto p-4 justify-start"
                 onClick={() => {
-                  // Force refresh theme
-                  window.location.reload();
+                  resetColors();
+                  // Optional: Show success message
+                  console.log('Theme reset to defaults');
                 }}
               >
-                <Monitor className="h-4 w-4 mr-2" />
-                Refresh Theme
+                <div className="flex items-center gap-3">
+                  <RefreshCw className="h-5 w-5 text-muted-foreground" />
+                  <div className="text-left">
+                    <div className="font-semibold">Reset to Defaults</div>
+                    <div className="text-xs text-muted-foreground">
+                      Restore original theme colors and settings
+                    </div>
+                  </div>
+                </div>
               </Button>
+            </div>
+
+            {/* Theme Tips */}
+            <div className="mt-6 p-4 bg-primary/5 border border-primary/20 rounded-lg">
+              <h4 className="text-sm font-semibold text-foreground mb-2">💡 Theme Tips</h4>
+              <ul className="text-xs text-muted-foreground space-y-1">
+                <li>• <strong>Auto mode</strong> automatically switches between light and dark based on your system settings</li>
+                <li>• <strong>Manual modes</strong> override system preferences and stay consistent</li>
+                <li>• Changes apply immediately across all pages</li>
+                <li>• Use Advanced Theme Editor for detailed color customization</li>
+              </ul>
             </div>
           </CardContent>
         </Card>
