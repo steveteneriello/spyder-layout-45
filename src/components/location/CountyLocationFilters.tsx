@@ -1,7 +1,9 @@
+
 import React, { useState } from 'react';
 import { Search, MapPin, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import CityAutocomplete from "./CityAutocomplete";
@@ -239,7 +241,11 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
         </div>
         
         <div className="w-32">
+          <Label htmlFor="radius" className="text-sm font-medium text-slate-700 mb-1 block">
+            Radius
+          </Label>
           <Input
+            id="radius"
             type="number"
             placeholder="Miles"
             value={radiusMiles}
