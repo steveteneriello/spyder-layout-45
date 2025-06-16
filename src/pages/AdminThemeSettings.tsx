@@ -10,6 +10,8 @@ import { Switch } from '@/components/ui/switch';
 import SidebarLayout from '@/components/layout/SidebarLayout';
 import { SideCategory } from '@/components/navigation/SideCategory';
 import { useGlobalTheme, type ThemeMode } from '@/contexts/GlobalThemeContext';
+import { LogoBrandSettings } from '@/components/LogoBrandSettings';
+import { Image } from 'lucide-react'; // Add Image to your existing lucide imports
 
 const allMenuItems = [
   { title: 'Dashboard', path: '/', icon: 'Home', section: 'Main' },
@@ -72,6 +74,7 @@ const AdminThemeSettings: React.FC = () => {
     { id: 'theme', label: 'Theme Mode', icon: Monitor },
     { id: 'colors', label: 'Color Editor', icon: Palette },
     { id: 'sidebar', label: 'Sidebar & Header', icon: Layout },
+    { id: 'branding', label: 'Logo & Branding', icon: Image }, 
     { id: 'debug', label: 'Debug Settings', icon: Bug },
     { id: 'preview', label: 'Live Preview', icon: Eye },
   ];
@@ -557,6 +560,13 @@ const AdminThemeSettings: React.FC = () => {
                 </CardContent>
               </Card>
             </div>
+          )}
+
+          {/* Logo & Branding Section */}
+          {activeSection === 'branding' && (
+              <div>
+                <LogoBrandSettings />
+                    </div>
           )}
 
           {/* ADDED: Debug Settings Section */}
