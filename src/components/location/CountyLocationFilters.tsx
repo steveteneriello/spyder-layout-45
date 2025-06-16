@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Search, MapPin, Plus, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -106,22 +105,18 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
       console.log('State filters:', selectedStates);
       console.log('Timezone filters:', selectedTimezones);
       
-      // For large searches (>500 miles), use a more generous bounding box
-      // For smaller searches, use a tighter bounding box
-      const bufferMultiplier = radiusMiles > 500 ? 2.5 : 1.5;
-      
-      // Calculate bounding box with appropriate buffer
-      const latRange = (radiusMiles * bufferMultiplier) / 69; // degrees latitude per mile
-      const lngRange = (radiusMiles * bufferMultiplier) / (69 * Math.cos(searchCoords.lat * Math.PI / 180)); // degrees longitude per mile (adjusted for latitude)
+      // Calculate bounding box - use centroid coordinates for more accurate county coverage
+      const latRange = radiusMiles / 69; // degrees latitude per mile
+      const lngRange = radiusMiles / (69 * Math.cos(searchCoords.lat * Math.PI / 180)); // degrees longitude per mile
       
       const minLat = searchCoords.lat - latRange;
       const maxLat = searchCoords.lat + latRange;
       const minLng = searchCoords.lng - lngRange;
       const maxLng = searchCoords.lng + lngRange;
 
-      console.log('Bounding box with', bufferMultiplier, 'x buffer:', { minLat, maxLat, minLng, maxLng });
+      console.log('Bounding box:', { minLat, maxLat, minLng, maxLng });
 
-      // Build query with state and timezone filters - use centroid coordinates for better county representation
+      // Build query using centroid coordinates and county-level indexes
       let query = supabase
         .from('location_data')
         .select(`
@@ -177,39 +172,38 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
         return;
       }
 
-      // Calculate distances for all locations and group by county using centroid coordinates
+      // Group by county and calculate distances using centroid coordinates
       const countyMap = new Map();
       let locationsWithinRadius = 0;
       
       locationData.forEach(location => {
-        // Use centroid coordinates for county distance calculation when available
-        const useCentroid = location.centroid_latitude && location.centroid_longitude;
-        const locationLat = useCentroid 
-          ? (typeof location.centroid_latitude === 'number' ? location.centroid_latitude : parseFloat(location.centroid_latitude))
-          : (typeof location.latitude === 'number' ? location.latitude : parseFloat(location.latitude));
-        const locationLng = useCentroid 
-          ? (typeof location.centroid_longitude === 'number' ? location.centroid_longitude : parseFloat(location.centroid_longitude))
-          : (typeof location.longitude === 'number' ? location.longitude : parseFloat(location.longitude));
+        // Use centroid coordinates for county distance calculation
+        const countyLat = typeof location.centroid_latitude === 'number' 
+          ? location.centroid_latitude 
+          : parseFloat(location.centroid_latitude);
+        const countyLng = typeof location.centroid_longitude === 'number' 
+          ? location.centroid_longitude 
+          : parseFloat(location.centroid_longitude);
         
-        // Skip if coordinates are invalid
-        if (isNaN(locationLat) || isNaN(locationLng)) {
-          console.log('Skipping location with invalid coordinates:', location);
+        // Skip if centroid coordinates are invalid
+        if (isNaN(countyLat) || isNaN(countyLng)) {
+          console.log('Skipping location with invalid centroid coordinates:', location);
           return;
         }
 
         const distance = calculateDistance(
           searchCoords.lat,
           searchCoords.lng,
-          locationLat,
-          locationLng
+          countyLat,
+          countyLng
         );
 
-        // Only process locations within the actual search radius
+        // Only process counties within the actual search radius
         if (distance <= radiusMiles) {
           locationsWithinRadius++;
           const countyKey = `${location.county_name}-${location.state_name}`;
           
-          // Parse numeric values, handling text fields
+          // Parse numeric values
           const parseNumber = (value: any) => {
             if (typeof value === 'number') return value;
             if (typeof value === 'string') {
@@ -220,10 +214,7 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
           };
 
           if (!countyMap.has(countyKey)) {
-            // Create new county entry - use centroid for county center if available
-            const countyLat = useCentroid ? locationLat : (typeof location.latitude === 'number' ? location.latitude : parseFloat(location.latitude));
-            const countyLng = useCentroid ? locationLng : (typeof location.longitude === 'number' ? location.longitude : parseFloat(location.longitude));
-            
+            // Create new county entry using centroid as county center
             countyMap.set(countyKey, {
               id: countyKey,
               county_name: location.county_name,
@@ -260,11 +251,6 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
             if (distance < county.min_distance) {
               county.min_distance = distance;
               county.distance_miles = Math.round(distance * 10) / 10;
-              // Update county center coordinates if this location is closer
-              if (useCentroid) {
-                county.center_lat = locationLat;
-                county.center_lng = locationLng;
-              }
             }
             
             // Update averages
