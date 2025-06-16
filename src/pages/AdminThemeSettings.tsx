@@ -196,13 +196,33 @@ const AdminThemeSettings = () => {
   };
 
   const handleColorChange = (colorKey: string, mode: 'light' | 'dark', value: string) => {
+    console.log('Color change:', colorKey, mode, value);
+    
+    // Convert hex to RGB if needed
+    let rgbValue = value;
+    if (value.startsWith('#')) {
+      const rgb = hexToRgb(value);
+      if (rgb) {
+        rgbValue = rgb;
+      }
+    }
+    
+    console.log('Setting color:', colorKey, mode, rgbValue);
+    
     setColors(prev => ({
       ...prev,
       [colorKey]: {
         ...prev[colorKey],
-        [mode]: value
+        [mode]: rgbValue
       }
     }));
+    
+    // Apply the color immediately
+    if (mode === actualTheme) {
+      const cssVariable = `--${colorKey}`;
+      document.documentElement.style.setProperty(cssVariable, rgbValue);
+      console.log(`Applied ${cssVariable} = ${rgbValue}`);
+    }
   };
 
   const handleHeaderSettingChange = (mode: 'light' | 'dark', key: string, value: string) => {
