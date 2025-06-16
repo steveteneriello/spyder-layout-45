@@ -343,11 +343,42 @@ const AdminThemeSettings = () => {
     console.log('Current theme:', actualTheme);
     console.log('Colors object:', colors);
     
+    // Apply global theme variables
     Object.entries(colors).forEach(([key, values]) => {
       const colorValue = values[actualTheme];
       const cssVariable = `--${key}`;
       document.documentElement.style.setProperty(cssVariable, colorValue);
       console.log(`Set ${cssVariable} to ${colorValue}`);
+    });
+
+    // Map global theme colors to shadcn/ui theme variables
+    const shadcnMapping = {
+      'background': colors['bg-primary'][actualTheme],
+      'foreground': colors['text-primary'][actualTheme],
+      'card': colors['bg-secondary'][actualTheme],
+      'card-foreground': colors['text-primary'][actualTheme],
+      'popover': colors['bg-secondary'][actualTheme],
+      'popover-foreground': colors['text-primary'][actualTheme],
+      'primary': colors['accent-primary'][actualTheme],
+      'primary-foreground': colors['text-inverse'][actualTheme],
+      'secondary': colors['bg-tertiary'][actualTheme],
+      'secondary-foreground': colors['text-secondary'][actualTheme],
+      'muted': colors['bg-tertiary'][actualTheme],
+      'muted-foreground': colors['text-tertiary'][actualTheme],
+      'accent': colors['bg-hover'][actualTheme],
+      'accent-foreground': colors['text-primary'][actualTheme],
+      'destructive': colors['error'][actualTheme],
+      'destructive-foreground': colors['text-inverse'][actualTheme],
+      'border': colors['border-primary'][actualTheme],
+      'input': colors['border-primary'][actualTheme],
+      'ring': colors['border-focus'][actualTheme],
+    };
+
+    // Apply shadcn variables
+    Object.entries(shadcnMapping).forEach(([key, value]) => {
+      const cssVariable = `--${key}`;
+      document.documentElement.style.setProperty(cssVariable, value);
+      console.log(`Set shadcn ${cssVariable} to ${value}`);
     });
     
     console.log('=== Colors applied ===');
