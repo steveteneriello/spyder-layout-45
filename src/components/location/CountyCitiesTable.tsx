@@ -39,6 +39,8 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
   
   // Dynamic filter ranges
   const [maxPopulation, setMaxPopulation] = useState(1000000);
+  const [maxIncome, setMaxIncome] = useState(200000);
+  const [maxHomeValue, setMaxHomeValue] = useState(1250000);
   const [populationRange, setPopulationRange] = useState<[number, number]>([0, 1000000]);
   const [incomeRange, setIncomeRange] = useState<[number, number]>([0, 200000]);
   const [homeValueRange, setHomeValueRange] = useState<[number, number]>([0, 1250000]);
@@ -63,12 +65,25 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
   useEffect(() => {
     if (allCities.length > 0) {
       const populations = allCities.map(c => c.population).filter(p => p !== null && p !== undefined);
+      const incomes = allCities.map(c => c.income_household_median).filter(i => i !== null && i !== undefined);
+      const homeValues = allCities.map(c => c.home_value).filter(h => h !== null && h !== undefined);
+
       if (populations.length > 0) {
         const maxPop = Math.max(...populations);
         setMaxPopulation(maxPop);
-        
-        // Update population range if current max is less than the data max
         setPopulationRange(prevRange => [prevRange[0], maxPop]);
+      }
+
+      if (incomes.length > 0) {
+        const maxInc = Math.max(...incomes);
+        setMaxIncome(maxInc);
+        setIncomeRange(prevRange => [prevRange[0], maxInc]);
+      }
+
+      if (homeValues.length > 0) {
+        const maxHome = Math.max(...homeValues);
+        setMaxHomeValue(maxHome);
+        setHomeValueRange(prevRange => [prevRange[0], maxHome]);
       }
     }
   }, [allCities]);
@@ -128,8 +143,8 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
 
   const clearFilters = () => {
     setPopulationRange([0, maxPopulation]);
-    setIncomeRange([0, 200000]);
-    setHomeValueRange([0, 1250000]);
+    setIncomeRange([0, maxIncome]);
+    setHomeValueRange([0, maxHomeValue]);
   };
 
   const fetchCitiesForCounties = async () => {
@@ -319,6 +334,8 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
             incomeRange={incomeRange}
             homeValueRange={homeValueRange}
             maxPopulation={maxPopulation}
+            maxIncome={maxIncome}
+            maxHomeValue={maxHomeValue}
             onPopulationChange={setPopulationRange}
             onIncomeChange={setIncomeRange}
             onHomeValueChange={setHomeValueRange}

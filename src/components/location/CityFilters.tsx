@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -10,6 +11,8 @@ interface CityFiltersProps {
   incomeRange: [number, number];
   homeValueRange: [number, number];
   maxPopulation: number;
+  maxIncome: number;
+  maxHomeValue: number;
   onPopulationChange: (range: [number, number]) => void;
   onIncomeChange: (range: [number, number]) => void;
   onHomeValueChange: (range: [number, number]) => void;
@@ -23,6 +26,8 @@ const CityFilters: React.FC<CityFiltersProps> = ({
   incomeRange,
   homeValueRange,
   maxPopulation,
+  maxIncome,
+  maxHomeValue,
   onPopulationChange,
   onIncomeChange,
   onHomeValueChange,
@@ -104,7 +109,7 @@ const CityFilters: React.FC<CityFiltersProps> = ({
               value={incomeRange}
               onValueChange={(value) => onIncomeChange(value as [number, number])}
               min={0}
-              max={200000}
+              max={maxIncome}
               step={1000}
               className="w-full"
             />
@@ -119,7 +124,7 @@ const CityFilters: React.FC<CityFiltersProps> = ({
               value={homeValueRange}
               onValueChange={(value) => onHomeValueChange(value as [number, number])}
               min={0}
-              max={1250000}
+              max={maxHomeValue}
               step={5000}
               className="w-full"
             />
