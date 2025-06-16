@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect, createContext, useContext } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 export type ThemeMode = 'light' | 'dark' | 'auto';
 
@@ -16,53 +15,144 @@ interface GlobalThemeContextType {
   setThemeMode: (mode: ThemeMode) => void;
   isSystemDark: boolean;
   colors: ThemeColors;
-  updateColors: (colors: ThemeColors) => void;
-  applyTheme: () => void;
+  updateColors: (newColors: ThemeColors) => void;
+  resetColors: () => void;
 }
+
+// CORRECTED: Proper color mappings - blue stays blue, white stays white
+const defaultColors: ThemeColors = {
+  // Core theme colors with CORRECT mappings
+  'background': { 
+    light: '255 255 255',  // WHITE (not yellow!)
+    dark: '15 23 42'       // Dark slate
+  },
+  'foreground': { 
+    light: '15 23 42',     // Dark text
+    dark: '248 250 252'    // Light text
+  },
+  'card': { 
+    light: '255 255 255',  // WHITE cards
+    dark: '15 23 42'       // Dark cards
+  },
+  'card-foreground': { 
+    light: '15 23 42',     // Dark text on white
+    dark: '248 250 252'    // Light text on dark
+  },
+  'primary': { 
+    light: '59 130 246',   // BLUE (not maroon!)
+    dark: '59 130 246'     // Same blue in dark mode
+  },
+  'primary-foreground': { 
+    light: '255 255 255',  // White text on blue
+    dark: '15 23 42'       // Dark text on blue
+  },
+  'secondary': { 
+    light: '241 245 249',  // Light gray
+    dark: '51 65 85'       // Dark gray
+  },
+  'secondary-foreground': { 
+    light: '15 23 42', 
+    dark: '248 250 252' 
+  },
+  'muted': { 
+    light: '241 245 249', 
+    dark: '51 65 85' 
+  },
+  'muted-foreground': { 
+    light: '100 116 139', 
+    dark: '148 163 184' 
+  },
+  'accent': { 
+    light: '241 245 249', 
+    dark: '51 65 85' 
+  },
+  'accent-foreground': { 
+    light: '15 23 42', 
+    dark: '248 250 252' 
+  },
+  'border': { 
+    light: '226 232 240',  // Light border
+    dark: '51 65 85'       // Dark border
+  },
+  'input': { 
+    light: '226 232 240', 
+    dark: '51 65 85' 
+  },
+  'ring': { 
+    light: '59 130 246',   // Blue focus ring
+    dark: '59 130 246' 
+  },
+
+  // Custom variables (maintaining correct colors)
+  'bg-primary': { 
+    light: '255 255 255',  // WHITE background
+    dark: '15 23 42' 
+  },
+  'bg-secondary': { 
+    light: '248 250 252', 
+    dark: '30 41 59' 
+  },
+  'bg-tertiary': { 
+    light: '241 245 249', 
+    dark: '51 65 85' 
+  },
+  'bg-hover': { 
+    light: '226 232 240', 
+    dark: '71 85 105' 
+  },
+  'text-primary': { 
+    light: '15 23 42',     // Dark text
+    dark: '248 250 252'    // Light text
+  },
+  'text-secondary': { 
+    light: '71 85 105', 
+    dark: '148 163 184' 
+  },
+  'text-tertiary': { 
+    light: '148 163 184', 
+    dark: '100 116 139' 
+  },
+  'text-inverse': { 
+    light: '255 255 255',  // White text
+    dark: '15 23 42' 
+  },
+  'accent-primary': { 
+    light: '59 130 246',   // BLUE accent (not maroon!)
+    dark: '59 130 246' 
+  },
+  'accent-hover': { 
+    light: '37 99 235',    // Darker blue on hover
+    dark: '37 99 235' 
+  },
+  'success': { 
+    light: '22 163 74',    // Green
+    dark: '34 197 94' 
+  },
+  'warning': { 
+    light: '234 179 8',    // Yellow
+    dark: '250 204 21' 
+  },
+  'error': { 
+    light: '220 38 38',    // Red
+    dark: '248 113 113' 
+  },
+  'border-primary': { 
+    light: '226 232 240', 
+    dark: '51 65 85' 
+  },
+  'border-focus': { 
+    light: '59 130 246',   // Blue focus
+    dark: '59 130 246' 
+  },
+};
 
 const GlobalThemeContext = createContext<GlobalThemeContextType | undefined>(undefined);
 
-export const useGlobalTheme = () => {
-  const context = useContext(GlobalThemeContext);
-  if (!context) {
-    throw new Error('useGlobalTheme must be used within a GlobalThemeProvider');
-  }
-  return context;
-};
+interface GlobalThemeProviderProps {
+  children: ReactNode;
+}
 
-// Default theme colors - COMPLETE SET
-const defaultColors: ThemeColors = {
-  'bg-primary': { light: '255 255 255', dark: '14 17 23' },
-  'bg-secondary': { light: '251 252 253', dark: '22 27 34' },
-  'bg-tertiary': { light: '248 249 250', dark: '33 38 45' },
-  'bg-hover': { light: '241 243 245', dark: '48 54 61' },
-  'bg-active': { light: '233 236 239', dark: '55 62 71' },
-  'bg-selected': { light: '227 242 253', dark: '28 33 40' },
-  'text-primary': { light: '26 32 44', dark: '240 246 252' },
-  'text-secondary': { light: '74 85 104', dark: '125 133 144' },
-  'text-tertiary': { light: '113 128 150', dark: '101 109 118' },
-  'text-inverse': { light: '255 255 255', dark: '14 17 23' },
-  'accent-primary': { light: '49 130 206', dark: '56 139 253' },
-  'accent-primary-hover': { light: '44 82 130', dark: '31 111 235' },
-  'accent-primary-active': { light: '42 67 101', dark: '26 84 144' },
-  'success': { light: '56 161 105', dark: '63 185 80' },
-  'warning': { light: '221 107 32', dark: '210 153 34' },
-  'error': { light: '229 62 62', dark: '248 81 73' },
-  'border-primary': { light: '226 232 240', dark: '48 54 61' },
-  'border-secondary': { light: '241 243 245', dark: '33 38 45' },
-  'border-focus': { light: '49 130 206', dark: '56 139 253' },
-  // Sidebar colors (always dark)
-  'sidebar-background': { light: '0 0 0', dark: '0 0 0' },
-  'sidebar-foreground': { light: '255 255 255', dark: '255 255 255' },
-  'sidebar-primary': { light: '255 255 255', dark: '255 255 255' },
-  'sidebar-primary-foreground': { light: '0 0 0', dark: '0 0 0' },
-  'sidebar-accent': { light: '0 0 10.2', dark: '0 0 10.2' },
-  'sidebar-accent-foreground': { light: '255 255 255', dark: '255 255 255' },
-  'sidebar-border': { light: '0 0 0', dark: '0 0 0' },
-  'sidebar-ring': { light: '217 91 60', dark: '217 91 60' },
-};
-
-export const GlobalThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export function GlobalThemeProvider({ children }: GlobalThemeProviderProps) {
   const [themeMode, setThemeModeState] = useState<ThemeMode>('auto');
   const [isSystemDark, setIsSystemDark] = useState(false);
   const [colors, setColors] = useState<ThemeColors>(defaultColors);
@@ -80,99 +170,192 @@ export const GlobalThemeProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
 
-  // Calculate actual theme
-  const actualTheme: 'light' | 'dark' = themeMode === 'auto' ? (isSystemDark ? 'dark' : 'light') : themeMode as 'light' | 'dark';
-
-  const applyTheme = () => {
-    console.log('Applying theme:', actualTheme);
-
-    // Set data attribute for theme
-    document.documentElement.setAttribute('data-theme', actualTheme);
-
-    // Apply all color variables
-    Object.entries(colors).forEach(([key, values]) => {
-      const colorValue = values[actualTheme];
-      const cssVariable = `--${key}`;
-      document.documentElement.style.setProperty(cssVariable, colorValue);
-    });
-
-    // Map to shadcn variables for compatibility
-    const shadcnMapping = {
-      'background': colors['bg-primary'][actualTheme],
-      'foreground': colors['text-primary'][actualTheme],
-      'card': colors['bg-secondary'][actualTheme],
-      'card-foreground': colors['text-primary'][actualTheme],
-      'popover': colors['bg-secondary'][actualTheme],
-      'popover-foreground': colors['text-primary'][actualTheme],
-      'primary': colors['accent-primary'][actualTheme],
-      'primary-foreground': colors['text-inverse'][actualTheme],
-      'secondary': colors['bg-tertiary'][actualTheme],
-      'secondary-foreground': colors['text-secondary'][actualTheme],
-      'muted': colors['bg-tertiary'][actualTheme],
-      'muted-foreground': colors['text-tertiary'][actualTheme],
-      'accent': colors['bg-hover'][actualTheme],
-      'accent-foreground': colors['text-primary'][actualTheme],
-      'destructive': colors['error'][actualTheme],
-      'destructive-foreground': colors['text-inverse'][actualTheme],
-      'border': colors['border-primary'][actualTheme],
-      'input': colors['border-primary'][actualTheme],
-      'ring': colors['border-focus'][actualTheme],
-    };
-
-    // Apply shadcn variables
-    Object.entries(shadcnMapping).forEach(([key, value]) => {
-      document.documentElement.style.setProperty(`--${key}`, value);
-    });
-
-    // Force body styles
-    document.body.style.backgroundColor = `rgb(${colors['bg-primary'][actualTheme]})`;
-    document.body.style.color = `rgb(${colors['text-primary'][actualTheme]})`;
-  };
-
-  const setThemeMode = (mode: ThemeMode) => {
-    setThemeModeState(mode);
-    localStorage.setItem('theme-mode', mode);
-  };
-
-  const updateColors = (newColors: ThemeColors) => {
-    setColors(newColors);
-    localStorage.setItem('theme-colors', JSON.stringify(newColors));
-  };
-
-  // Apply theme when actualTheme or colors change
+  // Load theme from localStorage
   useEffect(() => {
-    applyTheme();
-  }, [actualTheme, colors]);
-
-  // Load saved preferences
-  useEffect(() => {
-    const savedMode = localStorage.getItem('theme-mode') as ThemeMode;
-    const savedColors = localStorage.getItem('theme-colors');
-    
-    if (savedMode) {
-      setThemeModeState(savedMode);
+    const savedTheme = localStorage.getItem('theme-mode') as ThemeMode;
+    if (savedTheme && ['light', 'dark', 'auto'].includes(savedTheme)) {
+      setThemeModeState(savedTheme);
     }
-    
+
+    const savedColors = localStorage.getItem('theme-colors');
     if (savedColors) {
       try {
-        setColors(JSON.parse(savedColors));
-      } catch (e) {
-        console.error('Failed to parse saved colors:', e);
+        const parsedColors = JSON.parse(savedColors);
+        setColors({ ...defaultColors, ...parsedColors });
+      } catch (error) {
+        console.warn('Failed to parse saved colors, using defaults');
       }
     }
   }, []);
 
+  // Calculate actual theme
+  const actualTheme: 'light' | 'dark' = themeMode === 'auto' 
+    ? (isSystemDark ? 'dark' : 'light') 
+    : themeMode as 'light' | 'dark';
+
+  // Set theme mode with persistence
+  const setThemeMode = (mode: ThemeMode) => {
+    console.log('🔄 Setting theme mode:', mode);
+    setThemeModeState(mode);
+    localStorage.setItem('theme-mode', mode);
+  };
+
+  // Update colors with persistence
+  const updateColors = (newColors: ThemeColors) => {
+    console.log('🎨 Updating colors:', newColors);
+    setColors(newColors);
+    localStorage.setItem('theme-colors', JSON.stringify(newColors));
+  };
+
+  // Reset colors to defaults
+  const resetColors = () => {
+    console.log('🔄 Resetting colors to defaults');
+    setColors(defaultColors);
+    localStorage.removeItem('theme-colors');
+  };
+
+  // Apply theme to document
+  useEffect(() => {
+    console.log('🎯 APPLYING CORRECTED THEME SYSTEM');
+    console.log('Mode:', themeMode, '| Actual:', actualTheme);
+    console.log('✅ Blue should be blue:', colors.primary[actualTheme]);
+    console.log('✅ White should be white:', colors.background[actualTheme]);
+
+    // Remove existing theme
+    document.documentElement.className = '';
+    const existing = document.getElementById('corrected-theme-system');
+    if (existing) existing.remove();
+    
+    // Set theme class and attribute
+    if (actualTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    }
+    document.documentElement.setAttribute('data-theme', actualTheme);
+
+    // Create corrected theme CSS
+    const style = document.createElement('style');
+    style.id = 'corrected-theme-system';
+
+    // RGB variables (primary system)
+    const rgbVars = Object.entries(colors).map(([key, values]) => {
+      const colorValue = values[actualTheme];
+      return `  --${key}: ${colorValue};`;
+    }).join('\n');
+
+    // Convert RGB to HSL for shadcn compatibility
+    const rgbToHsl = (rgb: string): string => {
+      if (!rgb || !rgb.includes(' ')) return '0 0% 100%';
+      
+      const parts = rgb.split(' ').map(p => parseInt(p) / 255);
+      if (parts.length !== 3 || parts.some(isNaN)) return '0 0% 100%';
+      
+      const [r, g, b] = parts;
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      let h = 0, s = 0, l = (max + min) / 2;
+
+      if (max !== min) {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+          case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+          case g: h = (b - r) / d + 2; break;
+          case b: h = (r - g) / d + 4; break;
+        }
+        h /= 6;
+      }
+
+      return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
+    };
+
+    // HSL variables for shadcn compatibility
+    const hslVars = [
+      `--background: ${rgbToHsl(colors.background[actualTheme])}`,
+      `--foreground: ${rgbToHsl(colors.foreground[actualTheme])}`,
+      `--card: ${rgbToHsl(colors.card[actualTheme])}`,
+      `--card-foreground: ${rgbToHsl(colors['card-foreground'][actualTheme])}`,
+      `--primary: ${rgbToHsl(colors.primary[actualTheme])}`,
+      `--primary-foreground: ${rgbToHsl(colors['primary-foreground'][actualTheme])}`,
+      `--secondary: ${rgbToHsl(colors.secondary[actualTheme])}`,
+      `--secondary-foreground: ${rgbToHsl(colors['secondary-foreground'][actualTheme])}`,
+      `--muted: ${rgbToHsl(colors.muted[actualTheme])}`,
+      `--muted-foreground: ${rgbToHsl(colors['muted-foreground'][actualTheme])}`,
+      `--accent: ${rgbToHsl(colors.accent[actualTheme])}`,
+      `--accent-foreground: ${rgbToHsl(colors['accent-foreground'][actualTheme])}`,
+      `--border: ${rgbToHsl(colors.border[actualTheme])}`,
+      `--input: ${rgbToHsl(colors.input[actualTheme])}`,
+      `--ring: ${rgbToHsl(colors.ring[actualTheme])}`,
+    ].join(';\n  ') + ';';
+
+    // Complete CSS with both RGB and HSL support
+    style.textContent = `
+      /* CORRECTED THEME SYSTEM - Blue stays blue, white stays white */
+      :root {
+        /* RGB Variables (primary system) */
+${rgbVars}
+        
+        /* HSL Variables (shadcn compatibility) */
+        ${hslVars}
+      }
+
+      /* Force correct body styling */
+      body {
+        background-color: rgb(${colors.background[actualTheme]}) !important;
+        color: rgb(${colors.foreground[actualTheme]}) !important;
+        transition: background-color 0.3s ease, color 0.3s ease !important;
+      }
+
+      /* Essential utility class overrides */
+      .bg-background { background-color: rgb(${colors.background[actualTheme]}) !important; }
+      .bg-card { background-color: rgb(${colors.card[actualTheme]}) !important; }
+      .bg-primary { background-color: rgb(${colors.primary[actualTheme]}) !important; }
+      .bg-secondary { background-color: rgb(${colors.secondary[actualTheme]}) !important; }
+      .bg-muted { background-color: rgb(${colors.muted[actualTheme]}) !important; }
+      .bg-accent { background-color: rgb(${colors.accent[actualTheme]}) !important; }
+      
+      .text-foreground { color: rgb(${colors.foreground[actualTheme]}) !important; }
+      .text-card-foreground { color: rgb(${colors['card-foreground'][actualTheme]}) !important; }
+      .text-primary { color: rgb(${colors.primary[actualTheme]}) !important; }
+      .text-primary-foreground { color: rgb(${colors['primary-foreground'][actualTheme]}) !important; }
+      .text-secondary-foreground { color: rgb(${colors['secondary-foreground'][actualTheme]}) !important; }
+      .text-muted-foreground { color: rgb(${colors['muted-foreground'][actualTheme]}) !important; }
+      .text-accent-foreground { color: rgb(${colors['accent-foreground'][actualTheme]}) !important; }
+      
+      .border-border { border-color: rgb(${colors.border[actualTheme]}) !important; }
+      .border-input { border-color: rgb(${colors.input[actualTheme]}) !important; }
+
+      /* Ensure theme transitions */
+      * {
+        transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+      }
+    `;
+
+    document.head.appendChild(style);
+    console.log('✅ Corrected theme system applied successfully');
+
+  }, [colors, actualTheme, themeMode]);
+
+  const value: GlobalThemeContextType = {
+    themeMode,
+    actualTheme,
+    setThemeMode,
+    isSystemDark,
+    colors,
+    updateColors,
+    resetColors,
+  };
+
   return (
-    <GlobalThemeContext.Provider value={{
-      themeMode,
-      actualTheme,
-      setThemeMode,
-      isSystemDark,
-      colors,
-      updateColors,
-      applyTheme
-    }}>
+    <GlobalThemeContext.Provider value={value}>
       {children}
     </GlobalThemeContext.Provider>
   );
-};
+}
+
+export function useGlobalTheme(): GlobalThemeContextType {
+  const context = useContext(GlobalThemeContext);
+  if (context === undefined) {
+    throw new Error('useGlobalTheme must be used within a GlobalThemeProvider');
+  }
+  return context;
+}
