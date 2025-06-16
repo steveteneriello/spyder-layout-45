@@ -189,10 +189,47 @@ const AdminThemeSettings = () => {
     { title: "Theme Settings", path: "/admin/theme", icon: "palette", section: "Admin" },
   ];
 
-  const handleThemeChange = (mode: ThemeMode) => {
-    setThemeMode(mode);
-    // Reapply colors after theme change to ensure they work with the new theme
-    setTimeout(() => applyColors(), 100);
+  const hexToRgb = (hex: string): string | null => {
+    // Remove # if present and ensure we have a valid hex string
+    const cleanHex = hex.replace('#', '');
+    
+    // Check if it's a valid 6-character hex
+    if (!/^[a-f0-9]{6}$/i.test(cleanHex)) {
+      console.log('Invalid hex format:', hex);
+      return null;
+    }
+    
+    const r = parseInt(cleanHex.substr(0, 2), 16);
+    const g = parseInt(cleanHex.substr(2, 2), 16);
+    const b = parseInt(cleanHex.substr(4, 2), 16);
+    
+    const result = `${r} ${g} ${b}`;
+    console.log(`Converted ${hex} to RGB: ${result}`);
+    return result;
+  };
+
+  const rgbToHex = (rgb: string): string => {
+    const [r, g, b] = rgb.split(' ').map(Number);
+    if (isNaN(r) || isNaN(g) || isNaN(b)) {
+      console.log('Invalid RGB format:', rgb);
+      return '#000000';
+    }
+    return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+  };
+
+  const resetColors = () => {
+    setColors(defaultColors);
+    applyColors();
+  };
+
+  const resetHeaderSettings = () => {
+    setHeaderSettings(defaultHeaderSettings);
+    applyHeaderSettings();
+  };
+
+  const resetTypography = () => {
+    setTypographySettings(defaultTypographySettings);
+    applyTypographySettings();
   };
 
   const handleColorChange = (colorKey: string, mode: 'light' | 'dark', value: string) => {
@@ -204,6 +241,9 @@ const AdminThemeSettings = () => {
       const rgb = hexToRgb(value);
       if (rgb) {
         rgbValue = rgb;
+      } else {
+        console.error('Failed to convert hex to RGB:', value);
+        return; // Don't update if conversion failed
       }
     }
     
@@ -217,7 +257,7 @@ const AdminThemeSettings = () => {
       }
     }));
     
-    // Apply the color immediately
+    // Apply the color immediately if it's for the current theme
     if (mode === actualTheme) {
       const cssVariable = `--${colorKey}`;
       document.documentElement.style.setProperty(cssVariable, rgbValue);
@@ -250,37 +290,6 @@ const AdminThemeSettings = () => {
         [mode]: value
       }
     }));
-  };
-
-  const hexToRgb = (hex: string): string | null => {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    if (result) {
-      const r = parseInt(result[1], 16);
-      const g = parseInt(result[2], 16);
-      const b = parseInt(result[3], 16);
-      return `${r} ${g} ${b}`;
-    }
-    return null;
-  };
-
-  const rgbToHex = (rgb: string): string => {
-    const [r, g, b] = rgb.split(' ').map(Number);
-    return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
-  };
-
-  const resetColors = () => {
-    setColors(defaultColors);
-    applyColors();
-  };
-
-  const resetHeaderSettings = () => {
-    setHeaderSettings(defaultHeaderSettings);
-    applyHeaderSettings();
-  };
-
-  const resetTypography = () => {
-    setTypographySettings(defaultTypographySettings);
-    applyTypographySettings();
   };
 
   const applyColors = () => {
