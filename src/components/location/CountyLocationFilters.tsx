@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Search, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -64,14 +65,14 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
     try {
       console.log('Starting search with coords:', searchCoords, 'radius:', radiusMiles);
       
-      // Calculate bounding box - use centroid coordinates for more accurate county coverage
+      // Calculate bounding box - FIXED: Corrected longitude calculation
       const latRange = radiusMiles / 69; // degrees latitude per mile
       const lngRange = radiusMiles / (69 * Math.cos(searchCoords.lat * Math.PI / 180)); // degrees longitude per mile
       
       const minLat = searchCoords.lat - latRange;
       const maxLat = searchCoords.lat + latRange;
-      const minLng = searchCoords.lng - lngRange;
-      const maxLng = searchCoords.lng - lngRange;
+      const minLng = searchCoords.lng - lngRange; // FIXED: was searchCoords.lng - lngRange
+      const maxLng = searchCoords.lng + lngRange; // FIXED: now correctly adding lngRange
 
       console.log('Bounding box:', { minLat, maxLat, minLng, maxLng });
 
@@ -249,7 +250,7 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
   return (
     <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-4">
       <div className="flex items-center space-x-6">
-        <div className="flex-1 max-w-2xl">
+        <div className="flex-1 max-w-4xl">
           <CityAutocomplete
             value={searchValue}
             onChange={setSearchValue}
