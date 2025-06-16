@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { MapPin, Building2, List, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,30 +25,9 @@ interface CountyLocationList {
   updated_at: string;
 }
 
-// Define the County interface to match what the updated components expect
-interface County {
-  id: string;
-  county_name: string;
-  state_name: string;
-  center_lat: number;
-  center_lng: number;
-  distance_miles: number;
-  city_count: number;
-  total_population: number;
-  avg_income_household_median: number;
-  avg_home_value: number;
-  avg_age_median: number;
-  education_bachelors_pct: number;
-  race_white_pct: number;
-  race_black_pct: number;
-  race_asian_pct: number;
-  race_hispanic_pct: number;
-  timezone: string;
-}
-
 const LocationBuilder = () => {
   const [savedLists, setSavedLists] = useState<CountyLocationList[]>([]);
-  const [searchResults, setSearchResults] = useState<County[]>([]);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
   const [centerCoords, setCenterCoords] = useState<{lat: number; lng: number} | null>(null);
   const [selectedCounties, setSelectedCounties] = useState<Set<string>>(new Set());
   const [selectedCities, setSelectedCities] = useState<any[]>([]);
@@ -80,27 +60,20 @@ const LocationBuilder = () => {
     }
   };
 
-  const handleSearchResults = (results: County[], coords: {lat: number; lng: number} | null) => {
-    console.log('🏗️ LocationBuilder received search results:', results?.length || 0, 'counties');
-    console.log('📍 Search coordinates:', coords);
-    
-    // Ensure results is always an array
-    const safeResults = Array.isArray(results) ? results : [];
-    setSearchResults(safeResults);
+  const handleSearchResults = (results: any[], coords: {lat: number; lng: number} | null) => {
+    console.log('Search results received:', results);
+    setSearchResults(results);
     setCenterCoords(coords);
-    
-    // Reset selections when new search results come in
     setSelectedCounties(new Set());
     setSelectedCities([]);
   };
 
   const handleListSaved = () => {
-    console.log('📂 List saved, refreshing saved lists...');
     fetchSavedLists();
   };
 
   const handleCountySelectionChange = (countyId: string, checked: boolean) => {
-    console.log('🏛️ County selection changed:', countyId, checked);
+    console.log('County selection changed:', countyId, checked);
     const newSelected = new Set(selectedCounties);
     if (checked) {
       newSelected.add(countyId);
@@ -108,13 +81,12 @@ const LocationBuilder = () => {
       newSelected.delete(countyId);
     }
     setSelectedCounties(newSelected);
-    // Clear selected cities when county selection changes
     setSelectedCities([]);
   };
 
   const handleSelectedCitiesChange = (cities: any[]) => {
-    console.log('🏙️ Selected cities changed:', cities?.length || 0, 'cities');
-    setSelectedCities(cities || []);
+    console.log('Selected cities changed:', cities);
+    setSelectedCities(cities);
   };
 
   const menuItems = [
@@ -171,21 +143,6 @@ const LocationBuilder = () => {
               </div>
               <h1 className="text-xl font-semibold tracking-wide text-slate-900">Location List Builder</h1>
             </div>
-            
-            {/* Status indicator */}
-            <div className="text-sm text-slate-600">
-              {searchResults.length > 0 && (
-                <div className="flex items-center space-x-4">
-                  <span>📊 {searchResults.length} counties found</span>
-                  {selectedCounties.size > 0 && (
-                    <span>🏛️ {selectedCounties.size} counties selected</span>
-                  )}
-                  {selectedCities.length > 0 && (
-                    <span>🏙️ {selectedCities.length} cities selected</span>
-                  )}
-                </div>
-              )}
-            </div>
           </div>
           
           {/* Search bar */}
@@ -223,11 +180,12 @@ const LocationBuilder = () => {
             />
           </div>
           
-          {/* Cities panel - Updated to use the new CountyCitiesTable interface */}
+          {/* Cities panel */}
           <div className="flex-1 bg-white border border-slate-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
             <CountyCitiesTable 
-              counties={searchResults}
-              searchCoords={centerCoords}
+              selectedCounties={selectedCounties}
+              searchResults={searchResults}
+              onSelectedCitiesChange={handleSelectedCitiesChange}
             />
           </div>
         </div>
