@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { Wrapper, Status } from "@googlemaps/react-wrapper";
 import { Button } from "@/components/ui/button";
@@ -370,18 +369,18 @@ const CountyLocationMap: React.FC<CountyLocationMapProps> = ({
       {/* Map Legend - moved up to avoid covering Google logo */}
       {(showCounties || showCities) && (
         <div className="absolute bottom-12 left-4 z-10 bg-white rounded-lg shadow-lg p-3">
-          <div className="text-xs font-semibold text-slate-600 mb-2">Map Legend</div>
+          <div className="text-xs font-semibold text-slate-800 mb-2">Map Legend</div>
           <div className="space-y-1 text-xs">
             {showCounties && (
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                <span>Counties ({searchResults.length})</span>
+                <span className="text-slate-700">Counties ({searchResults.length})</span>
               </div>
             )}
             {showCities && (
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                <span>Cities ({selectedCities.length})</span>
+                <span className="text-slate-700">Cities ({selectedCities.length})</span>
               </div>
             )}
           </div>
