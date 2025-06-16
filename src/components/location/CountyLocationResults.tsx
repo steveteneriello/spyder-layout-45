@@ -70,7 +70,7 @@ const CountyLocationResults: React.FC<CountyLocationResultsProps> = ({
       }
 
       const selectedCountyData = searchResults.filter((county, index) => {
-        const countyId = `${county.county_name}-${county.state_name}-${index}`;
+        const countyId = `${county.county_name}-${county.state_name}`;
         return selectedCounties.has(countyId);
       });
 
@@ -254,7 +254,7 @@ const CountyLocationResults: React.FC<CountyLocationResultsProps> = ({
         ) : (
           <div className="space-y-3">
             {searchResults.map((county, index) => {
-              const countyId = `${county.county_name}-${county.state_name}-${index}`;
+              const countyId = `${county.county_name}-${county.state_name}`;
               const isSelected = selectedCounties.has(countyId);
               
               return (
