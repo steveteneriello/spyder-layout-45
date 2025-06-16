@@ -106,16 +106,20 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
       console.log('State filters:', selectedStates);
       console.log('Timezone filters:', selectedTimezones);
       
-      // Use a larger bounding box to ensure we don't miss counties at the edges
-      const latRange = (radiusMiles * 1.5) / 69; // Add 50% buffer to latitude range
-      const lngRange = (radiusMiles * 1.5) / (69 * Math.cos(searchCoords.lat * Math.PI / 180)); // Add 50% buffer to longitude range
+      // For large searches (>500 miles), use a more generous bounding box
+      // For smaller searches, use a tighter bounding box
+      const bufferMultiplier = radiusMiles > 500 ? 2.5 : 1.5;
+      
+      // Calculate bounding box with appropriate buffer
+      const latRange = (radiusMiles * bufferMultiplier) / 69; // degrees latitude per mile
+      const lngRange = (radiusMiles * bufferMultiplier) / (69 * Math.cos(searchCoords.lat * Math.PI / 180)); // degrees longitude per mile (adjusted for latitude)
       
       const minLat = searchCoords.lat - latRange;
       const maxLat = searchCoords.lat + latRange;
       const minLng = searchCoords.lng - lngRange;
       const maxLng = searchCoords.lng + lngRange;
 
-      console.log('Extended bounding box:', { minLat, maxLat, minLng, maxLng });
+      console.log('Bounding box with', bufferMultiplier, 'x buffer:', { minLat, maxLat, minLng, maxLng });
 
       // Build query with state and timezone filters
       let query = supabase
@@ -159,7 +163,7 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
 
       if (error) throw error;
 
-      console.log('Found locations in extended bounding box:', locationData?.length || 0);
+      console.log('Found locations in bounding box:', locationData?.length || 0);
 
       if (!locationData || locationData.length === 0) {
         console.log('No locations found in bounding box');
@@ -192,8 +196,6 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
           locationLat,
           locationLng
         );
-
-        console.log(`Distance from ${location.city}, ${location.county_name}: ${distance.toFixed(2)} miles`);
 
         // Only process locations within the actual search radius
         if (distance <= radiusMiles) {
@@ -274,7 +276,10 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
         .sort((a, b) => a.distance_miles - b.distance_miles); // Sort by distance, closest first
 
       console.log('Final search results:', results.length, 'counties found');
-      console.log('Sample counties:', results.slice(0, 3).map(c => ({ name: c.county_name, state: c.state_name, distance: c.distance_miles, cities: c.city_count })));
+      if (results.length > 0) {
+        console.log('Closest counties:', results.slice(0, 5).map(c => ({ name: c.county_name, state: c.state_name, distance: c.distance_miles })));
+        console.log('Furthest counties:', results.slice(-5).map(c => ({ name: c.county_name, state: c.state_name, distance: c.distance_miles })));
+      }
       
       onSearchResults(results, searchCoords);
       

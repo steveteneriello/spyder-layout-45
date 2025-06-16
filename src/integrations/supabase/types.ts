@@ -451,7 +451,6 @@ export type Database = {
           county_name_all: string | null
           csa_fips: string | null
           csa_name: string | null
-          data_cid: string | null
           density: string | null
           disabled: string | null
           divorced: string | null
@@ -465,7 +464,6 @@ export type Database = {
           family_dual_income: string | null
           family_size: string | null
           female: string | null
-          google_geo_location_id: string | null
           health_uninsured: string | null
           hispanic: string | null
           home_ownership: string | null
@@ -554,7 +552,6 @@ export type Database = {
           county_name_all?: string | null
           csa_fips?: string | null
           csa_name?: string | null
-          data_cid?: string | null
           density?: string | null
           disabled?: string | null
           divorced?: string | null
@@ -568,7 +565,6 @@ export type Database = {
           family_dual_income?: string | null
           family_size?: string | null
           female?: string | null
-          google_geo_location_id?: string | null
           health_uninsured?: string | null
           hispanic?: string | null
           home_ownership?: string | null
@@ -657,7 +653,6 @@ export type Database = {
           county_name_all?: string | null
           csa_fips?: string | null
           csa_name?: string | null
-          data_cid?: string | null
           density?: string | null
           disabled?: string | null
           divorced?: string | null
@@ -671,7 +666,6 @@ export type Database = {
           family_dual_income?: string | null
           family_size?: string | null
           female?: string | null
-          google_geo_location_id?: string | null
           health_uninsured?: string | null
           hispanic?: string | null
           home_ownership?: string | null
