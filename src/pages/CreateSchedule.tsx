@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import SidebarLayout from '@/components/layout/SidebarLayout';
 import { SideCategory } from '@/components/navigation/SideCategory';
 import { CreateOxylabsScheduleModal } from '@/components/scheduler/CreateOxylabsScheduleModal';
+import { Button } from '@/components/ui/button';
 
 const allMenuItems = [
   { title: 'Dashboard', path: '/', icon: 'Home', section: 'Main' },
@@ -14,6 +15,21 @@ const allMenuItems = [
 ];
 
 export default function CreateSchedule() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Mock data for the modal
+  const mockModalProps = {
+    isOpen: isModalOpen,
+    jobId: 'mock-job-id',
+    scheduleId: 'mock-schedule-id',
+    jobName: 'Sample Job',
+    onClose: () => setIsModalOpen(false),
+    onSuccess: () => {
+      setIsModalOpen(false);
+      console.log('Schedule created successfully');
+    }
+  };
+
   return (
     <SidebarLayout
       nav={
@@ -33,7 +49,15 @@ export default function CreateSchedule() {
       <div className="p-6 bg-background text-foreground min-h-screen">
         <h1 className="text-2xl font-bold mb-6">Create New Schedule</h1>
         <div className="bg-card border p-6 rounded-lg">
-          <CreateOxylabsScheduleModal />
+          <div className="space-y-4">
+            <p className="text-muted-foreground">
+              Click the button below to create a new Oxylabs schedule.
+            </p>
+            <Button onClick={() => setIsModalOpen(true)}>
+              Create Schedule
+            </Button>
+          </div>
+          <CreateOxylabsScheduleModal {...mockModalProps} />
         </div>
       </div>
     </SidebarLayout>

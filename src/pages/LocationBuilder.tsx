@@ -1,7 +1,7 @@
 import React from 'react';
 import SidebarLayout from '@/components/layout/SidebarLayout';
 import { SideCategory } from '@/components/navigation/SideCategory';
-import { CountyLocationResults } from '@/components/location/CountyLocationResults';
+import CountyLocationResults from '@/components/location/CountyLocationResults';
 
 const allMenuItems = [
   { title: 'Dashboard', path: '/', icon: 'Home', section: 'Main' },
@@ -19,7 +19,7 @@ export default function LocationBuilder() {
     searchResults: [],
     centerCoords: { lat: 0, lng: 0 },
     onListSaved: () => {},
-    selectedCounties: [],
+    selectedCounties: new Set<string>(),
     onCountySelectionChange: () => {}
   };
 
