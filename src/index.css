@@ -118,8 +118,36 @@
   body {
     @apply bg-background text-foreground;
     /* Use global theme variables for body background and text */
-    background-color: rgb(var(--bg-primary));
-    color: rgb(var(--text-primary));
+    background-color: rgb(var(--bg-primary)) !important;
+    color: rgb(var(--text-primary)) !important;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+
+  /* Force theme application on all major elements */
+  #root {
+    background-color: rgb(var(--bg-primary)) !important;
+    color: rgb(var(--text-primary)) !important;
+    min-height: 100vh;
+  }
+
+  /* Ensure all cards use theme colors */
+  .bg-card, [data-background="card"] {
+    background-color: rgb(var(--bg-secondary)) !important;
+  }
+
+  /* Ensure all text uses theme colors */
+  .text-foreground, [data-color="foreground"] {
+    color: rgb(var(--text-primary)) !important;
+  }
+
+  /* Force button colors */
+  .bg-primary, [data-background="primary"] {
+    background-color: rgb(var(--accent-primary)) !important;
+  }
+
+  /* Force border colors */
+  .border, [data-border] {
+    border-color: rgb(var(--border-primary)) !important;
   }
 }
 
@@ -185,5 +213,39 @@
 
   .campaign-button-blue:hover {
     background-color: hsl(var(--campaign-button-blue) / 0.9);
+  }
+
+  /* Force theme application on all pages */
+  .theme-bg-primary {
+    background-color: rgb(var(--bg-primary)) !important;
+  }
+
+  .theme-text-primary {
+    color: rgb(var(--text-primary)) !important;
+  }
+
+  /* Override shadcn defaults with theme colors */
+  .bg-background {
+    background-color: rgb(var(--bg-primary)) !important;
+  }
+
+  .text-foreground {
+    color: rgb(var(--text-primary)) !important;
+  }
+
+  .bg-card {
+    background-color: rgb(var(--bg-secondary)) !important;
+  }
+
+  .bg-secondary {
+    background-color: rgb(var(--bg-tertiary)) !important;
+  }
+
+  .bg-muted {
+    background-color: rgb(var(--bg-hover)) !important;
+  }
+
+  .border-border {
+    border-color: rgb(var(--border-primary)) !important;
   }
 }

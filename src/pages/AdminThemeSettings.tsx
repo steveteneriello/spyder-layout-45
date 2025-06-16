@@ -221,15 +221,15 @@ const AdminThemeSettings = () => {
     
     // Handle empty or invalid input
     if (!rgb || typeof rgb !== 'string') {
-      console.log('Invalid RGB input, returning default black');
-      return '#000000';
+      console.log('Invalid RGB input, returning default white');
+      return '#ffffff';
     }
     
     // Split RGB values and convert to numbers
     const parts = rgb.trim().split(' ');
     if (parts.length !== 3) {
       console.log('RGB format invalid, expected 3 parts but got:', parts.length);
-      return '#000000';
+      return '#ffffff';
     }
     
     const r = parseInt(parts[0]);
@@ -239,7 +239,7 @@ const AdminThemeSettings = () => {
     // Validate RGB values are in range 0-255
     if (isNaN(r) || isNaN(g) || isNaN(b) || r < 0 || r > 255 || g < 0 || g > 255 || b < 0 || b > 255) {
       console.log('Invalid RGB values:', { r, g, b });
-      return '#000000';
+      return '#ffffff';
     }
     
     // Convert to hex with proper padding
@@ -343,7 +343,7 @@ const AdminThemeSettings = () => {
     console.log('Current theme:', actualTheme);
     console.log('Colors object:', colors);
     
-    // Apply global theme variables
+    // Apply global theme variables to document root
     Object.entries(colors).forEach(([key, values]) => {
       const colorValue = values[actualTheme];
       const cssVariable = `--${key}`;
@@ -351,7 +351,7 @@ const AdminThemeSettings = () => {
       console.log(`Set ${cssVariable} to ${colorValue}`);
     });
 
-    // Map global theme colors to shadcn/ui theme variables
+    // Map and apply shadcn/ui theme variables
     const shadcnMapping = {
       'background': colors['bg-primary'][actualTheme],
       'foreground': colors['text-primary'][actualTheme],
@@ -380,6 +380,14 @@ const AdminThemeSettings = () => {
       document.documentElement.style.setProperty(cssVariable, value);
       console.log(`Set shadcn ${cssVariable} to ${value}`);
     });
+
+    // Force update body background and text using both methods
+    const bodyBg = `rgb(${colors['bg-primary'][actualTheme]})`;
+    const bodyText = `rgb(${colors['text-primary'][actualTheme]})`;
+    
+    document.body.style.backgroundColor = bodyBg;
+    document.body.style.color = bodyText;
+    console.log(`Set body background to ${bodyBg} and text to ${bodyText}`);
     
     console.log('=== Colors applied ===');
   };

@@ -31,9 +31,11 @@ export default function SchedulerDashboard() {
       }
       menuItems={allMenuItems}
     >
-      <div className="p-6">
-        <h1 className="text-2xl font-bold mb-6">Scheduler Dashboard</h1>
-        <OxylabsSchedulerDashboard />
+      <div className="p-6 theme-bg-primary theme-text-primary min-h-screen">
+        <h1 className="text-2xl font-bold mb-6 theme-text-primary">Scheduler Dashboard</h1>
+        <div className="theme-card p-6 rounded-lg">
+          <OxylabsSchedulerDashboard />
+        </div>
       </div>
     </SidebarLayout>
   );
