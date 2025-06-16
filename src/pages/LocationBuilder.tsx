@@ -154,18 +154,20 @@ const LocationBuilder = () => {
           </div>
         </div>
 
-        {/* Map section */}
-        <div className="h-[60vh] bg-white border-b border-slate-200">
-          <CountyLocationMap 
-            searchResults={searchResults}
-            centerCoords={centerCoords}
-            selectedCities={selectedCities}
-            selectedCounties={selectedCounties}
-          />
+        {/* Map section in a container */}
+        <div className="p-6">
+          <div className="h-[60vh] bg-white border border-slate-200 rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+            <CountyLocationMap 
+              searchResults={searchResults}
+              centerCoords={centerCoords}
+              selectedCities={selectedCities}
+              selectedCounties={selectedCounties}
+            />
+          </div>
         </div>
 
         {/* Main content area */}
-        <div className="flex gap-6 h-full bg-white min-h-[40vh] p-6">
+        <div className="flex gap-6 h-full bg-white min-h-[40vh] px-6 pb-6">
           {/* Counties panel */}
           <div className="w-[480px] bg-white border border-slate-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
             <CountyLocationResults 
