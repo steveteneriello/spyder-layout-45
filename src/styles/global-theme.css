@@ -1,0 +1,283 @@
+
+/* Global Theme System - CSS Custom Properties */
+
+:root {
+  /* Default light theme variables */
+  --bg-primary: 255 255 255;
+  --bg-secondary: 251 252 253;
+  --bg-tertiary: 248 249 250;
+  --bg-hover: 241 243 245;
+  --bg-active: 233 236 239;
+  --bg-selected: 227 242 253;
+  
+  --text-primary: 26 32 44;
+  --text-secondary: 74 85 104;
+  --text-tertiary: 113 128 150;
+  --text-inverse: 255 255 255;
+  
+  --accent-primary: 49 130 206;
+  --accent-primary-hover: 44 82 130;
+  --accent-primary-active: 42 67 101;
+  
+  --success: 56 161 105;
+  --success-bg: 240 255 244;
+  --success-border: 34 84 61;
+  
+  --warning: 221 107 32;
+  --warning-bg: 255 250 240;
+  --warning-border: 192 86 33;
+  
+  --error: 229 62 62;
+  --error-bg: 255 245 245;
+  --error-border: 197 48 48;
+  
+  --border-primary: 226 232 240;
+  --border-secondary: 241 243 245;
+  --border-focus: 49 130 206;
+  
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-focus: 0 0 0 3px rgb(49 130 206 / 0.1);
+}
+
+/* Dark theme overrides */
+:root[data-theme="dark"] {
+  --bg-primary: 14 17 23;
+  --bg-secondary: 22 27 34;
+  --bg-tertiary: 33 38 45;
+  --bg-hover: 48 54 61;
+  --bg-active: 55 62 71;
+  --bg-selected: 28 33 40;
+  
+  --text-primary: 240 246 252;
+  --text-secondary: 125 133 144;
+  --text-tertiary: 101 109 118;
+  --text-inverse: 14 17 23;
+  
+  --accent-primary: 56 139 253;
+  --accent-primary-hover: 31 111 235;
+  --accent-primary-active: 26 84 144;
+  
+  --success: 63 185 80;
+  --success-bg: 13 17 23;
+  --success-border: 46 160 67;
+  
+  --warning: 210 153 34;
+  --warning-bg: 28 22 17;
+  --warning-border: 184 134 11;
+  
+  --error: 248 81 73;
+  --error-bg: 28 17 22;
+  --error-border: 229 83 75;
+  
+  --border-primary: 48 54 61;
+  --border-secondary: 33 38 45;
+  --border-focus: 56 139 253;
+  
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.5);
+  --shadow-focus: 0 0 0 3px rgb(56 139 253 / 0.3);
+}
+
+/* Utility classes for theme-aware styling */
+.theme-bg-primary {
+  background-color: rgb(var(--bg-primary));
+}
+
+.theme-bg-secondary {
+  background-color: rgb(var(--bg-secondary));
+}
+
+.theme-bg-tertiary {
+  background-color: rgb(var(--bg-tertiary));
+}
+
+.theme-bg-hover {
+  background-color: rgb(var(--bg-hover));
+}
+
+.theme-bg-selected {
+  background-color: rgb(var(--bg-selected));
+}
+
+.theme-text-primary {
+  color: rgb(var(--text-primary));
+}
+
+.theme-text-secondary {
+  color: rgb(var(--text-secondary));
+}
+
+.theme-text-tertiary {
+  color: rgb(var(--text-tertiary));
+}
+
+.theme-text-inverse {
+  color: rgb(var(--text-inverse));
+}
+
+.theme-accent-primary {
+  color: rgb(var(--accent-primary));
+}
+
+.theme-accent-bg {
+  background-color: rgb(var(--accent-primary));
+}
+
+.theme-border-primary {
+  border-color: rgb(var(--border-primary));
+}
+
+.theme-border-secondary {
+  border-color: rgb(var(--border-secondary));
+}
+
+.theme-border-focus {
+  border-color: rgb(var(--border-focus));
+}
+
+/* Success state utilities */
+.theme-success {
+  color: rgb(var(--success));
+}
+
+.theme-success-bg {
+  background-color: rgb(var(--success-bg));
+}
+
+.theme-success-border {
+  border-color: rgb(var(--success-border));
+}
+
+/* Warning state utilities */
+.theme-warning {
+  color: rgb(var(--warning));
+}
+
+.theme-warning-bg {
+  background-color: rgb(var(--warning-bg));
+}
+
+.theme-warning-border {
+  border-color: rgb(var(--warning-border));
+}
+
+/* Error state utilities */
+.theme-error {
+  color: rgb(var(--error));
+}
+
+.theme-error-bg {
+  background-color: rgb(var(--error-bg));
+}
+
+.theme-error-border {
+  border-color: rgb(var(--error-border));
+}
+
+/* Shadow utilities */
+.theme-shadow-sm {
+  box-shadow: var(--shadow-sm);
+}
+
+.theme-shadow-md {
+  box-shadow: var(--shadow-md);
+}
+
+.theme-shadow-lg {
+  box-shadow: var(--shadow-lg);
+}
+
+.theme-shadow-focus {
+  box-shadow: var(--shadow-focus);
+}
+
+/* Interactive component patterns */
+.theme-button-primary {
+  background-color: rgb(var(--accent-primary));
+  color: rgb(var(--text-inverse));
+  border: 1px solid rgb(var(--accent-primary));
+  transition: all 0.2s ease;
+}
+
+.theme-button-primary:hover {
+  background-color: rgb(var(--accent-primary-hover));
+  border-color: rgb(var(--accent-primary-hover));
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.theme-button-primary:active {
+  background-color: rgb(var(--accent-primary-active));
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
+.theme-button-primary:focus {
+  box-shadow: var(--shadow-focus);
+}
+
+.theme-button-secondary {
+  background-color: transparent;
+  color: rgb(var(--text-primary));
+  border: 1px solid rgb(var(--border-primary));
+  transition: all 0.2s ease;
+}
+
+.theme-button-secondary:hover {
+  background-color: rgb(var(--bg-hover));
+  border-color: rgb(var(--accent-primary));
+  color: rgb(var(--accent-primary));
+}
+
+.theme-card {
+  background-color: rgb(var(--bg-secondary));
+  border: 1px solid rgb(var(--border-secondary));
+  transition: all 0.2s ease;
+}
+
+.theme-card:hover {
+  border-color: rgb(var(--border-primary));
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.theme-card.interactive:hover {
+  cursor: pointer;
+  border-color: rgb(var(--accent-primary));
+}
+
+.theme-input {
+  background-color: rgb(var(--bg-primary));
+  color: rgb(var(--text-primary));
+  border: 1px solid rgb(var(--border-primary));
+  transition: all 0.2s ease;
+}
+
+.theme-input:hover {
+  border-color: rgb(var(--accent-primary));
+}
+
+.theme-input:focus {
+  outline: none;
+  border-color: rgb(var(--accent-primary));
+  box-shadow: var(--shadow-focus);
+}
+
+.theme-input::placeholder {
+  color: rgb(var(--text-tertiary));
+}
+
+/* Smooth transitions for theme changes */
+* {
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+/* Ensure proper contrast and accessibility */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}

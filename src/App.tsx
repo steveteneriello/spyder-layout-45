@@ -1,44 +1,42 @@
 
-import React from "react";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
+import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { ThemeProvider } from "@/components/theme/ThemeProvider";
+import { GlobalThemeProvider } from "@/contexts/GlobalThemeContext";
 import Index from "./pages/Index";
 import Campaigns from "./pages/Campaigns";
 import SchedulerDashboard from "./pages/SchedulerDashboard";
 import CreateSchedule from "./pages/CreateSchedule";
 import LocationBuilder from "./pages/LocationBuilder";
-import LocationBuilderBackup from "./pages/LocationBuilderBackup";
 import Theme from "./pages/Theme";
+import AdminThemeSettings from "./pages/AdminThemeSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/campaigns" element={<Campaigns />} />
-            <Route path="/scheduler" element={<SchedulerDashboard />} />
-            <Route path="/create-schedule" element={<CreateSchedule />} />
-            <Route path="/location-builder" element={<LocationBuilder />} />
-            <Route path="/location-builder-backup" element={<LocationBuilderBackup />} />
-            <Route path="/theme" element={<Theme />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
-);
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <GlobalThemeProvider>
+        <TooltipProvider>
+          <Toaster />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/campaigns" element={<Campaigns />} />
+              <Route path="/scheduler" element={<SchedulerDashboard />} />
+              <Route path="/scheduler/create" element={<CreateSchedule />} />
+              <Route path="/location-builder" element={<LocationBuilder />} />
+              <Route path="/theme" element={<Theme />} />
+              <Route path="/admin/theme" element={<AdminThemeSettings />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </GlobalThemeProvider>
+    </QueryClientProvider>
+  );
+}
 
 export default App;

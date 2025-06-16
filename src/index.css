@@ -3,6 +3,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import the global theme system */
+@import './styles/global-theme.css';
+
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. */
 
 @layer base {
@@ -114,6 +117,9 @@
 
   body {
     @apply bg-background text-foreground;
+    /* Use global theme variables for body background and text */
+    background-color: rgb(var(--bg-primary));
+    color: rgb(var(--text-primary));
   }
 }
 
