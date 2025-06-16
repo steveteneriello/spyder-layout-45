@@ -1,312 +1,326 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Monitor, Sun, Moon, Palette, RotateCcw, Save, Eye, Code2, Bug, Layout, Navigation } from 'lucide-react';
+import { 
+  Monitor, 
+  Sun, 
+  Moon, 
+  Palette, 
+  RotateCcw, 
+  Save, 
+  Eye, 
+  Bug, 
+  Layout, 
+  Image,
+  Upload,
+  X,
+  Check,
+  Settings
+} from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
-import SidebarLayout from '@/components/layout/SidebarLayout';
-import { SideCategory } from '@/components/navigation/SideCategory';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useGlobalTheme, type ThemeMode } from '@/contexts/GlobalThemeContext';
-import { LogoBrandSettings } from '@/components/LogoBrandSettings';
-import { Image } from 'lucide-react'; // Add Image to your existing lucide imports
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
-const allMenuItems = [
-  { title: 'Dashboard', path: '/', icon: 'Home', section: 'Main' },
-  { title: 'Campaigns', path: '/campaigns', icon: 'Target', section: 'Main' },
-  { title: 'Scheduler', path: '/scheduler', icon: 'Calendar', section: 'Tools' },
-  { title: 'Create Schedule', path: '/scheduler/create', icon: 'Plus', section: 'Tools' },
-  { title: 'Location Builder', path: '/location-builder', icon: 'MapPin', section: 'Tools' },
-  { title: 'Theme', path: '/theme', icon: 'Palette', section: 'Settings' },
-  { title: 'Admin Theme', path: '/admin/theme', icon: 'Settings', section: 'Settings' },
-];
+interface ColorGroup {
+  name: string;
+  colors: {
+    [key: string]: {
+      light: string;
+      dark: string;
+    };
+  };
+}
 
-// ADDED: Debug settings management
 interface DebugSettings {
   showThemeDebug: boolean;
-  showColorPreviews: boolean;
+  showColorPreview: boolean;
   showThemeInfo: boolean;
 }
 
-const AdminThemeSettings: React.FC = () => {
-  const { themeMode, actualTheme, setThemeMode, isSystemDark, colors, updateColors, resetColors } = useGlobalTheme();
-  const [localColors, setLocalColors] = useState(colors);
-  const [activeSection, setActiveSection] = useState('theme');
-  const [activeColorGroup, setActiveColorGroup] = useState('core');
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+interface BrandSettings {
+  useLogo: boolean;
+  brandText: string;
+  tagline: string;
+  lightModeLogo: string | null;
+  darkModeLogo: string | null;
+  logoSize: 'sm' | 'md' | 'lg';
+  showTagline: boolean;
+  logoPosition: 'left' | 'center';
+}
+
+export default function AdminThemeSettings() {
+  const { themeMode, setThemeMode, actualTheme, colors, updateColors } = useGlobalTheme();
   
-  // ADDED: Debug settings state
-  const [debugSettings, setDebugSettings] = useState<DebugSettings>(() => {
-    const saved = localStorage.getItem('theme-debug-settings');
-    return saved ? JSON.parse(saved) : {
-      showThemeDebug: false,
-      showColorPreviews: true,
-      showThemeInfo: true,
-    };
+  // Debug settings state
+  const [debugSettings, setDebugSettings] = useState<DebugSettings>({
+    showThemeDebug: false,
+    showColorPreview: true,
+    showThemeInfo: true
   });
 
-  // Enhanced color groups with sidebar and header sections
-  const colorGroups = {
-    core: ['background', 'foreground', 'card', 'card-foreground', 'primary', 'primary-foreground'],
-    layout: ['secondary', 'secondary-foreground', 'muted', 'muted-foreground', 'accent', 'accent-foreground'],
-    sidebar: ['sidebar-background', 'sidebar-foreground', 'sidebar-accent', 'sidebar-border'],
-    header: ['header-background', 'header-foreground', 'header-accent', 'header-border'],
-    navigation: ['nav-background', 'nav-foreground', 'nav-hover', 'nav-active'],
-    borders: ['border', 'input', 'ring'],
-    status: ['success', 'warning', 'error'],
-    custom: ['bg-primary', 'bg-secondary', 'text-primary', 'text-secondary', 'accent-primary', 'border-primary']
+  // Brand settings state
+  const [brandSettings, setBrandSettings] = useState<BrandSettings>({
+    useLogo: false,
+    brandText: 'Oxylabs Dashboard',
+    tagline: 'Data Collection Platform',
+    lightModeLogo: null,
+    darkModeLogo: null,
+    logoSize: 'md',
+    showTagline: true,
+    logoPosition: 'left'
+  });
+
+  const [activeSection, setActiveSection] = useState('theme');
+  const [unsavedChanges, setUnsavedChanges] = useState(false);
+
+  // Load settings on mount
+  useEffect(() => {
+    // Load debug settings
+    const savedDebugSettings = localStorage.getItem('theme-debug-settings');
+    if (savedDebugSettings) {
+      try {
+        setDebugSettings(JSON.parse(savedDebugSettings));
+      } catch (error) {
+        console.error('Failed to load debug settings:', error);
+      }
+    }
+
+    // Load brand settings
+    const savedBrandSettings = localStorage.getItem('brand-settings');
+    if (savedBrandSettings) {
+      try {
+        setBrandSettings(JSON.parse(savedBrandSettings));
+      } catch (error) {
+        console.error('Failed to load brand settings:', error);
+      }
+    }
+  }, []);
+
+  // Save debug settings
+  const updateDebugSettings = (updates: Partial<DebugSettings>) => {
+    const newSettings = { ...debugSettings, ...updates };
+    setDebugSettings(newSettings);
+    localStorage.setItem('theme-debug-settings', JSON.stringify(newSettings));
+    
+    // Dispatch event to update all pages
+    window.dispatchEvent(new CustomEvent('themeDebugSettingsChanged', { 
+      detail: newSettings 
+    }));
   };
 
-  const colorGroupLabels = {
-    core: 'Core Colors (Background, Text, Primary)',
-    layout: 'Layout Colors (Secondary, Muted, Accent)',
-    sidebar: '🔧 Sidebar Colors',
-    header: '📱 Header & Navigation Bar',
-    navigation: '🧭 Navigation Elements',
-    borders: 'Borders & Focus States',
-    status: 'Status Colors (Success, Warning, Error)',
-    custom: 'Custom Theme Variables'
+  // Save brand settings
+  const updateBrandSettings = (updates: Partial<BrandSettings>) => {
+    const newSettings = { ...brandSettings, ...updates };
+    setBrandSettings(newSettings);
+    localStorage.setItem('brand-settings', JSON.stringify(newSettings));
+    
+    // Dispatch event to update header/sidebar
+    window.dispatchEvent(new CustomEvent('brandSettingsChanged', { 
+      detail: newSettings 
+    }));
   };
+
+  // Handle logo upload
+  const handleLogoUpload = (file: File, mode: 'light' | 'dark') => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      updateBrandSettings({
+        [mode === 'light' ? 'lightModeLogo' : 'darkModeLogo']: result
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Remove logo
+  const removeLogo = (mode: 'light' | 'dark') => {
+    updateBrandSettings({
+      [mode === 'light' ? 'lightModeLogo' : 'darkModeLogo']: null
+    });
+  };
+
+  // Color groups for organization
+  const colorGroups: ColorGroup[] = [
+    {
+      name: 'Core Colors',
+      colors: {
+        'bg-primary': colors['bg-primary'] || { light: '255 255 255', dark: '14 17 23' },
+        'bg-secondary': colors['bg-secondary'] || { light: '251 252 253', dark: '22 27 34' },
+        'text-primary': colors['text-primary'] || { light: '26 32 44', dark: '240 246 252' },
+        'text-secondary': colors['text-secondary'] || { light: '74 85 104', dark: '125 133 144' },
+      }
+    },
+    {
+      name: 'Sidebar & Header',
+      colors: {
+        'sidebar-background': colors['sidebar-background'] || { light: '0 0 0', dark: '15 23 42' },
+        'sidebar-foreground': colors['sidebar-foreground'] || { light: '255 255 255', dark: '240 246 252' },
+        'sidebar-accent': colors['sidebar-accent'] || { light: '49 130 206', dark: '56 189 248' },
+        'header-background': colors['header-background'] || { light: '255 255 255', dark: '22 27 34' },
+        'header-foreground': colors['header-foreground'] || { light: '26 32 44', dark: '240 246 252' },
+      }
+    },
+    {
+      name: 'Accents',
+      colors: {
+        'accent-primary': colors['accent-primary'] || { light: '49 130 206', dark: '56 189 248' },
+        'success': colors['success'] || { light: '56 161 105', dark: '72 187 120' },
+        'warning': colors['warning'] || { light: '221 107 32', dark: '251 146 60' },
+        'error': colors['error'] || { light: '229 62 62', dark: '248 113 113' },
+      }
+    },
+    {
+      name: 'Borders',
+      colors: {
+        'border-primary': colors['border-primary'] || { light: '226 232 240', dark: '52 64 84' },
+        'border-secondary': colors['border-secondary'] || { light: '241 243 245', dark: '45 55 72' },
+        'border-focus': colors['border-focus'] || { light: '49 130 206', dark: '56 189 248' },
+      }
+    }
+  ];
 
   const sections = [
     { id: 'theme', label: 'Theme Mode', icon: Monitor },
     { id: 'colors', label: 'Color Editor', icon: Palette },
     { id: 'sidebar', label: 'Sidebar & Header', icon: Layout },
-    { id: 'branding', label: 'Logo & Branding', icon: Image }, 
+    { id: 'branding', label: 'Logo & Branding', icon: Image },
     { id: 'debug', label: 'Debug Settings', icon: Bug },
     { id: 'preview', label: 'Live Preview', icon: Eye },
   ];
 
-  const themeOptions = [
-    {
-      id: 'light' as ThemeMode,
-      title: 'Light Mode',
-      description: 'Clean and bright interface',
-      icon: Sun,
-    },
-    {
-      id: 'dark' as ThemeMode,
-      title: 'Dark Mode',
-      description: 'Easy on the eyes in low-light',
-      icon: Moon,
-    },
-    {
-      id: 'auto' as ThemeMode,
-      title: 'Auto Mode',
-      description: `Follows system (currently ${isSystemDark ? 'dark' : 'light'})`,
-      icon: Monitor,
+  const resetColors = () => {
+    // Reset to default colors for current theme
+    const defaultColors = {
+      'bg-primary': { light: '255 255 255', dark: '14 17 23' },
+      'bg-secondary': { light: '251 252 253', dark: '22 27 34' },
+      'text-primary': { light: '26 32 44', dark: '240 246 252' },
+      'text-secondary': { light: '74 85 104', dark: '125 133 144' },
+      'accent-primary': { light: '49 130 206', dark: '56 189 248' },
+      'sidebar-background': { light: '0 0 0', dark: '15 23 42' },
+      'sidebar-foreground': { light: '255 255 255', dark: '240 246 252' },
+    };
+    
+    updateColors(defaultColors);
+    setUnsavedChanges(false);
+  };
+
+  const updateColor = (colorKey: string, theme: 'light' | 'dark', value: string) => {
+    const currentColors = { ...colors };
+    if (!currentColors[colorKey]) {
+      currentColors[colorKey] = { light: '', dark: '' };
     }
-  ];
-
-  // ADDED: Save debug settings to localStorage
-  const updateDebugSettings = (newSettings: Partial<DebugSettings>) => {
-    const updated = { ...debugSettings, ...newSettings };
-    setDebugSettings(updated);
-    localStorage.setItem('theme-debug-settings', JSON.stringify(updated));
-    
-    // Trigger a custom event to notify other components
-    window.dispatchEvent(new CustomEvent('themeDebugSettingsChanged', { 
-      detail: updated 
-    }));
+    currentColors[colorKey][theme] = value;
+    updateColors(currentColors);
+    setUnsavedChanges(true);
   };
 
-  // Color conversion utilities
-  const hexToRgb = (hex: string): string => {
-    const cleanHex = hex.replace('#', '');
-    if (!/^[a-f0-9]{6}$/i.test(cleanHex)) return '255 255 255';
-    
-    const r = parseInt(cleanHex.substring(0, 2), 16);
-    const g = parseInt(cleanHex.substring(2, 4), 16);
-    const b = parseInt(cleanHex.substring(4, 6), 16);
-    
-    return `${r} ${g} ${b}`;
+  const rgbToHex = (rgb: string) => {
+    const values = rgb.split(' ').map(v => parseInt(v.trim()));
+    if (values.length !== 3 || values.some(v => isNaN(v))) return '#000000';
+    return '#' + values.map(v => Math.max(0, Math.min(255, v)).toString(16).padStart(2, '0')).join('');
   };
 
-  const rgbToHex = (rgb: string): string => {
-    if (!rgb || rgb.startsWith('#')) return rgb || '#ffffff';
-    
-    const parts = rgb.trim().split(' ');
-    if (parts.length !== 3) return '#ffffff';
-    
-    const r = Math.max(0, Math.min(255, parseInt(parts[0]) || 0));
-    const g = Math.max(0, Math.min(255, parseInt(parts[1]) || 0));
-    const b = Math.max(0, Math.min(255, parseInt(parts[2]) || 0));
-    
-    const toHex = (num: number) => num.toString(16).padStart(2, '0');
-    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+  const hexToRgb = (hex: string) => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    if (!result) return '0 0 0';
+    return [
+      parseInt(result[1], 16),
+      parseInt(result[2], 16),
+      parseInt(result[3], 16)
+    ].join(' ');
   };
-
-  const handleColorChange = (colorKey: string, mode: 'light' | 'dark', value: string) => {
-    const rgbValue = value.startsWith('#') ? hexToRgb(value) : value;
-    
-    setLocalColors(prev => ({
-      ...prev,
-      [colorKey]: {
-        ...prev[colorKey],
-        [mode]: rgbValue
-      }
-    }));
-    
-    setHasUnsavedChanges(true);
-  };
-
-  const applyColors = () => {
-    console.log('🎨 Applying advanced theme settings...');
-    updateColors(localColors);
-    setHasUnsavedChanges(false);
-  };
-
-  const resetToDefaults = () => {
-    console.log('🔄 Resetting to defaults...');
-    resetColors();
-    setLocalColors(colors);
-    setHasUnsavedChanges(false);
-  };
-
-  // Sync local colors with global colors
-  useEffect(() => {
-    setLocalColors(colors);
-    setHasUnsavedChanges(false);
-  }, [colors]);
 
   return (
-    <SidebarLayout
-      nav={
-        <div className="flex items-center justify-between w-full px-4">
+    <div className="min-h-screen bg-background text-foreground p-6">
+      {/* Header */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-              <Palette className="h-5 w-5 text-black" />
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+              <Palette className="h-5 w-5 text-primary-foreground" />
             </div>
-            <div className="text-white">
-              <div className="font-bold text-sm">Theme Studio</div>
-              <div className="text-xs opacity-75">Advanced Settings</div>
-            </div>
-          </div>
-          <Badge variant="outline" className="text-white border-white/20">
-            {actualTheme}
-          </Badge>
-        </div>
-      }
-      category={
-        <div className="space-y-4">
-          <SideCategory section="Main" items={allMenuItems.filter(item => item.section === 'Main')} />
-          <SideCategory section="Tools" items={allMenuItems.filter(item => item.section === 'Tools')} />
-          <SideCategory section="Settings" items={allMenuItems.filter(item => item.section === 'Settings')} />
-        </div>
-      }
-      menuItems={allMenuItems}
-    >
-      <div className="min-h-screen bg-background text-foreground">
-        
-        {/* Header */}
-        <div className="border-b border-border bg-card p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                <Settings className="h-6 w-6 text-primary-foreground" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-foreground">Advanced Theme Settings</h1>
-                <p className="text-muted-foreground">
-                  Customize colors, sidebar appearance, and debug settings
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              {hasUnsavedChanges && (
-                <Badge variant="outline" className="text-orange-600 border-orange-600">
-                  Unsaved Changes
-                </Badge>
-              )}
-              <Badge variant="outline">
-                {Object.keys(localColors).length} Variables
-              </Badge>
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">Advanced Theme Settings</h1>
+              <p className="text-muted-foreground">Complete theme customization and debugging tools</p>
             </div>
           </div>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="text-foreground border-border">
+              {actualTheme} mode
+            </Badge>
+            {unsavedChanges && (
+              <Badge variant="destructive">Unsaved Changes</Badge>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Left Sidebar - Navigation */}
+        <div className="lg:col-span-1">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Settings</CardTitle>
+              <CardDescription>Choose a category to customize</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <nav className="space-y-2">
+                {sections.map((section) => {
+                  const Icon = section.icon;
+                  return (
+                    <Button
+                      key={section.id}
+                      variant={activeSection === section.id ? 'default' : 'ghost'}
+                      className="w-full justify-start"
+                      onClick={() => setActiveSection(section.id)}
+                    >
+                      <Icon className="h-4 w-4 mr-2" />
+                      {section.label}
+                    </Button>
+                  );
+                })}
+              </nav>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Navigation Tabs */}
-        <div className="border-b border-border bg-card px-6">
-          <div className="flex space-x-8">
-            {sections.map((section) => {
-              const Icon = section.icon;
-              const isActive = activeSection === section.id;
-              
-              return (
-                <button
-                  key={section.id}
-                  onClick={() => setActiveSection(section.id)}
-                  className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                    isActive 
-                      ? 'border-primary text-primary' 
-                      : 'border-transparent text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  <Icon className="h-4 w-4" />
-                  {section.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Content Area */}
-        <div className="p-6 max-w-6xl mx-auto">
-          
+        {/* Main Content */}
+        <div className="lg:col-span-3">
           {/* Theme Mode Section */}
           {activeSection === 'theme' && (
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Monitor className="h-5 w-5" />
-                  Theme Mode Selection
-                </CardTitle>
-                <CardDescription>
-                  Choose how the application should appear across all pages
-                </CardDescription>
+                <CardTitle>Theme Mode Settings</CardTitle>
+                <CardDescription>Choose between light, dark, and auto themes</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-4">
-                  {themeOptions.map((option) => {
-                    const Icon = option.icon;
-                    const isActive = themeMode === option.id;
-                    
-                    return (
-                      <div
-                        key={option.id}
-                        className={`relative p-6 border-2 rounded-lg cursor-pointer transition-all duration-200 hover:scale-[1.01] ${
-                          isActive
-                            ? 'border-primary bg-primary/5 shadow-lg'
-                            : 'border-border hover:border-primary/50'
-                        }`}
-                        onClick={() => setThemeMode(option.id)}
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className={`p-3 rounded-full ${
-                            isActive ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-                          }`}>
-                            <Icon className="h-6 w-6" />
-                          </div>
-                          <div className="flex-1">
-                            <h3 className="font-semibold mb-1 text-foreground">
-                              {option.title}
-                            </h3>
-                            <p className="text-sm text-muted-foreground">
-                              {option.description}
-                            </p>
-                          </div>
-                          <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                            isActive ? 'border-primary bg-primary' : 'border-muted-foreground/30'
-                          }`}>
-                            {isActive && <div className="w-3 h-3 bg-primary-foreground rounded-full" />}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div className="grid grid-cols-3 gap-4">
+                  {(['light', 'dark', 'auto'] as ThemeMode[]).map((mode) => (
+                    <Button
+                      key={mode}
+                      variant={themeMode === mode ? 'default' : 'outline'}
+                      onClick={() => setThemeMode(mode)}
+                      className="h-20 flex-col gap-2"
+                    >
+                      {mode === 'light' && <Sun className="h-6 w-6" />}
+                      {mode === 'dark' && <Moon className="h-6 w-6" />}
+                      {mode === 'auto' && <Monitor className="h-6 w-6" />}
+                      <span className="capitalize">{mode}</span>
+                      {mode === 'auto' && (
+                        <span className="text-xs opacity-75">({actualTheme})</span>
+                      )}
+                    </Button>
+                  ))}
                 </div>
               </CardContent>
             </Card>
@@ -316,121 +330,46 @@ const AdminThemeSettings: React.FC = () => {
           {activeSection === 'colors' && (
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Palette className="h-5 w-5" />
-                  Advanced Color Editor
-                </CardTitle>
-                <CardDescription>
-                  Customize individual theme colors with real-time preview
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Color Editor</CardTitle>
+                    <CardDescription>Customize colors for {actualTheme} theme</CardDescription>
+                  </div>
+                  <Button variant="outline" onClick={resetColors}>
+                    <RotateCcw className="h-4 w-4 mr-2" />
+                    Reset Colors
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
-                {/* Color Group Selection */}
-                <div className="flex flex-wrap gap-2 mb-6">
-                  {Object.entries(colorGroupLabels).map(([key, label]) => (
-                    <Button
-                      key={key}
-                      variant={activeColorGroup === key ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setActiveColorGroup(key)}
-                      className="text-sm"
-                    >
-                      {label}
-                    </Button>
-                  ))}
-                </div>
-
-                {/* Color Controls */}
-                <div className="space-y-6 max-h-96 overflow-y-auto">
-                  {colorGroups[activeColorGroup as keyof typeof colorGroups]?.map((colorKey) => (
-                    <div key={colorKey} className="p-4 border border-border rounded-lg bg-card">
-                      <div className="flex items-center justify-between mb-3">
-                        <div>
-                          <h4 className="text-sm font-medium text-foreground">
-                            --{colorKey}
-                          </h4>
-                          <p className="text-xs text-muted-foreground">
-                            {colorKey.includes('sidebar') ? 'Sidebar appearance and navigation' :
-                             colorKey.includes('header') ? 'Header bar and top navigation' :
-                             colorKey.includes('nav') ? 'Navigation elements and menus' :
-                             colorKey.includes('primary') ? 'Primary theme color' :
-                             colorKey.includes('background') ? 'Main background color' :
-                             'Theme variable'}
-                          </p>
-                        </div>
-                        <Badge variant="outline" className="text-xs font-mono">
-                          RGB
-                        </Badge>
-                      </div>
-                      
+                <div className="space-y-6">
+                  {colorGroups.map((group) => (
+                    <div key={group.name}>
+                      <h3 className="font-semibold mb-3 text-foreground">{group.name}</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Light Mode */}
-                        <div>
-                          <Label className="text-xs text-muted-foreground mb-2 block">Light Mode</Label>
-                          <div className="flex gap-2">
-                            <Input
-                              type="color"
-                              value={rgbToHex(localColors[colorKey]?.light || '255 255 255')}
-                              onChange={(e) => handleColorChange(colorKey, 'light', e.target.value)}
-                              className="w-14 h-10 p-1 border-2"
-                            />
-                            <Input
-                              type="text"
-                              value={rgbToHex(localColors[colorKey]?.light || '255 255 255')}
-                              onChange={(e) => handleColorChange(colorKey, 'light', e.target.value)}
-                              className="flex-1 text-sm font-mono"
-                              placeholder="#ffffff"
-                            />
+                        {Object.entries(group.colors).map(([colorKey, colorValue]) => (
+                          <div key={colorKey} className="space-y-2">
+                            <Label className="text-sm font-medium">{colorKey}</Label>
+                            <div className="flex items-center gap-2">
+                              <div 
+                                className="w-8 h-8 rounded border border-border"
+                                style={{ backgroundColor: `rgb(${colorValue[actualTheme]})` }}
+                              />
+                              <Input
+                                type="color"
+                                value={rgbToHex(colorValue[actualTheme])}
+                                onChange={(e) => updateColor(colorKey, actualTheme, hexToRgb(e.target.value))}
+                                className="w-16 h-8 p-1 border-border"
+                              />
+                              <Input
+                                value={colorValue[actualTheme]}
+                                onChange={(e) => updateColor(colorKey, actualTheme, e.target.value)}
+                                placeholder="255 255 255"
+                                className="flex-1 text-sm"
+                              />
+                            </div>
                           </div>
-                          <div className="mt-1 text-xs text-muted-foreground font-mono">
-                            RGB: {localColors[colorKey]?.light || '255 255 255'}
-                          </div>
-                        </div>
-                        
-                        {/* Dark Mode */}
-                        <div>
-                          <Label className="text-xs text-muted-foreground mb-2 block">Dark Mode</Label>
-                          <div className="flex gap-2">
-                            <Input
-                              type="color"
-                              value={rgbToHex(localColors[colorKey]?.dark || '15 23 42')}
-                              onChange={(e) => handleColorChange(colorKey, 'dark', e.target.value)}
-                              className="w-14 h-10 p-1 border-2"
-                            />
-                            <Input
-                              type="text"
-                              value={rgbToHex(localColors[colorKey]?.dark || '15 23 42')}
-                              onChange={(e) => handleColorChange(colorKey, 'dark', e.target.value)}
-                              className="flex-1 text-sm font-mono"
-                              placeholder="#0f172a"
-                            />
-                          </div>
-                          <div className="mt-1 text-xs text-muted-foreground font-mono">
-                            RGB: {localColors[colorKey]?.dark || '15 23 42'}
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* Live Preview */}
-                      <div className="mt-3 flex gap-2 items-center">
-                        <div 
-                          className="w-8 h-8 rounded border-2 border-border"
-                          style={{ backgroundColor: `rgb(${localColors[colorKey]?.light || '255 255 255'})` }}
-                          title="Light mode preview"
-                        />
-                        <div 
-                          className="w-8 h-8 rounded border-2 border-border"
-                          style={{ backgroundColor: `rgb(${localColors[colorKey]?.dark || '15 23 42'})` }}
-                          title="Dark mode preview"
-                        />
-                        <div 
-                          className="w-8 h-8 rounded border-4 border-primary"
-                          style={{ backgroundColor: `rgb(${localColors[colorKey]?.[actualTheme] || '255 255 255'})` }}
-                          title="Current active theme"
-                        />
-                        <span className="text-xs text-muted-foreground ml-2">
-                          Current: {localColors[colorKey]?.[actualTheme] || 'N/A'}
-                        </span>
+                        ))}
                       </div>
                     </div>
                   ))}
@@ -441,270 +380,400 @@ const AdminThemeSettings: React.FC = () => {
 
           {/* Sidebar & Header Section */}
           {activeSection === 'sidebar' && (
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Layout className="h-5 w-5" />
-                    🔧 Sidebar Customization
-                  </CardTitle>
-                  <CardDescription>
-                    Customize sidebar colors and appearance
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {['sidebar-background', 'sidebar-foreground', 'sidebar-accent', 'sidebar-border'].map((colorKey) => (
-                      <div key={colorKey} className="p-4 border border-border rounded-lg">
-                        <Label className="text-sm font-medium mb-3 block">
-                          {colorKey.replace('sidebar-', '').replace('-', ' ').toUpperCase()}
-                        </Label>
-                        <div className="space-y-3">
-                          <div>
-                            <Label className="text-xs text-muted-foreground mb-1 block">Light Mode</Label>
-                            <div className="flex gap-2">
-                              <Input
-                                type="color"
-                                value={rgbToHex(localColors[colorKey]?.light || '255 255 255')}
-                                onChange={(e) => handleColorChange(colorKey, 'light', e.target.value)}
-                                className="w-12 h-8 p-1"
+            <Card>
+              <CardHeader>
+                <CardTitle>Sidebar & Header Colors</CardTitle>
+                <CardDescription>Customize navigation and header appearance</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h3 className="font-semibold mb-3">Sidebar Colors</h3>
+                    <div className="space-y-4">
+                      {['sidebar-background', 'sidebar-foreground', 'sidebar-accent'].map((colorKey) => {
+                        const colorValue = colors[colorKey] || { light: '0 0 0', dark: '15 23 42' };
+                        return (
+                          <div key={colorKey} className="space-y-2">
+                            <Label className="text-sm font-medium">{colorKey.split('-')[1]}</Label>
+                            <div className="flex items-center gap-2">
+                              <div 
+                                className="w-8 h-8 rounded border border-border"
+                                style={{ backgroundColor: `rgb(${colorValue[actualTheme]})` }}
                               />
                               <Input
-                                type="text"
-                                value={rgbToHex(localColors[colorKey]?.light || '255 255 255')}
-                                onChange={(e) => handleColorChange(colorKey, 'light', e.target.value)}
-                                className="flex-1 text-sm font-mono"
+                                type="color"
+                                value={rgbToHex(colorValue[actualTheme])}
+                                onChange={(e) => updateColor(colorKey, actualTheme, hexToRgb(e.target.value))}
+                                className="w-16 h-8 p-1 border-border"
+                              />
+                              <Input
+                                value={colorValue[actualTheme]}
+                                onChange={(e) => updateColor(colorKey, actualTheme, e.target.value)}
+                                placeholder="255 255 255"
+                                className="flex-1 text-sm"
                               />
                             </div>
                           </div>
-                          <div>
-                            <Label className="text-xs text-muted-foreground mb-1 block">Dark Mode</Label>
-                            <div className="flex gap-2">
-                              <Input
-                                type="color"
-                                value={rgbToHex(localColors[colorKey]?.dark || '15 23 42')}
-                                onChange={(e) => handleColorChange(colorKey, 'dark', e.target.value)}
-                                className="w-12 h-8 p-1"
-                              />
-                              <Input
-                                type="text"
-                                value={rgbToHex(localColors[colorKey]?.dark || '15 23 42')}
-                                onChange={(e) => handleColorChange(colorKey, 'dark', e.target.value)}
-                                className="flex-1 text-sm font-mono"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                        );
+                      })}
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Navigation className="h-5 w-5" />
-                    📱 Header & Navigation
-                  </CardTitle>
-                  <CardDescription>
-                    Customize header bar and navigation elements
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {['header-background', 'header-foreground', 'nav-hover', 'nav-active'].map((colorKey) => (
-                      <div key={colorKey} className="p-4 border border-border rounded-lg">
-                        <Label className="text-sm font-medium mb-3 block">
-                          {colorKey.replace('-', ' ').toUpperCase()}
-                        </Label>
-                        <div className="space-y-3">
-                          <div>
-                            <Label className="text-xs text-muted-foreground mb-1 block">Light Mode</Label>
-                            <div className="flex gap-2">
-                              <Input
-                                type="color"
-                                value={rgbToHex(localColors[colorKey]?.light || '255 255 255')}
-                                onChange={(e) => handleColorChange(colorKey, 'light', e.target.value)}
-                                className="w-12 h-8 p-1"
+                  <div>
+                    <h3 className="font-semibold mb-3">Header Colors</h3>
+                    <div className="space-y-4">
+                      {['header-background', 'header-foreground'].map((colorKey) => {
+                        const colorValue = colors[colorKey] || { light: '255 255 255', dark: '22 27 34' };
+                        return (
+                          <div key={colorKey} className="space-y-2">
+                            <Label className="text-sm font-medium">{colorKey.split('-')[1]}</Label>
+                            <div className="flex items-center gap-2">
+                              <div 
+                                className="w-8 h-8 rounded border border-border"
+                                style={{ backgroundColor: `rgb(${colorValue[actualTheme]})` }}
                               />
                               <Input
-                                type="text"
-                                value={rgbToHex(localColors[colorKey]?.light || '255 255 255')}
-                                onChange={(e) => handleColorChange(colorKey, 'light', e.target.value)}
-                                className="flex-1 text-sm font-mono"
+                                type="color"
+                                value={rgbToHex(colorValue[actualTheme])}
+                                onChange={(e) => updateColor(colorKey, actualTheme, hexToRgb(e.target.value))}
+                                className="w-16 h-8 p-1 border-border"
+                              />
+                              <Input
+                                value={colorValue[actualTheme]}
+                                onChange={(e) => updateColor(colorKey, actualTheme, e.target.value)}
+                                placeholder="255 255 255"
+                                className="flex-1 text-sm"
                               />
                             </div>
                           </div>
-                          <div>
-                            <Label className="text-xs text-muted-foreground mb-1 block">Dark Mode</Label>
-                            <div className="flex gap-2">
-                              <Input
-                                type="color"
-                                value={rgbToHex(localColors[colorKey]?.dark || '15 23 42')}
-                                onChange={(e) => handleColorChange(colorKey, 'dark', e.target.value)}
-                                className="w-12 h-8 p-1"
-                              />
-                              <Input
-                                type="text"
-                                value={rgbToHex(localColors[colorKey]?.dark || '15 23 42')}
-                                onChange={(e) => handleColorChange(colorKey, 'dark', e.target.value)}
-                                className="flex-1 text-sm font-mono"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                        );
+                      })}
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
+                </div>
+              </CardContent>
+            </Card>
           )}
 
           {/* Logo & Branding Section */}
           {activeSection === 'branding' && (
-              <div>
-                <LogoBrandSettings />
-                    </div>
-          )}
-
-          {/* ADDED: Debug Settings Section */}
-          {activeSection === 'debug' && (
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Bug className="h-5 w-5" />
-                  🐛 Debug & Development Settings
-                </CardTitle>
-                <CardDescription>
-                  Control theme debugging features and development tools
-                </CardDescription>
+                <CardTitle>Logo & Branding</CardTitle>
+                <CardDescription>Upload logos and customize branding text</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-6">
-                  
-                  {/* Theme Debug Toggle */}
-                  <div className="flex items-center justify-between p-4 border border-border rounded-lg">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Bug className="h-4 w-4 text-primary" />
-                        <Label htmlFor="theme-debug" className="text-sm font-medium">
-                          Show Theme Debug Sections
-                        </Label>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Display "🎯 Theme Status" sections on all pages for debugging color issues
-                      </p>
+                  {/* Logo Toggle */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-base font-medium">Use Logo Instead of Text</Label>
+                      <p className="text-sm text-muted-foreground">Replace text branding with uploaded logos</p>
                     </div>
                     <Switch
-                      id="theme-debug"
+                      checked={brandSettings.useLogo}
+                      onCheckedChange={(checked) => updateBrandSettings({ useLogo: checked })}
+                    />
+                  </div>
+
+                  {/* Logo Upload Section */}
+                  {brandSettings.useLogo && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Light Mode Logo */}
+                      <div className="space-y-3">
+                        <Label className="text-sm font-medium">Light Mode Logo</Label>
+                        <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+                          {brandSettings.lightModeLogo ? (
+                            <div className="space-y-3">
+                              <img 
+                                src={brandSettings.lightModeLogo} 
+                                alt="Light mode logo" 
+                                className="mx-auto max-h-16 max-w-full object-contain"
+                              />
+                              <div className="flex gap-2 justify-center">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => document.getElementById('light-logo-upload')?.click()}
+                                >
+                                  Replace
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => removeLogo('light')}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="space-y-3">
+                              <Upload className="h-12 w-12 mx-auto text-muted-foreground" />
+                              <div>
+                                <Button
+                                  variant="outline"
+                                  onClick={() => document.getElementById('light-logo-upload')?.click()}
+                                >
+                                  Upload Light Logo
+                                </Button>
+                                <p className="text-xs text-muted-foreground mt-2">
+                                  PNG, JPG, SVG up to 2MB
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                          <input
+                            id="light-logo-upload"
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => e.target.files?.[0] && handleLogoUpload(e.target.files[0], 'light')}
+                            className="hidden"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Dark Mode Logo */}
+                      <div className="space-y-3">
+                        <Label className="text-sm font-medium">Dark Mode Logo</Label>
+                        <div className="border-2 border-dashed border-border rounded-lg p-6 text-center bg-muted/50">
+                          {brandSettings.darkModeLogo ? (
+                            <div className="space-y-3">
+                              <img 
+                                src={brandSettings.darkModeLogo} 
+                                alt="Dark mode logo" 
+                                className="mx-auto max-h-16 max-w-full object-contain"
+                              />
+                              <div className="flex gap-2 justify-center">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => document.getElementById('dark-logo-upload')?.click()}
+                                >
+                                  Replace
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => removeLogo('dark')}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="space-y-3">
+                              <Upload className="h-12 w-12 mx-auto text-muted-foreground" />
+                              <div>
+                                <Button
+                                  variant="outline"
+                                  onClick={() => document.getElementById('dark-logo-upload')?.click()}
+                                >
+                                  Upload Dark Logo
+                                </Button>
+                                <p className="text-xs text-muted-foreground mt-2">
+                                  PNG, JPG, SVG up to 2MB
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                          <input
+                            id="dark-logo-upload"
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => e.target.files?.[0] && handleLogoUpload(e.target.files[0], 'dark')}
+                            className="hidden"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Logo Settings */}
+                  {brandSettings.useLogo && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-sm font-medium">Logo Size</Label>
+                        <Select
+                          value={brandSettings.logoSize}
+                          onValueChange={(value: 'sm' | 'md' | 'lg') => updateBrandSettings({ logoSize: value })}
+                        >
+                          <SelectTrigger className="mt-1">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="sm">Small (24px)</SelectItem>
+                            <SelectItem value="md">Medium (32px)</SelectItem>
+                            <SelectItem value="lg">Large (40px)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium">Logo Position</Label>
+                        <Select
+                          value={brandSettings.logoPosition}
+                          onValueChange={(value: 'left' | 'center') => updateBrandSettings({ logoPosition: value })}
+                        >
+                          <SelectTrigger className="mt-1">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="left">Left Aligned</SelectItem>
+                            <SelectItem value="center">Centered</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Text Branding */}
+                  <div className="space-y-4">
+                    <h3 className="font-semibold">Text Branding</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="brand-text" className="text-sm font-medium">Brand Name</Label>
+                        <Input
+                          id="brand-text"
+                          value={brandSettings.brandText}
+                          onChange={(e) => updateBrandSettings({ brandText: e.target.value })}
+                          placeholder="Your App Name"
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="tagline" className="text-sm font-medium">Tagline</Label>
+                        <Input
+                          id="tagline"
+                          value={brandSettings.tagline}
+                          onChange={(e) => updateBrandSettings({ tagline: e.target.value })}
+                          placeholder="Your app description"
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-sm font-medium">Show Tagline</Label>
+                        <p className="text-xs text-muted-foreground">Display tagline below brand name</p>
+                      </div>
+                      <Switch
+                        checked={brandSettings.showTagline}
+                        onCheckedChange={(checked) => updateBrandSettings({ showTagline: checked })}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Brand Preview */}
+                  <div className="border border-border rounded-lg p-4 bg-muted/30">
+                    <Label className="text-sm font-medium mb-2 block">Preview</Label>
+                    <div className={`flex items-center gap-3 ${brandSettings.logoPosition === 'center' ? 'justify-center' : ''}`}>
+                      {brandSettings.useLogo && (brandSettings.lightModeLogo || brandSettings.darkModeLogo) ? (
+                        <div className={`${brandSettings.logoSize === 'sm' ? 'w-6 h-6' : brandSettings.logoSize === 'md' ? 'w-8 h-8' : 'w-10 h-10'}`}>
+                          <img 
+                            src={actualTheme === 'light' ? brandSettings.lightModeLogo || brandSettings.darkModeLogo : brandSettings.darkModeLogo || brandSettings.lightModeLogo} 
+                            alt="Logo preview" 
+                            className="w-full h-full object-contain"
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                          <Settings className="h-5 w-5 text-primary-foreground" />
+                        </div>
+                      )}
+                      <div>
+                        <div className="font-bold text-sm">{brandSettings.brandText}</div>
+                        {brandSettings.showTagline && (
+                          <div className="text-xs opacity-75">{brandSettings.tagline}</div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Debug Settings Section */}
+          {activeSection === 'debug' && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Debug Settings</CardTitle>
+                <CardDescription>Control theme debugging features across all pages</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-base font-medium">Show Theme Debug Sections</Label>
+                      <p className="text-sm text-muted-foreground">Display theme status sections on all pages for debugging</p>
+                    </div>
+                    <Switch
                       checked={debugSettings.showThemeDebug}
                       onCheckedChange={(checked) => updateDebugSettings({ showThemeDebug: checked })}
                     />
                   </div>
 
-                  {/* Color Preview Toggle */}
-                  <div className="flex items-center justify-between p-4 border border-border rounded-lg">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Palette className="h-4 w-4 text-primary" />
-                        <Label htmlFor="color-previews" className="text-sm font-medium">
-                          Show Color Previews
-                        </Label>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Display color preview swatches and RGB values in debug sections
-                      </p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-base font-medium">Show Color Preview</Label>
+                      <p className="text-sm text-muted-foreground">Display color swatches in debug sections</p>
                     </div>
                     <Switch
-                      id="color-previews"
-                      checked={debugSettings.showColorPreviews}
-                      onCheckedChange={(checked) => updateDebugSettings({ showColorPreviews: checked })}
+                      checked={debugSettings.showColorPreview}
+                      onCheckedChange={(checked) => updateDebugSettings({ showColorPreview: checked })}
                     />
                   </div>
 
-                  {/* Theme Info Toggle */}
-                  <div className="flex items-center justify-between p-4 border border-border rounded-lg">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Monitor className="h-4 w-4 text-primary" />
-                        <Label htmlFor="theme-info" className="text-sm font-medium">
-                          Show Theme Information
-                        </Label>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Display current theme mode, active theme, and system preferences
-                      </p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-base font-medium">Show Theme Information</Label>
+                      <p className="text-sm text-muted-foreground">Display current theme mode and status information</p>
                     </div>
                     <Switch
-                      id="theme-info"
                       checked={debugSettings.showThemeInfo}
                       onCheckedChange={(checked) => updateDebugSettings({ showThemeInfo: checked })}
                     />
                   </div>
 
-                  <Separator />
-
-                  {/* Debug Actions */}
-                  <div>
-                    <h4 className="text-sm font-semibold text-foreground mb-3">Debug Actions</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => {
-                          console.group('🎨 Theme Debug Info');
-                          console.log('Current Settings:', debugSettings);
-                          console.log('Theme Mode:', themeMode);
-                          console.log('Actual Theme:', actualTheme);
-                          console.log('Colors Count:', Object.keys(localColors).length);
-                          console.groupEnd();
-                        }}
-                      >
-                        <Code2 className="h-4 w-4 mr-2" />
-                        Log Debug Info
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => {
-                          updateDebugSettings({
-                            showThemeDebug: false,
-                            showColorPreviews: true,
-                            showThemeInfo: true,
-                          });
-                        }}
-                      >
-                        <RotateCcw className="h-4 w-4 mr-2" />
-                        Reset Debug Settings
-                      </Button>
+                  {/* Debug Status */}
+                  <div className="border border-border rounded-lg p-4 bg-muted/30">
+                    <h3 className="font-semibold mb-3">Current Debug Status</h3>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div className="flex items-center gap-2">
+                        {debugSettings.showThemeDebug ? (
+                          <Check className="h-4 w-4 text-green-600" />
+                        ) : (
+                          <X className="h-4 w-4 text-red-600" />
+                        )}
+                        Theme Debug Sections
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {debugSettings.showColorPreview ? (
+                          <Check className="h-4 w-4 text-green-600" />
+                        ) : (
+                          <X className="h-4 w-4 text-red-600" />
+                        )}
+                        Color Previews
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {debugSettings.showThemeInfo ? (
+                          <Check className="h-4 w-4 text-green-600" />
+                        ) : (
+                          <X className="h-4 w-4 text-red-600" />
+                        )}
+                        Theme Information
+                      </div>
                     </div>
                   </div>
 
-                  {/* Current Debug Status */}
-                  <div className="p-4 bg-muted/50 rounded-lg">
-                    <h4 className="text-sm font-semibold text-foreground mb-2">Current Debug Status</h4>
-                    <div className="space-y-1 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Theme Debug Sections:</span>
-                        <Badge variant={debugSettings.showThemeDebug ? "default" : "secondary"}>
-                          {debugSettings.showThemeDebug ? 'Enabled' : 'Disabled'}
-                        </Badge>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Color Previews:</span>
-                        <Badge variant={debugSettings.showColorPreviews ? "default" : "secondary"}>
-                          {debugSettings.showColorPreviews ? 'Enabled' : 'Disabled'}
-                        </Badge>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Theme Information:</span>
-                        <Badge variant={debugSettings.showThemeInfo ? "default" : "secondary"}>
-                          {debugSettings.showThemeInfo ? 'Enabled' : 'Disabled'}
-                        </Badge>
-                      </div>
-                    </div>
+                  {/* Instructions */}
+                  <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                    <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">How it Works</h4>
+                    <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                      <li>• Toggle "Show Theme Debug Sections" to show/hide debug panels on all pages</li>
+                      <li>• Changes apply immediately across your entire application</li>
+                      <li>• Debug sections help verify colors are working correctly</li>
+                      <li>• Turn off debug sections for production use</li>
+                    </ul>
                   </div>
                 </div>
               </CardContent>
@@ -715,106 +784,75 @@ const AdminThemeSettings: React.FC = () => {
           {activeSection === 'preview' && (
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Eye className="h-5 w-5" />
-                  Live Theme Preview
-                </CardTitle>
-                <CardDescription>
-                  See how your theme changes look across different UI elements
-                </CardDescription>
+                <CardTitle>Live Preview</CardTitle>
+                <CardDescription>See how your current theme looks across different modes</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  
-                  {/* Color Swatches */}
-                  {[
-                    { key: 'primary', label: 'Primary', desc: 'Should be BLUE' },
-                    { key: 'background', label: 'Background', desc: 'Should be WHITE/DARK' },
-                    { key: 'sidebar-background', label: 'Sidebar', desc: 'Navigation background' },
-                    { key: 'header-background', label: 'Header', desc: 'Top bar background' },
-                    { key: 'card', label: 'Card', desc: 'Elevated surfaces' },
-                    { key: 'accent-primary', label: 'Accent', desc: 'Highlight color' },
-                  ].map(({ key, label, desc }) => (
-                    <div key={key} className="text-center">
-                      <div 
-                        className="w-full h-20 rounded-lg border-2 border-border mb-2 flex items-center justify-center shadow-sm" 
-                        style={{ backgroundColor: `rgb(${localColors[key]?.[actualTheme] || '255 255 255'})` }}
-                      >
-                        <span 
-                          className="font-semibold text-sm"
-                          style={{ 
-                            color: key.includes('background') || key.includes('card') || key.includes('secondary') 
-                              ? `rgb(${localColors.foreground?.[actualTheme] || '0 0 0'})`
-                              : key.includes('sidebar') || key.includes('header')
-                              ? `rgb(${localColors[key.replace('-background', '-foreground')]?.[actualTheme] || '255 255 255'})`
-                              : `rgb(${localColors[key.includes('primary') ? 'primary-foreground' : 'foreground']?.[actualTheme] || '255 255 255'})`
-                          }}
-                        >
-                          {label}
-                        </span>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Light Theme Preview */}
+                  <div className="border border-border rounded-lg p-4 bg-white text-black">
+                    <h3 className="font-semibold mb-3 flex items-center gap-2">
+                      <Sun className="h-4 w-4" />
+                      Light Theme
+                    </h3>
+                    <div className="space-y-3">
+                      <div style={{ backgroundColor: `rgb(${colors['bg-primary']?.light || '255 255 255'})`, color: `rgb(${colors['text-primary']?.light || '26 32 44'})` }} className="p-3 rounded border">
+                        <p className="font-medium">Primary Background</p>
+                        <p className="text-sm opacity-75">rgb({colors['bg-primary']?.light || '255 255 255'})</p>
                       </div>
-                      <div className="text-xs font-medium text-foreground">{label}</div>
-                      <div className="text-xs text-muted-foreground">{desc}</div>
-                      <div className="text-xs font-mono text-muted-foreground mt-1">
-                        {localColors[key]?.[actualTheme] || 'N/A'}
+                      <div style={{ backgroundColor: `rgb(${colors['accent-primary']?.light || '49 130 206'})`, color: 'white' }} className="p-3 rounded">
+                        <p className="font-medium">Primary Accent</p>
+                        <p className="text-sm opacity-75">rgb({colors['accent-primary']?.light || '49 130 206'})</p>
                       </div>
                     </div>
-                  ))}
+                  </div>
+
+                  {/* Dark Theme Preview */}
+                  <div className="border border-border rounded-lg p-4 bg-gray-900 text-white">
+                    <h3 className="font-semibold mb-3 flex items-center gap-2">
+                      <Moon className="h-4 w-4" />
+                      Dark Theme
+                    </h3>
+                    <div className="space-y-3">
+                      <div style={{ backgroundColor: `rgb(${colors['bg-primary']?.dark || '14 17 23'})`, color: `rgb(${colors['text-primary']?.dark || '240 246 252'})` }} className="p-3 rounded border border-gray-700">
+                        <p className="font-medium">Primary Background</p>
+                        <p className="text-sm opacity-75">rgb({colors['bg-primary']?.dark || '14 17 23'})</p>
+                      </div>
+                      <div style={{ backgroundColor: `rgb(${colors['accent-primary']?.dark || '56 189 248'})`, color: 'white' }} className="p-3 rounded">
+                        <p className="font-medium">Primary Accent</p>
+                        <p className="text-sm opacity-75">rgb({colors['accent-primary']?.dark || '56 189 248'})</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                <Separator className="my-6" />
-
-                {/* Component Preview */}
-                <div className="space-y-4">
-                  <h4 className="font-semibold text-foreground">Component Preview</h4>
-                  
-                  <div className="p-4 bg-card border border-border rounded-lg">
-                    <div className="flex items-center justify-between mb-3">
-                      <h5 className="font-medium text-card-foreground">Sample Card Component</h5>
-                      <Badge variant="outline">Live Preview</Badge>
+                {/* Current Theme Status */}
+                <div className="mt-6 p-4 border border-border rounded-lg bg-muted/30">
+                  <h3 className="font-semibold mb-3">Current Theme Status</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div>
+                      <p className="text-muted-foreground">Theme Mode</p>
+                      <p className="font-medium capitalize">{themeMode}</p>
                     </div>
-                    <p className="text-muted-foreground text-sm mb-3">
-                      This card demonstrates how your theme colors appear in actual components.
-                    </p>
-                    <div className="flex gap-2">
-                      <Button size="sm">Primary Button</Button>
-                      <Button size="sm" variant="outline">Secondary Button</Button>
+                    <div>
+                      <p className="text-muted-foreground">Active Theme</p>
+                      <p className="font-medium capitalize">{actualTheme}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Debug Status</p>
+                      <p className="font-medium">{debugSettings.showThemeDebug ? 'Enabled' : 'Disabled'}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Branding</p>
+                      <p className="font-medium">{brandSettings.useLogo ? 'Logo' : 'Text'}</p>
                     </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
           )}
-
-          {/* Action Buttons */}
-          <div className="flex gap-3 mt-8 pt-6 border-t border-border">
-            <Button 
-              onClick={applyColors} 
-              className="flex items-center gap-2"
-              disabled={!hasUnsavedChanges}
-            >
-              <Save className="h-4 w-4" />
-              Apply Changes
-            </Button>
-            <Button 
-              onClick={resetToDefaults} 
-              variant="outline" 
-              className="flex items-center gap-2"
-            >
-              <RotateCcw className="h-4 w-4" />
-              Reset to Defaults
-            </Button>
-            <Button variant="outline" asChild>
-              <a href="/theme">
-                <Monitor className="h-4 w-4 mr-2" />
-                Basic Theme Settings
-              </a>
-            </Button>
-          </div>
         </div>
       </div>
-    </SidebarLayout>
+    </div>
   );
-};
-
-export default AdminThemeSettings;
+}
