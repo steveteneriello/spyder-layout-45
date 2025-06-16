@@ -93,6 +93,149 @@ const CityDemographicsDrawer: React.FC<CityDemographicsDrawerProps> = ({ isOpen,
                   <p className="text-sm text-gray-500">Median Home Value</p>
                   <p className="text-lg font-semibold">{formatCurrency(city.home_value)}</p>
                 </div>
+                <div>
+                  <p className="text-sm text-gray-500">Per Capita Income</p>
+                  <p className="text-lg font-semibold">{formatCurrency(city.income_per_capita)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Rent (Median)</p>
+                  <p className="text-lg font-semibold">{formatCurrency(city.rent_median)}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Education */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Education</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-500">Bachelor's Degree or Higher</p>
+                  <p className="text-lg font-semibold">{formatPercentage(city.education_bachelors_pct)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">High School Graduate</p>
+                  <p className="text-lg font-semibold">{formatPercentage(city.education_high_school_pct)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Graduate Degree</p>
+                  <p className="text-lg font-semibold">{formatPercentage(city.education_graduate_pct)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Less than High School</p>
+                  <p className="text-lg font-semibold">{formatPercentage(city.education_less_than_high_school_pct)}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Race & Ethnicity */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Race & Ethnicity</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div>
+                  <p className="text-sm text-gray-500">White</p>
+                  <p className="text-lg font-semibold">{formatPercentage(city.race_white_pct)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Black</p>
+                  <p className="text-lg font-semibold">{formatPercentage(city.race_black_pct)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Asian</p>
+                  <p className="text-lg font-semibold">{formatPercentage(city.race_asian_pct)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Hispanic/Latino</p>
+                  <p className="text-lg font-semibold">{formatPercentage(city.race_hispanic_pct)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Native American</p>
+                  <p className="text-lg font-semibold">{formatPercentage(city.race_native_pct)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Other</p>
+                  <p className="text-lg font-semibold">{formatPercentage(city.race_other_pct)}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Employment */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Employment</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-500">Unemployment Rate</p>
+                  <p className="text-lg font-semibold">{formatPercentage(city.unemployment_rate)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Labor Force</p>
+                  <p className="text-lg font-semibold">{formatNumber(city.labor_force)}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Age Demographics */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Age Distribution</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div>
+                  <p className="text-sm text-gray-500">Under 18</p>
+                  <p className="text-lg font-semibold">{formatPercentage(city.age_under_18_pct)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">18-34</p>
+                  <p className="text-lg font-semibold">{formatPercentage(city.age_18_34_pct)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">35-64</p>
+                  <p className="text-lg font-semibold">{formatPercentage(city.age_35_64_pct)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">65 and Over</p>
+                  <p className="text-lg font-semibold">{formatPercentage(city.age_65_over_pct)}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Housing Details */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Housing</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-500">Total Housing Units</p>
+                  <p className="text-lg font-semibold">{formatNumber(city.housing_units)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Owner Occupied</p>
+                  <p className="text-lg font-semibold">{formatPercentage(city.housing_owner_occupied_pct)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Renter Occupied</p>
+                  <p className="text-lg font-semibold">{formatPercentage(city.housing_renter_occupied_pct)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Vacant Units</p>
+                  <p className="text-lg font-semibold">{formatPercentage(city.housing_vacant_pct)}</p>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -113,6 +256,11 @@ const CityDemographicsDrawer: React.FC<CityDemographicsDrawerProps> = ({ isOpen,
             {city.postal_code && (
               <Badge variant="secondary">
                 ZIP: {city.postal_code}
+              </Badge>
+            )}
+            {city.education_bachelors_pct && (
+              <Badge variant="secondary">
+                College: {formatPercentage(city.education_bachelors_pct)}
               </Badge>
             )}
           </div>
