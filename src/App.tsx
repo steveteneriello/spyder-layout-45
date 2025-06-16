@@ -11,6 +11,7 @@ import Campaigns from "./pages/Campaigns";
 import SchedulerDashboard from "./pages/SchedulerDashboard";
 import CreateSchedule from "./pages/CreateSchedule";
 import LocationBuilder from "./pages/LocationBuilder";
+import LocationBuilderBackup from "./pages/LocationBuilderBackup";
 import Theme from "./pages/Theme";
 import NotFound from "./pages/NotFound";
 
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/scheduler" element={<SchedulerDashboard />} />
             <Route path="/create-schedule" element={<CreateSchedule />} />
             <Route path="/location-builder" element={<LocationBuilder />} />
+            <Route path="/location-builder-backup" element={<LocationBuilderBackup />} />
             <Route path="/theme" element={<Theme />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
