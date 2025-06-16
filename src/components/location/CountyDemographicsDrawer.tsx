@@ -28,7 +28,6 @@ const CountyDemographicsDrawer: React.FC<CountyDemographicsDrawerProps> = ({ isO
     
     setIsLoading(true);
     try {
-      // Get county data by searching for a representative city in that county
       const { data, error } = await supabase
         .from('location_data')
         .select('*')
@@ -133,31 +132,8 @@ const CountyDemographicsDrawer: React.FC<CountyDemographicsDrawerProps> = ({ isO
                   {renderDataPoint("Widowed", formatPercentage(county.widowed))}
                   {renderDataPoint("Family Size", formatNumber(county.family_size))}
                   {renderDataPoint("Dual Income", formatPercentage(county.family_dual_income))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Income Distribution */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Income Distribution</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="grid grid-cols-3 gap-2 text-xs">
                   {renderDataPoint("Median Household", formatCurrency(county.income_household_median))}
-                  {renderDataPoint("Median Individual", formatCurrency(county.income_individual_median))}
                   {renderDataPoint("Six Figure", formatPercentage(county.income_household_six_figure))}
-                  {renderDataPoint("Under $5K", formatPercentage(county.income_household_under_5))}
-                  {renderDataPoint("$5K-$10K", formatPercentage(county.income_household_5_to_10))}
-                  {renderDataPoint("$10K-$15K", formatPercentage(county.income_household_10_to_15))}
-                  {renderDataPoint("$15K-$20K", formatPercentage(county.income_household_15_to_20))}
-                  {renderDataPoint("$20K-$25K", formatPercentage(county.income_household_20_to_25))}
-                  {renderDataPoint("$25K-$35K", formatPercentage(county.income_household_25_to_35))}
-                  {renderDataPoint("$35K-$50K", formatPercentage(county.income_household_35_to_50))}
-                  {renderDataPoint("$50K-$75K", formatPercentage(county.income_household_50_to_75))}
-                  {renderDataPoint("$75K-$100K", formatPercentage(county.income_household_75_to_100))}
-                  {renderDataPoint("$100K-$150K", formatPercentage(county.income_household_100_to_150))}
-                  {renderDataPoint("$150K+", formatPercentage(county.income_household_150_over))}
                 </div>
               </CardContent>
             </Card>

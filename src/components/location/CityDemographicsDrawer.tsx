@@ -109,11 +109,8 @@ const CityDemographicsDrawer: React.FC<CityDemographicsDrawerProps> = ({ isOpen,
               <CardContent className="pt-0">
                 <div className="grid grid-cols-3 gap-3 text-xs">
                   {renderDataPoint("Population", formatNumber(city.population))}
-                  {renderDataPoint("County", city.county_name)}
-                  {renderDataPoint("ZIP Code", city.postal_code)}
+                  {renderDataPoint("State", city.state_name)}
                   {renderDataPoint("Median Age", city.age_median ? `${parseFloat(city.age_median).toFixed(1)} years` : null)}
-                  {renderDataPoint("Latitude", city.latitude?.toFixed(4), "font-mono text-xs")}
-                  {renderDataPoint("Longitude", city.longitude?.toFixed(4), "font-mono text-xs")}
                 </div>
               </CardContent>
             </Card>
@@ -135,31 +132,8 @@ const CityDemographicsDrawer: React.FC<CityDemographicsDrawerProps> = ({ isOpen,
                   {renderDataPoint("Widowed", formatPercentage(city.widowed))}
                   {renderDataPoint("Family Size", formatNumber(city.family_size))}
                   {renderDataPoint("Dual Income", formatPercentage(city.family_dual_income))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Income Distribution */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Income Distribution</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="grid grid-cols-3 gap-2 text-xs">
                   {renderDataPoint("Median Household", formatCurrency(city.income_household_median))}
-                  {renderDataPoint("Median Individual", formatCurrency(city.income_individual_median))}
                   {renderDataPoint("Six Figure", formatPercentage(city.income_household_six_figure))}
-                  {renderDataPoint("Under $5K", formatPercentage(city.income_household_under_5))}
-                  {renderDataPoint("$5K-$10K", formatPercentage(city.income_household_5_to_10))}
-                  {renderDataPoint("$10K-$15K", formatPercentage(city.income_household_10_to_15))}
-                  {renderDataPoint("$15K-$20K", formatPercentage(city.income_household_15_to_20))}
-                  {renderDataPoint("$20K-$25K", formatPercentage(city.income_household_20_to_25))}
-                  {renderDataPoint("$25K-$35K", formatPercentage(city.income_household_25_to_35))}
-                  {renderDataPoint("$35K-$50K", formatPercentage(city.income_household_35_to_50))}
-                  {renderDataPoint("$50K-$75K", formatPercentage(city.income_household_50_to_75))}
-                  {renderDataPoint("$75K-$100K", formatPercentage(city.income_household_75_to_100))}
-                  {renderDataPoint("$100K-$150K", formatPercentage(city.income_household_100_to_150))}
-                  {renderDataPoint("$150K+", formatPercentage(city.income_household_150_over))}
                 </div>
               </CardContent>
             </Card>
@@ -194,11 +168,6 @@ const CityDemographicsDrawer: React.FC<CityDemographicsDrawerProps> = ({ isOpen,
               {city.income_household_median && (
                 <Badge variant="secondary" className="text-xs">
                   Income: {formatCurrency(city.income_household_median)}
-                </Badge>
-              )}
-              {city.postal_code && (
-                <Badge variant="secondary" className="text-xs">
-                  ZIP: {city.postal_code}
                 </Badge>
               )}
             </div>
