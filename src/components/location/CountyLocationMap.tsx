@@ -3,12 +3,17 @@ import { Wrapper, Status } from "@googlemaps/react-wrapper";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { MapPin, Building2 } from "lucide-react";
+import StateFilterTags from "./StateFilterTags";
+import SavedListsButton from "./SavedListsButton";
 
 interface CountyLocationMapProps {
   searchResults: any[];
   centerCoords: {lat: number; lng: number} | null;
   selectedCities?: any[];
   selectedCounties?: Set<string>;
+  selectedStates?: Set<string>;
+  onStateToggle?: (state: string) => void;
+  onListSelect?: (list: any) => void;
 }
 
 const render = (status: Status) => {
@@ -39,7 +44,8 @@ const MapComponent: React.FC<{
   selectedCounties?: Set<string>;
   showCounties: boolean;
   showCities: boolean;
-}> = ({ searchResults, centerCoords, selectedCities = [], selectedCounties = new Set(), showCounties, showCities }) => {
+  selectedStates?: Set<string>;
+}> = ({ searchResults, centerCoords, selectedCities = [], selectedCounties = new Set(), showCounties, showCities, selectedStates = new Set() }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const countyMarkersRef = useRef<Map<string, google.maps.Marker>>(new Map());
@@ -142,6 +148,11 @@ const MapComponent: React.FC<{
   }, [selectedCounties, searchResults]);
 
   // Update county markers
+  const filteredSearchResults = selectedStates.size > 0 
+    ? searchResults.filter(county => selectedStates.has(county.state_name))
+    : searchResults;
+
+  // Use filteredSearchResults instead of searchResults in marker updates
   useEffect(() => {
     if (!map) return;
 
@@ -151,8 +162,8 @@ const MapComponent: React.FC<{
     clearCountyMarkers();
 
     if (showCounties) {
-      // Add county markers (red)
-      searchResults.forEach((county, index) => {
+      // Add county markers (red) - use filtered results
+      filteredSearchResults.forEach((county, index) => {
         const countyId = `${county.county_name}-${county.state_name}-${index}`;
         
         console.log(`Processing county: ${county.county_name}`);
@@ -193,7 +204,7 @@ const MapComponent: React.FC<{
         countyMarkersRef.current.set(`county-${countyId}`, countyMarker);
       });
     }
-  }, [map, searchResults, showCounties]);
+  }, [map, filteredSearchResults, showCounties]);
 
   // Update city markers with incremental changes to prevent blinking
   useEffect(() => {
@@ -329,7 +340,10 @@ const CountyLocationMap: React.FC<CountyLocationMapProps> = ({
   searchResults, 
   centerCoords,
   selectedCities = [],
-  selectedCounties = new Set()
+  selectedCounties = new Set(),
+  selectedStates = new Set(),
+  onStateToggle = () => {},
+  onListSelect = () => {}
 }) => {
   const apiKey = "AIzaSyAOlWmVnT8p2D9pLI393WqEjrKNJ1ojwPM";
   const [toggleValue, setToggleValue] = useState<string[]>(["counties", "cities"]);
@@ -339,34 +353,57 @@ const CountyLocationMap: React.FC<CountyLocationMapProps> = ({
 
   return (
     <div className="h-full w-full relative">
-      {/* Toggle Controls - moved left to accommodate expand map button */}
-      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 -translate-x-8 z-10 bg-white rounded-lg shadow-lg p-2">
-        <ToggleGroup 
-          type="multiple" 
-          value={toggleValue}
-          onValueChange={setToggleValue}
-          className="gap-1"
-        >
-          <ToggleGroupItem
-            value="counties"
-            size="sm"
-            className="data-[state=on]:bg-red-100 data-[state=on]:text-red-700 hover:bg-red-50"
+      {/* Top Controls Bar */}
+      <div className="absolute top-4 left-4 right-4 z-10 flex items-center justify-between">
+        {/* Left side - Saved Lists Button */}
+        <SavedListsButton onListSelect={onListSelect} />
+        
+        {/* Center - Toggle Controls */}
+        <div className="bg-white rounded-lg shadow-lg p-2">
+          <ToggleGroup 
+            type="multiple" 
+            value={toggleValue}
+            onValueChange={setToggleValue}
+            className="gap-1"
           >
-            <MapPin className="h-4 w-4 mr-1" />
-            Counties
-          </ToggleGroupItem>
-          <ToggleGroupItem
-            value="cities"
-            size="sm"
-            className="data-[state=on]:bg-blue-100 data-[state=on]:text-blue-700 hover:bg-blue-50"
-          >
-            <Building2 className="h-4 w-4 mr-1" />
-            Cities
-          </ToggleGroupItem>
-        </ToggleGroup>
+            <ToggleGroupItem
+              value="counties"
+              size="sm"
+              className="data-[state=on]:bg-red-100 data-[state=on]:text-red-700 hover:bg-red-50"
+            >
+              <MapPin className="h-4 w-4 mr-1" />
+              Counties
+            </ToggleGroupItem>
+            <ToggleGroupItem
+              value="cities"
+              size="sm"
+              className="data-[state=on]:bg-blue-100 data-[state=on]:text-blue-700 hover:bg-blue-50"
+            >
+              <Building2 className="h-4 w-4 mr-1" />
+              Cities
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </div>
+        
+        {/* Right side - placeholder for future controls */}
+        <div></div>
       </div>
 
-      {/* Map Legend - moved up to avoid covering Google logo */}
+      {/* State Filter Tags */}
+      {searchResults.length > 0 && (
+        <div className="absolute top-20 left-4 right-4 z-10">
+          <div className="bg-white rounded-lg shadow-lg p-3">
+            <div className="text-xs font-semibold text-slate-800 mb-2">Filter by State</div>
+            <StateFilterTags
+              searchResults={searchResults}
+              selectedStates={selectedStates}
+              onStateToggle={onStateToggle}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Map Legend */}
       {(showCounties || showCities) && (
         <div className="absolute bottom-12 left-4 z-10 bg-white rounded-lg shadow-lg p-3">
           <div className="text-xs font-semibold text-slate-800 mb-2">Map Legend</div>
@@ -395,6 +432,7 @@ const CountyLocationMap: React.FC<CountyLocationMapProps> = ({
           selectedCounties={selectedCounties}
           showCounties={showCounties}
           showCities={showCities}
+          selectedStates={selectedStates}
         />
       </Wrapper>
     </div>

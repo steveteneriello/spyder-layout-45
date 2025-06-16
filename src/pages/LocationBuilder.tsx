@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { MapPin, Building2, List, Search } from "lucide-react";
+import { MapPin, Building2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import SidebarLayout from "@/components/layout/SidebarLayout";
@@ -31,6 +31,7 @@ const LocationBuilder = () => {
   const [centerCoords, setCenterCoords] = useState<{lat: number; lng: number} | null>(null);
   const [selectedCounties, setSelectedCounties] = useState<Set<string>>(new Set());
   const [selectedCities, setSelectedCities] = useState<any[]>([]);
+  const [selectedStates, setSelectedStates] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -66,6 +67,7 @@ const LocationBuilder = () => {
     setCenterCoords(coords);
     setSelectedCounties(new Set());
     setSelectedCities([]);
+    setSelectedStates(new Set());
   };
 
   const handleListSaved = () => {
@@ -87,6 +89,25 @@ const LocationBuilder = () => {
   const handleSelectedCitiesChange = (cities: any[]) => {
     console.log('Selected cities changed:', cities);
     setSelectedCities(cities);
+  };
+
+  const handleStateToggle = (state: string) => {
+    const newSelected = new Set(selectedStates);
+    if (newSelected.has(state)) {
+      newSelected.delete(state);
+    } else {
+      newSelected.add(state);
+    }
+    setSelectedStates(newSelected);
+  };
+
+  const handleListSelect = (list: any) => {
+    // TODO: Implement loading a saved list
+    console.log('Loading saved list:', list);
+    toast({
+      title: "List Selected",
+      description: `Loading ${list.name}...`,
+    });
   };
 
   const menuItems = [
@@ -146,7 +167,7 @@ const LocationBuilder = () => {
           </div>
           
           {/* Search bar */}
-          <div className="max-w-3xl">
+          <div className="max-w-5xl">
             <CountyLocationFilters 
               onSearchResults={handleSearchResults}
               onListSaved={handleListSaved} 
@@ -162,6 +183,9 @@ const LocationBuilder = () => {
               centerCoords={centerCoords}
               selectedCities={selectedCities}
               selectedCounties={selectedCounties}
+              selectedStates={selectedStates}
+              onStateToggle={handleStateToggle}
+              onListSelect={handleListSelect}
             />
           </div>
         </div>

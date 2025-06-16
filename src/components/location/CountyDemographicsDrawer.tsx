@@ -28,10 +28,21 @@ const CountyDemographicsDrawer: React.FC<CountyDemographicsDrawerProps> = ({ isO
     
     setIsLoading(true);
     try {
+      // Extract county and state from the countyId format: "CountyName-StateName-index"
+      const parts = countyId.split('-');
+      if (parts.length < 2) {
+        throw new Error('Invalid county ID format');
+      }
+      
+      const countyName = parts[0];
+      const stateName = parts[1];
+      
       const { data, error } = await supabase
         .from('location_data')
         .select('*')
-        .eq('id', countyId)
+        .eq('county_name', countyName)
+        .eq('state_name', stateName)
+        .limit(1)
         .single();
 
       if (error) throw error;
@@ -134,6 +145,7 @@ const CountyDemographicsDrawer: React.FC<CountyDemographicsDrawerProps> = ({ isO
                   {renderDataPoint("Dual Income", formatPercentage(county.family_dual_income))}
                   {renderDataPoint("Median Household", formatCurrency(county.income_household_median))}
                   {renderDataPoint("Six Figure", formatPercentage(county.income_household_six_figure))}
+                  {renderDataPoint("Military", formatPercentage(county.military))}
                 </div>
               </CardContent>
             </Card>

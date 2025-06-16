@@ -111,6 +111,9 @@ const CityDemographicsDrawer: React.FC<CityDemographicsDrawerProps> = ({ isOpen,
                   {renderDataPoint("Population", formatNumber(city.population))}
                   {renderDataPoint("State", city.state_name)}
                   {renderDataPoint("Median Age", city.age_median ? `${parseFloat(city.age_median).toFixed(1)} years` : null)}
+                  {renderDataPoint("Latitude", city.latitude ? parseFloat(city.latitude).toFixed(4) : null)}
+                  {renderDataPoint("Longitude", city.longitude ? parseFloat(city.longitude).toFixed(4) : null)}
+                  {renderDataPoint("Timezone", city.timezone)}
                 </div>
               </CardContent>
             </Card>
@@ -134,6 +137,7 @@ const CityDemographicsDrawer: React.FC<CityDemographicsDrawerProps> = ({ isOpen,
                   {renderDataPoint("Dual Income", formatPercentage(city.family_dual_income))}
                   {renderDataPoint("Median Household", formatCurrency(city.income_household_median))}
                   {renderDataPoint("Six Figure", formatPercentage(city.income_household_six_figure))}
+                  {renderDataPoint("Military", formatPercentage(city.military))}
                 </div>
               </CardContent>
             </Card>

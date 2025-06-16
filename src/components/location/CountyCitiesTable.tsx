@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -20,6 +21,7 @@ interface CityData {
   income_household_median?: number;
   age_median?: number;
   home_value?: number;
+  timezone?: string;
 }
 
 interface CountyCitiesTableProps {
@@ -307,6 +309,11 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
     }).format(value);
   };
 
+  const formatCoordinate = (value: number | null | undefined) => {
+    if (!value) return 'N/A';
+    return value.toFixed(4);
+  };
+
   if (selectedCounties.size === 0) {
     return (
       <div className="h-full flex items-center justify-center">
@@ -394,7 +401,7 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
                     </div>
                   </div>
                   <p className="text-sm text-slate-600">
-                    {city.county_name}, {city.state_name}
+                    {city.county_name}, {city.state_name} • {city.timezone || 'N/A'}
                   </p>
                   <div className="flex gap-4 text-xs text-slate-500 mt-1">
                     {city.income_household_median && (
@@ -404,9 +411,13 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
                       <span>Home: {formatCurrency(city.home_value)}</span>
                     )}
                   </div>
-                  {city.postal_code && (
-                    <p className="text-xs text-slate-500">{city.postal_code}</p>
-                  )}
+                  <div className="flex gap-4 text-xs text-slate-500 mt-1">
+                    <span>Lat: {formatCoordinate(city.latitude)}</span>
+                    <span>Lng: {formatCoordinate(city.longitude)}</span>
+                    {city.postal_code && (
+                      <span>{city.postal_code}</span>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
