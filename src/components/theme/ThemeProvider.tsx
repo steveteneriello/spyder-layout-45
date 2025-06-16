@@ -1,20 +1,13 @@
 
 import React from 'react';
-import { ThemeProvider as NextThemesProvider } from 'next-themes';
+import { useGlobalTheme } from '@/contexts/GlobalThemeContext';
 
 interface ThemeProviderProps {
   children: React.ReactNode;
 }
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
-  return (
-    <NextThemesProvider
-      attribute="class"
-      defaultTheme="light"
-      enableSystem={true}
-      disableTransitionOnChange
-    >
-      {children}
-    </NextThemesProvider>
-  );
+  // This component is now just a wrapper since we use GlobalThemeContext
+  // The GlobalThemeProvider handles all theme logic
+  return <>{children}</>;
 }

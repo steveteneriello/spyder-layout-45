@@ -1,20 +1,26 @@
 
 import React from 'react';
-import { Moon, Sun } from 'lucide-react';
-import { useTheme } from 'next-themes';
+import { Moon, Sun, Monitor } from 'lucide-react';
+import { useGlobalTheme } from '@/contexts/GlobalThemeContext';
 import { Button } from '@/components/ui/button';
 
 export function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
-
-  // Add error boundary for theme context
-  if (!setTheme) {
-    console.warn('ThemeToggle: theme context not available');
-    return null;
-  }
+  const { themeMode, setThemeMode, actualTheme } = useGlobalTheme();
 
   const toggleTheme = () => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
+    if (themeMode === 'light') {
+      setThemeMode('dark');
+    } else if (themeMode === 'dark') {
+      setThemeMode('auto');
+    } else {
+      setThemeMode('light');
+    }
+  };
+
+  const getIcon = () => {
+    if (themeMode === 'light') return <Sun className="h-4 w-4" />;
+    if (themeMode === 'dark') return <Moon className="h-4 w-4" />;
+    return <Monitor className="h-4 w-4" />;
   };
 
   return (
@@ -24,9 +30,8 @@ export function ThemeToggle() {
       onClick={toggleTheme}
       className="relative"
     >
-      <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-      <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-      <span className="sr-only">Toggle theme</span>
+      {getIcon()}
+      <span className="sr-only">Toggle theme ({themeMode})</span>
     </Button>
   );
 }
