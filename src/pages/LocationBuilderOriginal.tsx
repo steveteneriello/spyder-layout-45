@@ -1,12 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { MapPin, Building2, List, Search } from "lucide-react";
+import { Plus, MapPin, Building2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import SidebarLayout from "@/components/layout/SidebarLayout";
+import { Separator } from "@/components/ui/separator";
 import CountyLocationFilters from "@/components/location/CountyLocationFilters";
 import CountyLocationResults from "@/components/location/CountyLocationResults";
 import CountyLocationMap from "@/components/location/CountyLocationMap";
+import CountySavedLists from "@/components/location/CountySavedLists";
 import CountyCitiesTable from "@/components/location/CountyCitiesTable";
 
 interface CountyLocationList {
@@ -25,7 +26,7 @@ interface CountyLocationList {
   updated_at: string;
 }
 
-const LocationBuilder = () => {
+const LocationBuilderOriginal = () => {
   const [savedLists, setSavedLists] = useState<CountyLocationList[]>([]);
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [centerCoords, setCenterCoords] = useState<{lat: number; lng: number} | null>(null);
@@ -40,6 +41,7 @@ const LocationBuilder = () => {
 
   const fetchSavedLists = async () => {
     try {
+      // Remove the list_type filter since the column doesn't exist
       const { data, error } = await supabase
         .from('location_lists')
         .select('*')
@@ -47,6 +49,7 @@ const LocationBuilder = () => {
 
       if (error) throw error;
       
+      // Use simple type assertion to avoid deep type inference
       setSavedLists((data || []) as CountyLocationList[]);
     } catch (error) {
       console.error('Error fetching saved county lists:', error);
@@ -64,7 +67,9 @@ const LocationBuilder = () => {
     console.log('Search results received:', results);
     setSearchResults(results);
     setCenterCoords(coords);
+    // Clear selected counties when new search results come in
     setSelectedCounties(new Set());
+    // Clear selected cities when new search results come in
     setSelectedCities([]);
   };
 
@@ -81,6 +86,9 @@ const LocationBuilder = () => {
       newSelected.delete(countyId);
     }
     setSelectedCounties(newSelected);
+    
+    // Clear selected cities when county selection changes
+    // The cities table will refresh with new county data
     setSelectedCities([]);
   };
 
@@ -88,14 +96,6 @@ const LocationBuilder = () => {
     console.log('Selected cities changed:', cities);
     setSelectedCities(cities);
   };
-
-  const menuItems = [
-    { title: "Dashboard", path: "/", icon: "home", section: "Main" },
-    { title: "Campaigns", path: "/campaigns", icon: "megaphone", section: "Tools" },
-    { title: "Scheduler", path: "/scheduler", icon: "calendar", section: "Tools" },
-    { title: "Location Builder", path: "/location-builder", icon: "map-pin", section: "Tools" },
-    { title: "Theme", path: "/theme", icon: "palette", section: "Settings" },
-  ];
 
   if (isLoading) {
     return (
@@ -109,39 +109,30 @@ const LocationBuilder = () => {
   }
 
   return (
-    <SidebarLayout
-      menuItems={menuItems}
-      nav={
-        <div className="flex items-center justify-between w-full px-6">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center">
-              <MapPin className="h-5 w-5 text-white" />
+    <div className="min-h-screen bg-slate-50">
+      <div className="w-full">
+        {/* Clean, professional header with gradient */}
+        <div className="bg-gradient-to-r from-slate-50 to-white border-b border-slate-200 shadow-sm">
+          <div className="max-w-7xl mx-auto px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center">
+                  <MapPin className="h-5 w-5 text-white" />
+                </div>
+                <h1 className="text-xl font-semibold tracking-wide text-slate-900">Location List Builder</h1>
+              </div>
+              
+              {/* Search bar */}
+              <div className="flex-1 max-w-3xl ml-12">
+                <CountyLocationFilters 
+                  onSearchResults={handleSearchResults}
+                  onListSaved={handleListSaved} 
+                />
+              </div>
             </div>
-            <h1 className="text-xl font-semibold tracking-wide text-white">Location List Builder</h1>
-          </div>
-          
-          {/* Search bar in header */}
-          <div className="flex-1 max-w-3xl ml-12">
-            <CountyLocationFilters 
-              onSearchResults={handleSearchResults}
-              onListSaved={handleListSaved} 
-            />
           </div>
         </div>
-      }
-      category={
-        <div className="flex items-center space-x-2 text-white/80 text-sm">
-          <Building2 className="h-4 w-4" />
-          <span>Location Tools</span>
-        </div>
-      }
-      footer={
-        <div className="text-xs text-white/60 text-center">
-          <p>{savedLists.length} saved lists</p>
-        </div>
-      }
-    >
-      <div className="h-full bg-slate-50">
+
         {/* Map section */}
         <div className="h-[60vh] bg-white border-b border-slate-200">
           <CountyLocationMap 
@@ -152,7 +143,7 @@ const LocationBuilder = () => {
           />
         </div>
 
-        {/* Main content area */}
+        {/* Main content area with consistent spacing */}
         <div className="flex gap-6 h-full bg-white min-h-[40vh] p-6">
           {/* Counties panel */}
           <div className="w-[480px] bg-white border border-slate-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
@@ -175,8 +166,8 @@ const LocationBuilder = () => {
           </div>
         </div>
       </div>
-    </SidebarLayout>
+    </div>
   );
 };
 
-export default LocationBuilder;
+export default LocationBuilderOriginal;
