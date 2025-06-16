@@ -62,7 +62,20 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
 
     setIsSearching(true);
     try {
-      // Query location_data table to get counties within radius
+      console.log('Starting search with coords:', searchCoords, 'radius:', radiusMiles);
+      
+      // Calculate rough bounding box to limit the initial query
+      const latRange = radiusMiles / 69; // Roughly 69 miles per degree of latitude
+      const lngRange = radiusMiles / (69 * Math.cos(searchCoords.lat * Math.PI / 180));
+      
+      const minLat = searchCoords.lat - latRange;
+      const maxLat = searchCoords.lat + latRange;
+      const minLng = searchCoords.lng - lngRange;
+      const maxLng = searchCoords.lng + lngRange;
+
+      console.log('Bounding box:', { minLat, maxLat, minLng, maxLng });
+
+      // Query with bounding box filter first to reduce dataset
       const { data: locationData, error } = await supabase
         .from('location_data')
         .select(`
@@ -82,9 +95,25 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
         `)
         .not('county_name', 'is', null)
         .not('latitude', 'is', null)
-        .not('longitude', 'is', null);
+        .not('longitude', 'is', null)
+        .gte('latitude', minLat)
+        .lte('latitude', maxLat)
+        .gte('longitude', minLng)
+        .lte('longitude', maxLng);
 
       if (error) throw error;
+
+      console.log('Found locations in bounding box:', locationData?.length || 0);
+
+      if (!locationData || locationData.length === 0) {
+        console.log('No locations found in bounding box');
+        onSearchResults([], searchCoords);
+        toast({
+          title: "No Results",
+          description: "No counties found within the specified radius",
+        });
+        return;
+      }
 
       // Group by county and calculate distances
       const countyMap = new Map();
@@ -100,6 +129,7 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
             location.longitude
           );
 
+          // Only include if within radius
           if (distance <= radiusMiles) {
             // Parse numeric values, handling text fields
             const parseNumber = (value: any) => {
@@ -131,9 +161,18 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
             });
           }
         } else {
-          // Update city count for existing county
-          const county = countyMap.get(countyKey);
-          county.city_count += 1;
+          // Update city count for existing county (if within radius)
+          const distance = calculateDistance(
+            searchCoords.lat,
+            searchCoords.lng,
+            location.latitude,
+            location.longitude
+          );
+          
+          if (distance <= radiusMiles) {
+            const county = countyMap.get(countyKey);
+            county.city_count += 1;
+          }
         }
       });
 
@@ -141,7 +180,7 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
         .sort((a, b) => a.distance_miles - b.distance_miles)
         .slice(0, 50); // Limit to 50 results for performance
 
-      console.log('Real data search results:', results);
+      console.log('Final search results:', results.length, 'counties found');
       onSearchResults(results, searchCoords);
       
       toast({
