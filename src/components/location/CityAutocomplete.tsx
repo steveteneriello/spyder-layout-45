@@ -65,6 +65,19 @@ const CityAutocomplete: React.FC<CityAutocompleteProps> = ({ value, onChange, on
 
         setSuggestions(uniqueResults);
         setShowSuggestions(true);
+
+        // Auto-select if there's an exact match
+        const exactMatch = uniqueResults.find(location => {
+          if (/^\d+$/.test(value)) {
+            return location.postal_code === value;
+          } else {
+            return location.city.toLowerCase() === value.toLowerCase();
+          }
+        });
+
+        if (exactMatch && uniqueResults.length === 1) {
+          handleSuggestionClick(exactMatch);
+        }
       } catch (error) {
         console.error('Error searching locations:', error);
         setSuggestions([]);
@@ -105,7 +118,31 @@ const CityAutocomplete: React.FC<CityAutocompleteProps> = ({ value, onChange, on
 
   const handleBlur = () => {
     // Delay hiding suggestions to allow for clicks
-    setTimeout(() => setShowSuggestions(false), 150);
+    setTimeout(() => {
+      setShowSuggestions(false);
+      
+      // Try to auto-select if user typed a complete location
+      if (value && suggestions.length > 0) {
+        const potentialMatch = suggestions.find(location => {
+          const searchTerm = value.toLowerCase().trim();
+          const cityMatch = location.city.toLowerCase() === searchTerm;
+          const zipMatch = location.postal_code === searchTerm;
+          const cityStateMatch = `${location.city.toLowerCase()}, ${location.state_name.toLowerCase()}` === searchTerm;
+          
+          return cityMatch || zipMatch || cityStateMatch;
+        });
+        
+        if (potentialMatch) {
+          handleSuggestionClick(potentialMatch);
+        }
+      }
+    }, 150);
+  };
+
+  const handleFocus = () => {
+    if (value.length >= 2 && suggestions.length > 0) {
+      setShowSuggestions(true);
+    }
   };
 
   return (
@@ -116,7 +153,7 @@ const CityAutocomplete: React.FC<CityAutocompleteProps> = ({ value, onChange, on
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyPress={handleKeyPress}
-        onFocus={() => value.length >= 2 && setSuggestions.length > 0 && setShowSuggestions(true)}
+        onFocus={handleFocus}
         onBlur={handleBlur}
         className="w-full"
       />
