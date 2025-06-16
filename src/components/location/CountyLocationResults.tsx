@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -66,8 +67,8 @@ const CountyLocationResults: React.FC<CountyLocationResultsProps> = ({
         return;
       }
 
-      const selectedCountyData = searchResults.filter((county, index) => {
-        const countyId = `${county.county_name}-${county.state_name}-${index}`;
+      const selectedCountyData = searchResults.filter((county) => {
+        const countyId = `${county.county_name}-${county.state_name}`;
         return selectedCounties.has(countyId);
       });
 
@@ -175,8 +176,8 @@ const CountyLocationResults: React.FC<CountyLocationResultsProps> = ({
           </div>
         ) : (
           <div className="space-y-3">
-            {searchResults.map((county, index) => {
-              const countyId = `${county.county_name}-${county.state_name}-${index}`;
+            {searchResults.map((county) => {
+              const countyId = `${county.county_name}-${county.state_name}`;
               const isSelected = selectedCounties.has(countyId);
               
               return (
@@ -204,7 +205,7 @@ const CountyLocationResults: React.FC<CountyLocationResultsProps> = ({
                           </CardTitle>
                           <div className="flex items-center text-sm text-slate-600">
                             <MapPin className="h-3 w-3 mr-1 text-slate-400" />
-                            {county.state_name}
+                            {county.state_name} • {county.distance_miles} miles
                           </div>
                         </div>
                       </div>

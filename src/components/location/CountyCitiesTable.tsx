@@ -43,24 +43,33 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
       setCities([]);
       setSelectedCities(new Set());
     }
-  }, [selectedCounties]);
+  }, [selectedCounties, searchResults]);
 
   const fetchCitiesForCounties = async () => {
     setIsLoading(true);
     try {
       // Get selected county names from search results
-      const selectedCountyData = searchResults.filter((county, index) => {
-        const countyId = `${county.county_name}-${county.state_name}-${index}`;
+      const selectedCountyData = searchResults.filter((county) => {
+        const countyId = `${county.county_name}-${county.state_name}`;
         return selectedCounties.has(countyId);
       });
+
+      console.log('Selected county data:', selectedCountyData);
+      console.log('Selected county IDs:', Array.from(selectedCounties));
 
       if (selectedCountyData.length === 0) {
         setCities([]);
         return;
       }
 
-      // Build query conditions for selected counties
-      let query = supabase
+      // Create OR conditions for each selected county
+      const orConditions = selectedCountyData.map(county => 
+        `(county_name.eq.${county.county_name},state_name.eq.${county.state_name})`
+      ).join(',');
+
+      console.log('OR conditions:', orConditions);
+
+      const { data: cityData, error } = await supabase
         .from('location_data')
         .select(`
           id,
@@ -77,27 +86,8 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
         `)
         .not('city', 'is', null)
         .not('latitude', 'is', null)
-        .not('longitude', 'is', null);
-
-      // Add county filters
-      const countyFilters = selectedCountyData.map(county => 
-        `county_name.eq.${county.county_name},state_name.eq.${county.state_name}`
-      );
-
-      if (countyFilters.length === 1) {
-        const [countyName, stateName] = selectedCountyData[0];
-        query = query
-          .eq('county_name', selectedCountyData[0].county_name)
-          .eq('state_name', selectedCountyData[0].state_name);
-      } else {
-        // For multiple counties, we need to use OR conditions
-        const orConditions = selectedCountyData.map(county => 
-          `and(county_name.eq.${county.county_name},state_name.eq.${county.state_name})`
-        ).join(',');
-        query = query.or(orConditions);
-      }
-
-      const { data: cityData, error } = await query
+        .not('longitude', 'is', null)
+        .or(orConditions)
         .order('city')
         .limit(200); // Limit for performance
 

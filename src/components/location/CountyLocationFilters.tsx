@@ -177,7 +177,7 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
       });
 
       const results = Array.from(countyMap.values())
-        .sort((a, b) => a.distance_miles - b.distance_miles)
+        .sort((a, b) => a.distance_miles - b.distance_miles) // Sort by distance, closest first
         .slice(0, 50); // Limit to 50 results for performance
 
       console.log('Final search results:', results.length, 'counties found');
