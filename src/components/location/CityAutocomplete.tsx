@@ -15,6 +15,8 @@ interface LocationResult {
   postal_code: string;
   latitude: number;
   longitude: number;
+  county_name: string;
+  population: string;
 }
 
 const CityAutocomplete: React.FC<CityAutocompleteProps> = ({ value, onChange, onPlaceSelect }) => {
@@ -34,49 +36,75 @@ const CityAutocomplete: React.FC<CityAutocompleteProps> = ({ value, onChange, on
       try {
         let query = supabase
           .from('location_data')
-          .select('city, state_name, postal_code, latitude, longitude')
+          .select('city, state_name, postal_code, latitude, longitude, county_name, population')
           .not('city', 'is', null)
           .not('state_name', 'is', null)
+          .not('postal_code', 'is', null)
           .not('latitude', 'is', null)
           .not('longitude', 'is', null);
 
-        // Check if input is numeric (ZIP code search)
-        if (/^\d+$/.test(value)) {
-          query = query.ilike('postal_code', `${value}%`);
-        } else {
-          // City name search
-          query = query.ilike('city', `${value}%`);
+        const searchTerm = value.trim();
+
+        // Check if input is a ZIP code (5 digits)
+        if (/^\d{1,5}$/.test(searchTerm)) {
+          query = query.ilike('postal_code', `${searchTerm}%`);
+        } 
+        // Check if input is "city, state" format
+        else if (searchTerm.includes(',')) {
+          const [cityPart, statePart] = searchTerm.split(',').map(s => s.trim());
+          if (cityPart && statePart) {
+            query = query
+              .ilike('city', `${cityPart}%`)
+              .ilike('state_name', `${statePart}%`);
+          }
+        }
+        // Just city name search
+        else {
+          query = query.ilike('city', `${searchTerm}%`);
         }
 
         const { data, error } = await query
+          .order('population', { ascending: false, nullsLast: true })
           .order('city')
-          .limit(10);
+          .limit(20);
 
         if (error) throw error;
 
-        // Remove duplicates based on city + state combination
-        const uniqueResults = data.reduce((acc: LocationResult[], current) => {
-          const key = `${current.city}-${current.state_name}`;
-          if (!acc.find(item => `${item.city}-${item.state_name}` === key)) {
-            acc.push(current);
+        // For cities with multiple ZIP codes, group by city+state and pick the highest population one
+        const cityStateMap = new Map<string, LocationResult>();
+        
+        data.forEach(location => {
+          const cityStateKey = `${location.city}-${location.state_name}`;
+          const existing = cityStateMap.get(cityStateKey);
+          
+          if (!existing) {
+            cityStateMap.set(cityStateKey, location);
+          } else {
+            // Compare population (convert to number, handle null/empty)
+            const currentPop = parseInt(location.population?.replace(/,/g, '') || '0');
+            const existingPop = parseInt(existing.population?.replace(/,/g, '') || '0');
+            
+            if (currentPop > existingPop) {
+              cityStateMap.set(cityStateKey, location);
+            }
           }
-          return acc;
-        }, []);
+        });
 
+        const uniqueResults = Array.from(cityStateMap.values()).slice(0, 10);
         setSuggestions(uniqueResults);
         setShowSuggestions(true);
 
         // Auto-select if there's an exact match
-        const exactMatch = uniqueResults.find(location => {
-          if (/^\d+$/.test(value)) {
-            return location.postal_code === value;
-          } else {
-            return location.city.toLowerCase() === value.toLowerCase();
+        if (uniqueResults.length === 1) {
+          const location = uniqueResults[0];
+          const isExactZipMatch = /^\d{5}$/.test(searchTerm) && location.postal_code === searchTerm;
+          const isExactCityMatch = location.city.toLowerCase() === searchTerm.toLowerCase();
+          const isExactCityStateMatch = searchTerm.includes(',') && 
+            `${location.city.toLowerCase()}, ${location.state_name.toLowerCase()}` === searchTerm.toLowerCase();
+          
+          if (isExactZipMatch || isExactCityMatch || isExactCityStateMatch) {
+            handleSuggestionClick(location);
           }
-        });
-
-        if (exactMatch && uniqueResults.length === 1) {
-          handleSuggestionClick(exactMatch);
         }
       } catch (error) {
         console.error('Error searching locations:', error);
@@ -91,9 +119,7 @@ const CityAutocomplete: React.FC<CityAutocompleteProps> = ({ value, onChange, on
   }, [value]);
 
   const handleSuggestionClick = (location: LocationResult) => {
-    const displayValue = location.postal_code 
-      ? `${location.city}, ${location.state_name} ${location.postal_code}`
-      : `${location.city}, ${location.state_name}`;
+    const displayValue = `${location.city}, ${location.state_name} ${location.postal_code}`;
     
     onChange(displayValue);
     onPlaceSelect({
@@ -120,22 +146,6 @@ const CityAutocomplete: React.FC<CityAutocompleteProps> = ({ value, onChange, on
     // Delay hiding suggestions to allow for clicks
     setTimeout(() => {
       setShowSuggestions(false);
-      
-      // Try to auto-select if user typed a complete location
-      if (value && suggestions.length > 0) {
-        const potentialMatch = suggestions.find(location => {
-          const searchTerm = value.toLowerCase().trim();
-          const cityMatch = location.city.toLowerCase() === searchTerm;
-          const zipMatch = location.postal_code === searchTerm;
-          const cityStateMatch = `${location.city.toLowerCase()}, ${location.state_name.toLowerCase()}` === searchTerm;
-          
-          return cityMatch || zipMatch || cityStateMatch;
-        });
-        
-        if (potentialMatch) {
-          handleSuggestionClick(potentialMatch);
-        }
-      }
     }, 150);
   };
 
@@ -149,7 +159,7 @@ const CityAutocomplete: React.FC<CityAutocompleteProps> = ({ value, onChange, on
     <div className="relative w-full">
       <Input
         type="text"
-        placeholder="Enter city or ZIP code"
+        placeholder="Enter city, state or ZIP code"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyPress={handleKeyPress}
@@ -162,18 +172,17 @@ const CityAutocomplete: React.FC<CityAutocompleteProps> = ({ value, onChange, on
         <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-md shadow-lg max-h-60 overflow-auto">
           {suggestions.map((location, index) => (
             <div
-              key={index}
+              key={`${location.city}-${location.state_name}-${location.postal_code}`}
               className="px-4 py-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0"
               onClick={() => handleSuggestionClick(location)}
             >
               <div className="font-medium text-slate-900">
                 {location.city}, {location.state_name}
               </div>
-              {location.postal_code && (
-                <div className="text-sm text-slate-500">
-                  ZIP: {location.postal_code}
-                </div>
-              )}
+              <div className="text-sm text-slate-500 flex justify-between">
+                <span>ZIP: {location.postal_code}</span>
+                <span>{location.county_name} County</span>
+              </div>
             </div>
           ))}
         </div>
