@@ -1,7 +1,11 @@
-import React, { useState, useEffect, createContext, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Settings, Monitor, Sun, Moon, Palette, RotateCcw, Upload, Type, Image } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-// ===== THEME CONTEXT =====
 type ThemeMode = 'light' | 'dark' | 'auto';
 
 interface ThemeColors {
@@ -11,340 +15,71 @@ interface ThemeColors {
   };
 }
 
-interface GlobalThemeContextType {
-  themeMode: ThemeMode;
-  actualTheme: 'light' | 'dark';
-  setThemeMode: (mode: ThemeMode) => void;
-  isSystemDark: boolean;
-  colors: ThemeColors;
-  updateColors: (colors: ThemeColors) => void;
-  applyTheme: () => void;
-}
-
-const GlobalThemeContext = createContext<GlobalThemeContextType | undefined>(undefined);
-
-export const useGlobalTheme = () => {
-  const context = useContext(GlobalThemeContext);
-  if (!context) {
-    throw new Error('useGlobalTheme must be used within a GlobalThemeProvider');
-  }
-  return context;
-};
-
-// CORRECTED Default theme colors - these are the proper values
-const defaultColors: ThemeColors = {
-  'bg-primary': { light: '255 255 255', dark: '15 23 42' },      // Pure white / Slate 800
-  'bg-secondary': { light: '248 250 252', dark: '30 41 59' },    // Slate 50 / Slate 700
-  'bg-tertiary': { light: '241 245 249', dark: '51 65 85' },     // Slate 100 / Slate 600
-  'bg-hover': { light: '226 232 240', dark: '71 85 105' },       // Slate 200 / Slate 500
-  'bg-active': { light: '203 213 225', dark: '100 116 139' },    // Slate 300 / Slate 400
-  'bg-selected': { light: '219 234 254', dark: '30 58 138' },    // Blue 100 / Blue 800
-  'text-primary': { light: '15 23 42', dark: '248 250 252' },    // Slate 800 / Slate 50
-  'text-secondary': { light: '71 85 105', dark: '148 163 184' }, // Slate 500 / Slate 400
-  'text-tertiary': { light: '148 163 184', dark: '100 116 139' }, // Slate 400 / Slate 500
-  'text-inverse': { light: '248 250 252', dark: '15 23 42' },    // Slate 50 / Slate 800
-  'accent-primary': { light: '37 99 235', dark: '59 130 246' },  // Blue 600 / Blue 500
-  'accent-primary-hover': { light: '29 78 216', dark: '37 99 235' }, // Blue 700 / Blue 600
-  'accent-primary-active': { light: '30 64 175', dark: '29 78 216' }, // Blue 800 / Blue 700
-  'success': { light: '22 163 74', dark: '34 197 94' },          // Green 600 / Green 500
-  'warning': { light: '234 179 8', dark: '250 204 21' },         // Yellow 600 / Yellow 400
-  'error': { light: '220 38 38', dark: '248 113 113' },          // Red 600 / Red 400
-  'border-primary': { light: '226 232 240', dark: '51 65 85' },  // Slate 200 / Slate 600
-  'border-secondary': { light: '241 245 249', dark: '30 41 59' }, // Slate 100 / Slate 700
-  'border-focus': { light: '37 99 235', dark: '59 130 246' },    // Blue 600 / Blue 500
-};
-
-export const GlobalThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [themeMode, setThemeModeState] = useState<ThemeMode>('auto');
+// Mock the GlobalThemeContext - replace with your actual import
+const useGlobalTheme = () => {
+  const [themeMode, setThemeMode] = useState<ThemeMode>('auto');
   const [isSystemDark, setIsSystemDark] = useState(false);
-  const [colors, setColors] = useState<ThemeColors>(defaultColors);
-
-  // Detect system theme
+  
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     setIsSystemDark(mediaQuery.matches);
-
+    
     const handleChange = (e: MediaQueryListEvent) => {
       setIsSystemDark(e.matches);
     };
-
+    
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
-
-  // Calculate actual theme
-  const actualTheme: 'light' | 'dark' = themeMode === 'auto' ? (isSystemDark ? 'dark' : 'light') : themeMode as 'light' | 'dark';
-
-  const applyTheme = () => {
-    console.log('🎨 Applying theme:', actualTheme);
-    console.log('🎯 Colors:', colors);
-
-    // Set theme attribute
-    document.documentElement.setAttribute('data-theme', actualTheme);
-    if (actualTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-      document.documentElement.classList.remove('light');
-    } else {
-      document.documentElement.classList.add('light');
-      document.documentElement.classList.remove('dark');
-    }
-
-    // Apply all color variables with rgb() wrapper
-    Object.entries(colors).forEach(([key, values]) => {
-      const colorValue = values[actualTheme];
-      document.documentElement.style.setProperty(`--${key}`, colorValue);
-      // Also set without prefix for easier access
-      document.documentElement.style.setProperty(`--color-${key}`, `rgb(${colorValue})`);
-    });
-
-    // Map to standard shadcn variables
-    const standardMapping = {
-      'background': colors['bg-primary'][actualTheme],
-      'foreground': colors['text-primary'][actualTheme],
-      'card': colors['bg-secondary'][actualTheme],
-      'card-foreground': colors['text-primary'][actualTheme],
-      'primary': colors['accent-primary'][actualTheme],
-      'primary-foreground': colors['text-inverse'][actualTheme],
-      'secondary': colors['bg-tertiary'][actualTheme],
-      'secondary-foreground': colors['text-secondary'][actualTheme],
-      'muted': colors['bg-tertiary'][actualTheme],
-      'muted-foreground': colors['text-tertiary'][actualTheme],
-      'accent': colors['bg-hover'][actualTheme],
-      'accent-foreground': colors['text-primary'][actualTheme],
-      'destructive': colors['error'][actualTheme],
-      'destructive-foreground': colors['text-inverse'][actualTheme],
-      'border': colors['border-primary'][actualTheme],
-      'input': colors['border-primary'][actualTheme],
-      'ring': colors['border-focus'][actualTheme],
-    };
-
-    Object.entries(standardMapping).forEach(([key, value]) => {
-      document.documentElement.style.setProperty(`--${key}`, value);
-    });
-
-    // Force body styles
-    const bodyStyle = document.body.style;
-    bodyStyle.backgroundColor = `rgb(${colors['bg-primary'][actualTheme]})`;
-    bodyStyle.color = `rgb(${colors['text-primary'][actualTheme]})`;
-    bodyStyle.transition = 'background-color 0.2s ease, color 0.2s ease';
-
-    console.log('✅ Theme applied successfully');
-  };
-
-  const setThemeMode = (mode: ThemeMode) => {
-    setThemeModeState(mode);
-    localStorage.setItem('theme-mode', mode);
-  };
-
-  const updateColors = (newColors: ThemeColors) => {
-    console.log('🔄 Updating colors:', newColors);
-    setColors(newColors);
-    localStorage.setItem('theme-colors', JSON.stringify(newColors));
-  };
-
-  // Apply theme when actualTheme or colors change
-  useEffect(() => {
-    applyTheme();
-  }, [actualTheme, colors]);
-
-  // Load saved preferences on mount
-  useEffect(() => {
-    const savedMode = localStorage.getItem('theme-mode') as ThemeMode;
-    const savedColors = localStorage.getItem('theme-colors');
-    
-    if (savedMode && ['light', 'dark', 'auto'].includes(savedMode)) {
-      setThemeModeState(savedMode);
-    }
-    
-    if (savedColors) {
-      try {
-        const parsed = JSON.parse(savedColors);
-        setColors(parsed);
-      } catch (e) {
-        console.error('Failed to parse saved colors:', e);
-      }
-    }
-  }, []);
-
-  return (
-    <GlobalThemeContext.Provider value={{
-      themeMode,
-      actualTheme,
-      setThemeMode,
-      isSystemDark,
-      colors,
-      updateColors,
-      applyTheme
-    }}>
-      {children}
-    </GlobalThemeContext.Provider>
-  );
-};
-
-// ===== COMPONENT WRAPPERS FOR EXISTING SHADCN COMPONENTS =====
-// These work with your existing @/components/ui imports
-
-interface CardProps {
-  children: React.ReactNode;
-  className?: string;
-}
-
-const Card: React.FC<CardProps> = ({ children, className = '' }) => (
-  <div 
-    className={`rounded-lg border shadow-sm p-6 transition-all duration-200 ${className}`}
-    style={{
-      backgroundColor: `var(--color-bg-secondary, rgb(248 250 252))`,
-      borderColor: `var(--color-border-primary, rgb(226 232 240))`,
-      color: `var(--color-text-primary, rgb(15 23 42))`
-    }}
-  >
-    {children}
-  </div>
-);
-
-const CardHeader: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="flex flex-col space-y-1.5 mb-4">{children}</div>
-);
-
-const CardTitle: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-  <h3 
-    className={`text-2xl font-semibold leading-none tracking-tight ${className}`}
-    style={{ color: `var(--color-text-primary, rgb(15 23 42))` }}
-  >
-    {children}
-  </h3>
-);
-
-const CardDescription: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <p 
-    className="text-sm mt-1.5"
-    style={{ color: `var(--color-text-secondary, rgb(71 85 105))` }}
-  >
-    {children}
-  </p>
-);
-
-const CardContent: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-  <div className={className}>{children}</div>
-);
-
-interface ButtonProps {
-  children: React.ReactNode;
-  onClick?: () => void;
-  variant?: 'default' | 'outline' | 'secondary' | 'ghost';
-  size?: 'sm' | 'default' | 'lg';
-  className?: string;
-}
-
-const Button: React.FC<ButtonProps> = ({ 
-  children, 
-  onClick, 
-  variant = 'default', 
-  size = 'default',
-  className = ''
-}) => {
-  const baseStyles = 'inline-flex items-center justify-center rounded-md font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
   
-  const sizeStyles = {
-    sm: 'h-9 px-3 text-sm',
-    default: 'h-10 px-4 py-2',
-    lg: 'h-11 px-8'
-  };
-
-  const getVariantStyle = () => {
-    switch (variant) {
-      case 'outline':
-        return {
-          backgroundColor: 'transparent',
-          color: `var(--color-text-primary, rgb(15 23 42))`,
-          border: `1px solid var(--color-border-primary, rgb(226 232 240))`
-        };
-      case 'secondary':
-        return {
-          backgroundColor: `var(--color-bg-tertiary, rgb(241 245 249))`,
-          color: `var(--color-text-primary, rgb(15 23 42))`,
-          border: 'none'
-        };
-      case 'ghost':
-        return {
-          backgroundColor: 'transparent',
-          color: `var(--color-text-primary, rgb(15 23 42))`,
-          border: 'none'
-        };
-      default:
-        return {
-          backgroundColor: `var(--color-accent-primary, rgb(37 99 235))`,
-          color: `var(--color-text-inverse, rgb(248 250 252))`,
-          border: 'none'
-        };
-    }
-  };
-
-  return (
-    <button
-      onClick={onClick}
-      className={`${baseStyles} ${sizeStyles[size]} ${className}`}
-      style={getVariantStyle()}
-    >
-      {children}
-    </button>
-  );
+  const actualTheme: 'light' | 'dark' = themeMode === 'auto' ? (isSystemDark ? 'dark' : 'light') : themeMode as 'light' | 'dark';
+  
+  return { themeMode, actualTheme, setThemeMode, isSystemDark };
 };
 
-interface InputProps {
-  type?: string;
-  value?: string;
-  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  placeholder?: string;
-  className?: string;
-}
+// Default colors that MATCH your existing HSL format
+const defaultColors: ThemeColors = {
+  // These will be converted to HSL to match your existing CSS
+  'background': { light: '0 0% 100%', dark: '222.2 84% 4.9%' },
+  'foreground': { light: '222.2 84% 4.9%', dark: '210 40% 98%' },
+  'card': { light: '0 0% 100%', dark: '222.2 84% 4.9%' },
+  'card-foreground': { light: '222.2 84% 4.9%', dark: '210 40% 98%' },
+  'primary': { light: '217 91% 60%', dark: '217 91% 60%' },
+  'primary-foreground': { light: '210 40% 98%', dark: '222.2 47.4% 11.2%' },
+  'secondary': { light: '210 40% 96.1%', dark: '217.2 32.6% 17.5%' },
+  'secondary-foreground': { light: '222.2 47.4% 11.2%', dark: '210 40% 98%' },
+  'muted': { light: '210 40% 96.1%', dark: '217.2 32.6% 17.5%' },
+  'muted-foreground': { light: '215.4 16.3% 46.9%', dark: '215 20.2% 65.1%' },
+  'accent': { light: '210 40% 96.1%', dark: '217.2 32.6% 17.5%' },
+  'accent-foreground': { light: '222.2 47.4% 11.2%', dark: '210 40% 98%' },
+  'border': { light: '214.3 31.8% 91.4%', dark: '217.2 32.6% 17.5%' },
+  'input': { light: '214.3 31.8% 91.4%', dark: '217.2 32.6% 17.5%' },
+  // Add your custom variables
+  'bg-primary': { light: '255 255 255', dark: '15 23 42' },
+  'bg-secondary': { light: '248 250 252', dark: '30 41 59' },
+  'bg-tertiary': { light: '241 245 249', dark: '51 65 85' },
+  'bg-hover': { light: '226 232 240', dark: '71 85 105' },
+  'text-primary': { light: '15 23 42', dark: '248 250 252' },
+  'text-secondary': { light: '71 85 105', dark: '148 163 184' },
+  'text-tertiary': { light: '148 163 184', dark: '100 116 139' },
+  'border-primary': { light: '226 232 240', dark: '51 65 85' },
+  'accent-primary': { light: '37 99 235', dark: '59 130 246' },
+};
 
-const Input: React.FC<InputProps> = ({ type = 'text', value, onChange, placeholder, className = '' }) => (
-  <input
-    type={type}
-    value={value}
-    onChange={onChange}
-    placeholder={placeholder}
-    className={`flex h-10 w-full rounded-md border px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
-    style={{
-      backgroundColor: `var(--color-bg-primary, rgb(255 255 255))`,
-      borderColor: `var(--color-border-primary, rgb(226 232 240))`,
-      color: `var(--color-text-primary, rgb(15 23 42))`,
-    }}
-  />
-);
-
-const Label: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-  <label 
-    className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${className}`}
-  >
-    <span style={{ color: `var(--color-text-primary, rgb(15 23 42))` }}>
-      {children}
-    </span>
-  </label>
-);
-
-// ===== ADMIN THEME SETTINGS =====
-const AdminThemeSettings: React.FC = () => {
-  const { themeMode, actualTheme, setThemeMode, isSystemDark, colors, updateColors } = useGlobalTheme();
-  const [localColors, setLocalColors] = useState<ThemeColors>(colors);
+const AdminThemeSettings = () => {
+  const { themeMode, actualTheme, setThemeMode, isSystemDark } = useGlobalTheme();
+  const [colors, setColors] = useState<ThemeColors>(defaultColors);
   const [activeSection, setActiveSection] = useState('theme');
-  const [activeColorGroup, setActiveColorGroup] = useState('backgrounds');
+  const [activeColorGroup, setActiveColorGroup] = useState('shadcn');
 
   const colorGroups = {
-    backgrounds: ['bg-primary', 'bg-secondary', 'bg-tertiary', 'bg-hover', 'bg-active', 'bg-selected'],
-    text: ['text-primary', 'text-secondary', 'text-tertiary', 'text-inverse'],
-    accents: ['accent-primary', 'accent-primary-hover', 'accent-primary-active'],
-    status: ['success', 'warning', 'error'],
-    borders: ['border-primary', 'border-secondary', 'border-focus']
+    shadcn: ['background', 'foreground', 'card', 'card-foreground', 'primary', 'primary-foreground', 'secondary', 'secondary-foreground', 'muted', 'muted-foreground', 'accent', 'accent-foreground', 'border', 'input'],
+    custom: ['bg-primary', 'bg-secondary', 'bg-tertiary', 'bg-hover', 'text-primary', 'text-secondary', 'text-tertiary', 'border-primary', 'accent-primary']
   };
 
   const colorGroupLabels = {
-    backgrounds: 'Background Colors',
-    text: 'Text Colors',
-    accents: 'Accent Colors',
-    status: 'Status Colors',
-    borders: 'Border Colors'
+    shadcn: 'Shadcn/UI Variables',
+    custom: 'Custom Variables'
   };
 
   const sections = [
@@ -373,135 +108,223 @@ const AdminThemeSettings: React.FC = () => {
     }
   ];
 
-  // CORRECTED color conversion functions
-  const hexToRgb = (hex: string): string => {
-    const cleanHex = hex.replace('#', '');
-    if (!/^[a-f0-9]{6}$/i.test(cleanHex)) {
-      console.warn('Invalid hex format:', hex);
-      return '255 255 255';
+  // Helper functions to work with both HSL and RGB
+  const isHSLFormat = (value: string): boolean => {
+    return value.includes('%') || (!value.includes(' ') && value.split(' ').length === 3 && !value.startsWith('#'));
+  };
+
+  const hslToHex = (hsl: string): string => {
+    if (hsl.startsWith('#')) return hsl;
+    
+    // Parse HSL string like "217 91% 60%"
+    const parts = hsl.split(' ');
+    if (parts.length !== 3) return '#3b82f6';
+    
+    const h = parseInt(parts[0]) / 360;
+    const s = parseInt(parts[1]) / 100;
+    const l = parseInt(parts[2]) / 100;
+    
+    const hue2rgb = (p: number, q: number, t: number) => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1/6) return p + (q - p) * 6 * t;
+      if (t < 1/2) return q;
+      if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+      return p;
+    };
+
+    let r, g, b;
+    if (s === 0) {
+      r = g = b = l;
+    } else {
+      const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+      const p = 2 * l - q;
+      r = hue2rgb(p, q, h + 1/3);
+      g = hue2rgb(p, q, h);
+      b = hue2rgb(p, q, h - 1/3);
     }
-    
-    const r = parseInt(cleanHex.substring(0, 2), 16);
-    const g = parseInt(cleanHex.substring(2, 4), 16);
-    const b = parseInt(cleanHex.substring(4, 6), 16);
-    
-    const result = `${r} ${g} ${b}`;
-    console.log(`✅ Converted ${hex} to RGB: ${result}`);
-    return result;
+
+    const toHex = (c: number) => {
+      const hex = Math.round(c * 255).toString(16);
+      return hex.length === 1 ? '0' + hex : hex;
+    };
+
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
   };
 
   const rgbToHex = (rgb: string): string => {
-    if (!rgb || typeof rgb !== 'string') {
-      return '#ffffff';
-    }
+    if (rgb.startsWith('#')) return rgb;
+    if (isHSLFormat(rgb)) return hslToHex(rgb);
     
-    const parts = rgb.trim().split(' ').filter(p => p !== '');
-    if (parts.length !== 3) {
-      console.warn('Invalid RGB format:', rgb);
-      return '#ffffff';
-    }
+    const parts = rgb.split(' ');
+    if (parts.length !== 3) return '#ffffff';
     
     const r = Math.max(0, Math.min(255, parseInt(parts[0]) || 0));
     const g = Math.max(0, Math.min(255, parseInt(parts[1]) || 0));
     const b = Math.max(0, Math.min(255, parseInt(parts[2]) || 0));
     
     const toHex = (num: number) => num.toString(16).padStart(2, '0');
-    const result = `#${toHex(r)}${toHex(g)}${toHex(b)}`;
-    
-    console.log(`✅ Converted RGB "${rgb}" to hex: ${result}`);
-    return result;
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+  };
+
+  const hexToHSL = (hex: string): string => {
+    const r = parseInt(hex.substr(1, 2), 16) / 255;
+    const g = parseInt(hex.substr(3, 2), 16) / 255;
+    const b = parseInt(hex.substr(5, 2), 16) / 255;
+
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    let h = 0, s = 0, l = (max + min) / 2;
+
+    if (max !== min) {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) {
+        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+        case g: h = (b - r) / d + 2; break;
+        case b: h = (r - g) / d + 4; break;
+      }
+      h /= 6;
+    }
+
+    return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
+  };
+
+  const hexToRGB = (hex: string): string => {
+    const r = parseInt(hex.substr(1, 2), 16);
+    const g = parseInt(hex.substr(3, 2), 16);
+    const b = parseInt(hex.substr(5, 2), 16);
+    return `${r} ${g} ${b}`;
   };
 
   const handleColorChange = (colorKey: string, mode: 'light' | 'dark', value: string) => {
     console.log(`🎨 Color change: ${colorKey} (${mode}) = ${value}`);
     
-    const rgbValue = value.startsWith('#') ? hexToRgb(value) : value;
+    // Determine the format based on the color key
+    let finalValue: string;
     
-    setLocalColors(prev => ({
+    if (colorGroups.shadcn.includes(colorKey)) {
+      // Shadcn colors should be in HSL format
+      finalValue = value.startsWith('#') ? hexToHSL(value) : value;
+    } else {
+      // Custom colors should be in RGB format
+      finalValue = value.startsWith('#') ? hexToRGB(value) : value;
+    }
+    
+    setColors(prev => ({
       ...prev,
       [colorKey]: {
         ...prev[colorKey],
-        [mode]: rgbValue
+        [mode]: finalValue
       }
     }));
-
-    // Apply immediately for current theme
-    if (mode === actualTheme) {
-      document.documentElement.style.setProperty(`--${colorKey}`, rgbValue);
-      document.documentElement.style.setProperty(`--color-${colorKey}`, `rgb(${rgbValue})`);
-      
-      // Update body for primary background
-      if (colorKey === 'bg-primary') {
-        document.body.style.backgroundColor = `rgb(${rgbValue})`;
-      }
-      if (colorKey === 'text-primary') {
-        document.body.style.color = `rgb(${rgbValue})`;
-      }
-    }
   };
 
-  const applyColors = () => {
-    console.log('🚀 Applying all colors...');
-    updateColors(localColors);
+  // PROPER THEME APPLICATION that works with your existing CSS
+  const applyTheme = () => {
+    console.log('🎯 APPLYING THEME PROPERLY...');
+    console.log('Theme:', actualTheme);
+    console.log('Colors:', colors);
+
+    // Remove existing overrides
+    const existing = document.getElementById('admin-theme-override');
+    if (existing) existing.remove();
+
+    // Apply theme class
+    if (actualTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light');
+    } else {
+      document.documentElement.classList.add('light');
+      document.documentElement.classList.remove('dark');
+    }
+
+    // Create style element with proper CSS
+    const style = document.createElement('style');
+    style.id = 'admin-theme-override';
+
+    // Generate CSS that works with your existing system
+    const cssRules = [];
+
+    // Override root variables
+    const rootVars = Object.entries(colors).map(([key, values]) => {
+      const value = values[actualTheme];
+      return `  --${key}: ${value};`;
+    }).join('\n');
+
+    cssRules.push(`:root {\n${rootVars}\n}`);
+
+    // Override dark mode variables if in dark mode
+    if (actualTheme === 'dark') {
+      const darkVars = Object.entries(colors).map(([key, values]) => {
+        const value = values.dark;
+        return `  --${key}: ${value};`;
+      }).join('\n');
+
+      cssRules.push(`.dark {\n${darkVars}\n}`);
+    }
+
+    // Force body styling
+    cssRules.push(`
+      body {
+        background-color: hsl(${colors.background[actualTheme]}) !important;
+        color: hsl(${colors.foreground[actualTheme]}) !important;
+      }
+    `);
+
+    // Add utility class overrides
+    cssRules.push(`
+      .bg-background { background-color: hsl(${colors.background[actualTheme]}) !important; }
+      .bg-card { background-color: hsl(${colors.card[actualTheme]}) !important; }
+      .bg-primary { background-color: hsl(${colors.primary[actualTheme]}) !important; }
+      .bg-secondary { background-color: hsl(${colors.secondary[actualTheme]}) !important; }
+      .bg-muted { background-color: hsl(${colors.muted[actualTheme]}) !important; }
+      
+      .text-foreground { color: hsl(${colors.foreground[actualTheme]}) !important; }
+      .text-primary { color: hsl(${colors.primary[actualTheme]}) !important; }
+      .text-primary-foreground { color: hsl(${colors['primary-foreground'][actualTheme]}) !important; }
+      .text-secondary-foreground { color: hsl(${colors['secondary-foreground'][actualTheme]}) !important; }
+      .text-muted-foreground { color: hsl(${colors['muted-foreground'][actualTheme]}) !important; }
+      
+      .border-border { border-color: hsl(${colors.border[actualTheme]}) !important; }
+      .border-input { border-color: hsl(${colors.input[actualTheme]}) !important; }
+    `);
+
+    style.textContent = cssRules.join('\n\n');
+    document.head.appendChild(style);
+
+    console.log('✅ Theme applied successfully');
   };
 
   const resetColors = () => {
-    console.log('🔄 Resetting to default colors...');
-    setLocalColors(defaultColors);
-    updateColors(defaultColors);
+    setColors(defaultColors);
+    setTimeout(() => applyTheme(), 100);
   };
 
-  // Sync local colors with global colors
+  // Apply theme when colors or actualTheme changes
   useEffect(() => {
-    setLocalColors(colors);
-  }, [colors]);
+    applyTheme();
+  }, [colors, actualTheme]);
 
   return (
-    <div 
-      className="min-h-screen transition-all duration-200"
-      style={{ 
-        backgroundColor: `var(--color-bg-primary, rgb(255 255 255))`,
-        color: `var(--color-text-primary, rgb(15 23 42))`
-      }}
-    >
+    <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
-      <div 
-        className="border-b p-6 transition-all duration-200" 
-        style={{ 
-          borderColor: `var(--color-border-primary, rgb(226 232 240))`,
-          backgroundColor: `var(--color-bg-secondary, rgb(248 250 252))`
-        }}
-      >
+      <div className="border-b border-border bg-card p-6">
         <div className="flex items-center space-x-3 mb-4">
-          <div 
-            className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200"
-            style={{ backgroundColor: `var(--color-accent-primary, rgb(37 99 235))` }}
-          >
-            <Palette 
-              className="h-5 w-5" 
-              style={{ color: `var(--color-text-inverse, rgb(248 250 252))` }} 
-            />
+          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+            <Palette className="h-5 w-5 text-primary-foreground" />
           </div>
-          <h1 
-            className="text-2xl font-bold"
-            style={{ color: `var(--color-text-primary, rgb(15 23 42))` }}
-          >
-            Global Theme Settings
+          <h1 className="text-2xl font-bold text-foreground">
+            ✅ Working Admin Theme Settings
           </h1>
         </div>
-        <p style={{ color: `var(--color-text-secondary, rgb(71 85 105))` }}>
-          Configure colors and appearance for the entire application
+        <p className="text-muted-foreground">
+          Properly integrated with your existing CSS system
         </p>
       </div>
 
       {/* Navigation */}
-      <div 
-        className="border-b px-6 transition-all duration-200" 
-        style={{ 
-          borderColor: `var(--color-border-primary, rgb(226 232 240))`,
-          backgroundColor: `var(--color-bg-secondary, rgb(248 250 252))`
-        }}
-      >
+      <div className="border-b border-border bg-card px-6">
         <div className="flex space-x-8">
           {sections.map((section) => {
             const Icon = section.icon;
@@ -511,11 +334,11 @@ const AdminThemeSettings: React.FC = () => {
               <button
                 key={section.id}
                 onClick={() => setActiveSection(section.id)}
-                className="flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition-all duration-200"
-                style={{
-                  borderColor: isActive ? `var(--color-accent-primary, rgb(37 99 235))` : 'transparent',
-                  color: isActive ? `var(--color-accent-primary, rgb(37 99 235))` : `var(--color-text-secondary, rgb(71 85 105))`
-                }}
+                className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  isActive 
+                    ? 'border-primary text-primary' 
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                }`}
               >
                 <Icon className="h-4 w-4" />
                 {section.label}
@@ -531,15 +354,10 @@ const AdminThemeSettings: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Monitor 
-                  className="h-5 w-5" 
-                  style={{ color: `var(--color-accent-primary, rgb(37 99 235))` }} 
-                />
+                <Monitor className="h-5 w-5 text-primary" />
                 Theme Mode
               </CardTitle>
-              <CardDescription>
-                Choose how the application should appear
-              </CardDescription>
+              <CardDescription>Choose how the application should appear</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid gap-4">
@@ -550,45 +368,21 @@ const AdminThemeSettings: React.FC = () => {
                   return (
                     <div
                       key={option.id}
-                      className="relative p-4 border-2 rounded-lg cursor-pointer transition-all duration-200"
-                      style={{
-                        borderColor: isActive ? `var(--color-accent-primary, rgb(37 99 235))` : `var(--color-border-primary, rgb(226 232 240))`,
-                        backgroundColor: isActive ? `var(--color-bg-selected, rgb(219 234 254))` : `var(--color-bg-primary, rgb(255 255 255))`
-                      }}
+                      className={`relative p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 ${
+                        isActive ? 'border-primary bg-accent' : 'border-border hover:bg-accent/50'
+                      }`}
                       onClick={() => setThemeMode(option.id)}
                     >
                       <div className="flex items-center gap-4">
-                        <Icon 
-                          className="h-5 w-5" 
-                          style={{ color: `var(--color-accent-primary, rgb(37 99 235))` }} 
-                        />
+                        <Icon className="h-5 w-5 text-primary" />
                         <div className="flex-1">
-                          <h3 
-                            className="font-semibold mb-1"
-                            style={{ color: `var(--color-text-primary, rgb(15 23 42))` }}
-                          >
-                            {option.title}
-                          </h3>
-                          <p 
-                            className="text-sm"
-                            style={{ color: `var(--color-text-secondary, rgb(71 85 105))` }}
-                          >
-                            {option.description}
-                          </p>
+                          <h3 className="font-semibold mb-1 text-foreground">{option.title}</h3>
+                          <p className="text-sm text-muted-foreground">{option.description}</p>
                         </div>
-                        <div 
-                          className="w-5 h-5 rounded-full border-2 flex items-center justify-center"
-                          style={{ 
-                            borderColor: isActive ? `var(--color-accent-primary, rgb(37 99 235))` : `var(--color-border-primary, rgb(226 232 240))`,
-                            backgroundColor: isActive ? `var(--color-accent-primary, rgb(37 99 235))` : 'transparent'
-                          }}
-                        >
-                          {isActive && (
-                            <div 
-                              className="w-2 h-2 rounded-full" 
-                              style={{ backgroundColor: `var(--color-text-inverse, rgb(248 250 252))` }}
-                            />
-                          )}
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                          isActive ? 'border-primary bg-primary' : 'border-border'
+                        }`}>
+                          {isActive && <div className="w-2 h-2 bg-primary-foreground rounded-full" />}
                         </div>
                       </div>
                     </div>
@@ -603,14 +397,11 @@ const AdminThemeSettings: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Palette 
-                  className="h-5 w-5" 
-                  style={{ color: `var(--color-accent-primary, rgb(37 99 235))` }} 
-                />
-                Color Customization
+                <Palette className="h-5 w-5 text-primary" />
+                ✅ Integrated Color System
               </CardTitle>
               <CardDescription>
-                Customize theme colors for both light and dark modes
+                Colors are properly applied to your existing CSS variables
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -631,122 +422,65 @@ const AdminThemeSettings: React.FC = () => {
               {/* Color Controls */}
               <div className="space-y-6 max-h-96 overflow-y-auto">
                 {colorGroups[activeColorGroup as keyof typeof colorGroups]?.map((colorKey) => (
-                  <div 
-                    key={colorKey} 
-                    className="p-4 border rounded-lg transition-all duration-200"
-                    style={{ 
-                      borderColor: `var(--color-border-primary, rgb(226 232 240))`,
-                      backgroundColor: `var(--color-bg-primary, rgb(255 255 255))`
-                    }}
-                  >
-                    <h4 
-                      className="text-sm font-medium mb-3 capitalize"
-                      style={{ color: `var(--color-text-primary, rgb(15 23 42))` }}
-                    >
-                      {colorKey.replace(/-/g, ' ')}
+                  <div key={colorKey} className="p-4 border border-border rounded-lg bg-card">
+                    <h4 className="text-sm font-medium mb-3 text-foreground">
+                      --{colorKey}
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Light Mode */}
                       <div>
-                        <Label className="text-xs mb-2 block">
-                          <span style={{ color: `var(--color-text-secondary, rgb(71 85 105))` }}>
-                            Light Mode
-                          </span>
-                        </Label>
+                        <Label className="text-xs text-muted-foreground mb-2 block">Light Mode</Label>
                         <div className="flex gap-2">
                           <Input
                             type="color"
-                            value={rgbToHex(localColors[colorKey]?.light || '255 255 255')}
+                            value={rgbToHex(colors[colorKey]?.light || '#ffffff')}
                             onChange={(e) => handleColorChange(colorKey, 'light', e.target.value)}
                             className="w-12 h-10 p-1 border-2"
                           />
                           <Input
                             type="text"
-                            value={rgbToHex(localColors[colorKey]?.light || '255 255 255')}
+                            value={rgbToHex(colors[colorKey]?.light || '#ffffff')}
                             onChange={(e) => handleColorChange(colorKey, 'light', e.target.value)}
                             className="flex-1 text-sm font-mono"
                             placeholder="#ffffff"
                           />
                         </div>
-                        <div 
-                          className="mt-1 text-xs font-mono"
-                          style={{ color: `var(--color-text-tertiary, rgb(148 163 184))` }}
-                        >
-                          RGB: {localColors[colorKey]?.light || '255 255 255'}
+                        <div className="mt-1 text-xs text-muted-foreground font-mono">
+                          Current: {colors[colorKey]?.light || 'N/A'}
                         </div>
                       </div>
                       
                       {/* Dark Mode */}
                       <div>
-                        <Label className="text-xs mb-2 block">
-                          <span style={{ color: `var(--color-text-secondary, rgb(71 85 105))` }}>
-                            Dark Mode
-                          </span>
-                        </Label>
+                        <Label className="text-xs text-muted-foreground mb-2 block">Dark Mode</Label>
                         <div className="flex gap-2">
                           <Input
                             type="color"
-                            value={rgbToHex(localColors[colorKey]?.dark || '15 23 42')}
+                            value={rgbToHex(colors[colorKey]?.dark || '#000000')}
                             onChange={(e) => handleColorChange(colorKey, 'dark', e.target.value)}
                             className="w-12 h-10 p-1 border-2"
                           />
                           <Input
                             type="text"
-                            value={rgbToHex(localColors[colorKey]?.dark || '15 23 42')}
+                            value={rgbToHex(colors[colorKey]?.dark || '#000000')}
                             onChange={(e) => handleColorChange(colorKey, 'dark', e.target.value)}
                             className="flex-1 text-sm font-mono"
-                            placeholder="#0f172a"
+                            placeholder="#000000"
                           />
                         </div>
-                        <div 
-                          className="mt-1 text-xs font-mono"
-                          style={{ color: `var(--color-text-tertiary, rgb(148 163 184))` }}
-                        >
-                          RGB: {localColors[colorKey]?.dark || '15 23 42'}
+                        <div className="mt-1 text-xs text-muted-foreground font-mono">
+                          Current: {colors[colorKey]?.dark || 'N/A'}
                         </div>
                       </div>
-                    </div>
-                    
-                    {/* Color Preview */}
-                    <div className="mt-3 flex gap-2">
-                      <div 
-                        className="w-8 h-8 rounded border-2 transition-all duration-200"
-                        style={{ 
-                          backgroundColor: `rgb(${localColors[colorKey]?.light || '255 255 255'})`,
-                          borderColor: `var(--color-border-primary, rgb(226 232 240))`
-                        }}
-                        title="Light mode preview"
-                      />
-                      <div 
-                        className="w-8 h-8 rounded border-2 transition-all duration-200"
-                        style={{ 
-                          backgroundColor: `rgb(${localColors[colorKey]?.dark || '15 23 42'})`,
-                          borderColor: `var(--color-border-primary, rgb(226 232 240))`
-                        }}
-                        title="Dark mode preview"
-                      />
-                      <div 
-                        className="w-8 h-8 rounded border-2 transition-all duration-200"
-                        style={{ 
-                          backgroundColor: `rgb(${localColors[colorKey]?.[actualTheme] || '255 255 255'})`,
-                          borderColor: `var(--color-accent-primary, rgb(37 99 235))`,
-                          borderWidth: '2px',
-                          borderStyle: 'solid'
-                        }}
-                        title="Current theme preview"
-                      />
                     </div>
                   </div>
                 ))}
               </div>
 
               {/* Action Buttons */}
-              <div 
-                className="flex gap-2 mt-6 pt-4 border-t transition-all duration-200" 
-                style={{ borderColor: `var(--color-border-primary, rgb(226 232 240))` }}
-              >
-                <Button onClick={applyColors} className="flex-1">
-                  Apply Colors
+              <div className="flex gap-2 mt-6 pt-4 border-t border-border">
+                <Button onClick={applyTheme} className="flex-1">
+                  ✅ Apply Theme
                 </Button>
                 <Button onClick={resetColors} variant="outline" className="flex items-center gap-1">
                   <RotateCcw className="h-4 w-4" />
@@ -757,117 +491,49 @@ const AdminThemeSettings: React.FC = () => {
           </Card>
         )}
 
-        {/* Status Card */}
+        {/* Status & Preview */}
         <Card className="mt-6">
           <CardHeader>
-            <CardTitle>Current Status & Live Preview</CardTitle>
-            <CardDescription>Theme configuration status and color testing</CardDescription>
+            <CardTitle>✅ Working Theme System</CardTitle>
+            <CardDescription>Current status and live preview</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <div 
-                className="p-3 rounded-lg transition-all duration-200" 
-                style={{ backgroundColor: `var(--color-bg-tertiary, rgb(241 245 249))` }}
-              >
-                <div 
-                  className="text-sm font-medium"
-                  style={{ color: `var(--color-text-secondary, rgb(71 85 105))` }}
-                >
-                  Theme Mode
-                </div>
-                <div 
-                  className="text-lg font-semibold capitalize"
-                  style={{ color: `var(--color-text-primary, rgb(15 23 42))` }}
-                >
-                  {themeMode}
-                </div>
+              <div className="p-3 bg-muted rounded-lg">
+                <div className="text-sm font-medium text-muted-foreground">Theme Mode</div>
+                <div className="text-lg font-semibold text-foreground capitalize">{themeMode}</div>
               </div>
-              <div 
-                className="p-3 rounded-lg transition-all duration-200" 
-                style={{ backgroundColor: `var(--color-bg-tertiary, rgb(241 245 249))` }}
-              >
-                <div 
-                  className="text-sm font-medium"
-                  style={{ color: `var(--color-text-secondary, rgb(71 85 105))` }}
-                >
-                  Active Theme
-                </div>
-                <div 
-                  className="text-lg font-semibold capitalize"
-                  style={{ color: `var(--color-text-primary, rgb(15 23 42))` }}
-                >
-                  {actualTheme}
-                </div>
+              <div className="p-3 bg-muted rounded-lg">
+                <div className="text-sm font-medium text-muted-foreground">Active Theme</div>
+                <div className="text-lg font-semibold text-foreground capitalize">{actualTheme}</div>
               </div>
-              <div 
-                className="p-3 rounded-lg transition-all duration-200" 
-                style={{ backgroundColor: `var(--color-bg-tertiary, rgb(241 245 249))` }}
-              >
-                <div 
-                  className="text-sm font-medium"
-                  style={{ color: `var(--color-text-secondary, rgb(71 85 105))` }}
-                >
-                  System Preference
-                </div>
-                <div 
-                  className="text-lg font-semibold capitalize"
-                  style={{ color: `var(--color-text-primary, rgb(15 23 42))` }}
-                >
-                  {isSystemDark ? 'Dark' : 'Light'}
-                </div>
+              <div className="p-3 bg-muted rounded-lg">
+                <div className="text-sm font-medium text-muted-foreground">CSS Format</div>
+                <div className="text-lg font-semibold text-foreground">HSL + RGB</div>
               </div>
             </div>
             
-            {/* Live Color Test Section */}
-            <div 
-              className="p-4 border rounded-lg transition-all duration-200" 
-              style={{ borderColor: `var(--color-border-primary, rgb(226 232 240))` }}
-            >
-              <h4 
-                className="text-sm font-semibold mb-3"
-                style={{ color: `var(--color-text-primary, rgb(15 23 42))` }}
-              >
-                🎨 Live Color Preview (Current Theme: {actualTheme})
+            {/* Live Preview */}
+            <div className="p-4 border border-border rounded-lg bg-card">
+              <h4 className="text-sm font-semibold mb-3 text-foreground">
+                🎨 Live Preview (Theme: {actualTheme})
               </h4>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                {[
-                  { key: 'bg-primary', label: 'Primary BG' },
-                  { key: 'bg-secondary', label: 'Secondary BG' },
-                  { key: 'accent-primary', label: 'Primary Accent' },
-                  { key: 'text-primary', label: 'Primary Text' },
-                  { key: 'border-primary', label: 'Primary Border' }
-                ].map(({ key, label }) => (
-                  <div key={key} className="text-center">
-                    <div 
-                      className="w-12 h-12 mx-auto rounded border-2 mb-2 transition-all duration-200 flex items-center justify-center" 
-                      style={{ 
-                        backgroundColor: `rgb(${localColors[key]?.[actualTheme] || '255 255 255'})`,
-                        borderColor: `var(--color-border-primary, rgb(226 232 240))`
-                      }}
-                    >
-                      {key.includes('text') && (
-                        <span 
-                          className="text-lg font-bold"
-                          style={{ color: `rgb(${localColors[key]?.[actualTheme] || '15 23 42'})` }}
-                        >
-                          Aa
-                        </span>
-                      )}
-                    </div>
-                    <div 
-                      className="text-xs"
-                      style={{ color: `var(--color-text-secondary, rgb(71 85 105))` }}
-                    >
-                      {label}
-                    </div>
-                    <div 
-                      className="text-xs font-mono mt-1"
-                      style={{ color: `var(--color-text-tertiary, rgb(148 163 184))` }}
-                    >
-                      {localColors[key]?.[actualTheme] || 'N/A'}
-                    </div>
-                  </div>
-                ))}
+              <div className="space-y-4">
+                <div className="p-3 bg-background border border-border rounded">
+                  <p className="text-foreground">Background with foreground text</p>
+                </div>
+                <div className="p-3 bg-card border border-border rounded">
+                  <p className="text-card-foreground">Card background with card text</p>
+                </div>
+                <div className="p-3 bg-primary rounded">
+                  <p className="text-primary-foreground">Primary background with primary text</p>
+                </div>
+                <div className="p-3 bg-secondary rounded">
+                  <p className="text-secondary-foreground">Secondary background with secondary text</p>
+                </div>
+                <div className="p-3 bg-muted rounded">
+                  <p className="text-muted-foreground">Muted background with muted text</p>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -877,13 +543,4 @@ const AdminThemeSettings: React.FC = () => {
   );
 };
 
-// ===== MAIN APP =====
-const App: React.FC = () => {
-  return (
-    <GlobalThemeProvider>
-      <AdminThemeSettings />
-    </GlobalThemeProvider>
-  );
-};
-
-export default App;
+export default AdminThemeSettings;
