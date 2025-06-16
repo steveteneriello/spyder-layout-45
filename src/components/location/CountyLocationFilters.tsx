@@ -125,9 +125,10 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
     }
   };
 
-  // Main search function using reliable JavaScript distance calculation
+  // Optimized search function that handles large radius searches efficiently
   const performFallbackSearch = async () => {
-    console.log('🔄 Performing JavaScript distance search');
+    console.log('🔄 Performing optimized JavaScript distance search');
+    console.log(`📏 Search radius: ${radiusMiles} miles ${radiusMiles > 500 ? '(LARGE SEARCH)' : '(STANDARD SEARCH)'}`);
     
     const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
       const R = 3959; // Radius of the Earth in miles
@@ -141,22 +142,99 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
       return R * c;
     };
 
-    // Calculate a generous bounding box for initial filtering
-    const latDelta = radiusMiles / 69 * 2; // Extra generous multiplier
-    const lngDelta = radiusMiles / (69 * Math.cos(searchCoords!.lat * Math.PI / 180)) * 2;
+    // For large searches, use a different strategy
+    if (radiusMiles > 500) {
+      return await performLargeRadiusSearch(calculateDistance);
+    }
+
+    // Standard search for smaller radius
+    return await performStandardSearch(calculateDistance);
+  };
+
+  // Optimized search for large radius (500+ miles)
+  const performLargeRadiusSearch = async (calculateDistance: Function) => {
+    console.log('🌍 Performing LARGE RADIUS search - using county-first approach');
+    
+    try {
+      // Step 1: Get unique counties with their centroids first
+      let query = supabase
+        .from('location_data')
+        .select(`
+          county_name,
+          state_name,
+          centroid_latitude,
+          centroid_longitude,
+          timezone
+        `)
+        .not('county_name', 'is', null)
+        .not('centroid_latitude', 'is', null)
+        .not('centroid_longitude', 'is', null);
+
+      // Apply filters early to reduce data
+      if (selectedStates.length > 0) {
+        query = query.in('state_name', selectedStates);
+        console.log('🏛️ State filter applied:', selectedStates);
+      }
+
+      if (selectedTimezones.length > 0) {
+        query = query.in('timezone', selectedTimezones);
+        console.log('🕐 Timezone filter applied:', selectedTimezones);
+      }
+
+      console.log('🗄️ Fetching unique counties...');
+      const { data: countyData, error: countyError } = await query
+        .select('county_name, state_name, centroid_latitude, centroid_longitude, timezone')
+        .group('county_name, state_name, centroid_latitude, centroid_longitude, timezone');
+
+      if (countyError) {
+        console.error('❌ County query error:', countyError);
+        // Fallback to distinct approach
+        const { data: allData, error: allError } = await query;
+        if (allError) throw allError;
+        
+        // Create unique counties map
+        const uniqueCounties = new Map();
+        allData?.forEach(record => {
+          const key = `${record.county_name}-${record.state_name}`;
+          if (!uniqueCounties.has(key)) {
+            uniqueCounties.set(key, record);
+          }
+        });
+        
+        console.log('📊 Using fallback distinct approach, unique counties:', uniqueCounties.size);
+        const countyArray = Array.from(uniqueCounties.values());
+        return await processCountiesWithDistance(countyArray, calculateDistance);
+      }
+
+      console.log('📊 Unique counties fetched:', countyData?.length || 0);
+      return await processCountiesWithDistance(countyData || [], calculateDistance);
+
+    } catch (error) {
+      console.error('💥 Large radius search error:', error);
+      throw error;
+    }
+  };
+
+  // Standard search for smaller radius (under 500 miles)
+  const performStandardSearch = async (calculateDistance: Function) => {
+    console.log('🎯 Performing STANDARD RADIUS search');
+    
+    // Calculate a reasonable bounding box for smaller searches
+    const latDelta = Math.min(radiusMiles / 69 * 1.5, 20); // Cap at 20 degrees
+    const lngDelta = Math.min(radiusMiles / (69 * Math.cos(searchCoords!.lat * Math.PI / 180)) * 1.5, 30); // Cap at 30 degrees
     
     const minLat = searchCoords!.lat - latDelta;
     const maxLat = searchCoords!.lat + latDelta;
     const minLng = searchCoords!.lng - lngDelta;
     const maxLng = searchCoords!.lng + lngDelta;
 
-    console.log('📦 Generous bounding box:', { 
+    console.log('📦 Standard bounding box:', { 
       center: searchCoords,
       bounds: { minLat, maxLat, minLng, maxLng },
       deltas: { latDelta, lngDelta }
     });
 
-    // Build the basic query with bounding box
+    // Build the query with bounding box
     let query = supabase
       .from('location_data')
       .select(`
@@ -179,61 +257,114 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
       .not('county_name', 'is', null)
       .not('centroid_latitude', 'is', null)
       .not('centroid_longitude', 'is', null)
-      .not('city', 'is', null);
+      .not('city', 'is', null)
+      .gte('centroid_latitude', minLat)
+      .lte('centroid_latitude', maxLat)
+      .gte('centroid_longitude', minLng)
+      .lte('centroid_longitude', maxLng);
 
-    // Apply bounding box filter if we have reasonable bounds
-    if (latDelta < 50 && lngDelta < 50) { // Only apply if deltas are reasonable
-      query = query
-        .gte('centroid_latitude', minLat)
-        .lte('centroid_latitude', maxLat)
-        .gte('centroid_longitude', minLng)
-        .lte('centroid_longitude', maxLng);
-    }
-
-    // Apply state filter if selected
+    // Apply additional filters
     if (selectedStates.length > 0) {
       query = query.in('state_name', selectedStates);
     }
-
-    // Apply timezone filter if selected
     if (selectedTimezones.length > 0) {
       query = query.in('timezone', selectedTimezones);
     }
 
-    console.log('🗄️ Executing bounding box query...');
+    console.log('🗄️ Executing standard search query...');
     const { data: locationData, error } = await query;
 
-    if (error) {
-      console.error('❌ Bounding box query error:', error);
-      throw error;
-    }
+    if (error) throw error;
 
-    console.log('📊 Raw database results from bounding box:', locationData?.length || 0, 'records');
+    console.log('📊 Standard search raw results:', locationData?.length || 0, 'records');
 
     if (!locationData || locationData.length === 0) {
-      console.log('📭 No location data found in bounding box');
       return [];
     }
 
-    // Group by county and calculate distances
+    return await processLocationDataWithAggregation(locationData, calculateDistance);
+  };
+
+  // Process counties and calculate distances (for large radius searches)
+  const processCountiesWithDistance = async (counties: any[], calculateDistance: Function) => {
+    console.log('⚡ Processing counties with distance calculation...');
+    
+    const results = [];
+    let processedCount = 0;
+    
+    for (const county of counties) {
+      const countyLat = parseFloat(county.centroid_latitude);
+      const countyLng = parseFloat(county.centroid_longitude);
+      
+      if (isNaN(countyLat) || isNaN(countyLng)) continue;
+
+      const distance = calculateDistance(
+        searchCoords!.lat,
+        searchCoords!.lng,
+        countyLat,
+        countyLng
+      );
+
+      if (distance <= radiusMiles) {
+        // For large searches, get city count separately to avoid loading all city data
+        const { count: cityCount } = await supabase
+          .from('location_data')
+          .select('*', { count: 'exact', head: true })
+          .eq('county_name', county.county_name)
+          .eq('state_name', county.state_name)
+          .not('city', 'is', null);
+
+        results.push({
+          id: `${county.county_name}-${county.state_name}`,
+          county_name: county.county_name,
+          state_name: county.state_name,
+          center_lat: countyLat,
+          center_lng: countyLng,
+          distance_miles: Math.round(distance * 10) / 10,
+          city_count: cityCount || 0,
+          total_population: 0, // Will be filled if needed
+          avg_income_household_median: 0,
+          avg_home_value: 0,
+          avg_age_median: 0,
+          education_bachelors_pct: 0,
+          race_white_pct: 0,
+          race_black_pct: 0,
+          race_asian_pct: 0,
+          race_hispanic_pct: 0,
+          timezone: county.timezone
+        });
+
+        processedCount++;
+        
+        // Log progress for large searches
+        if (processedCount % 50 === 0) {
+          console.log(`📈 Processed ${processedCount} counties, found ${results.length} within radius`);
+        }
+      }
+    }
+
+    // Sort by distance
+    results.sort((a, b) => a.distance_miles - b.distance_miles);
+    
+    console.log(`✅ Large radius search complete: ${results.length} counties found`);
+    return results;
+  };
+
+  // Process location data with aggregation (for standard searches)
+  const processLocationDataWithAggregation = async (locationData: any[], calculateDistance: Function) => {
+    console.log('📊 Processing location data with aggregation...');
+    
     const countyMap = new Map();
     let distanceCalculations = 0;
-    let countiesWithinRadius = 0;
     
     locationData.forEach(location => {
       const countyKey = `${location.county_name}-${location.state_name}`;
       
-      // Parse centroid coordinates
       const countyLat = parseFloat(location.centroid_latitude);
       const countyLng = parseFloat(location.centroid_longitude);
       
-      // Skip if centroid coordinates are invalid
-      if (isNaN(countyLat) || isNaN(countyLng)) {
-        console.log('⚠️ Skipping location with invalid centroid coordinates:', location.county_name);
-        return;
-      }
+      if (isNaN(countyLat) || isNaN(countyLng)) return;
 
-      // Calculate distance from search center to county centroid
       const distance = calculateDistance(
         searchCoords!.lat,
         searchCoords!.lng,
@@ -242,12 +373,8 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
       );
       distanceCalculations++;
 
-      // Only include counties within the search radius
       if (distance <= radiusMiles) {
-        countiesWithinRadius++;
-        
         if (!countyMap.has(countyKey)) {
-          // Create new county entry
           countyMap.set(countyKey, {
             id: countyKey,
             county_name: location.county_name,
@@ -297,19 +424,13 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
         if (raceA !== null) county.races.asian.push(raceA);
         if (raceH !== null) county.races.hispanic.push(raceH);
 
-        // Update distance if this is closer
         if (distance < county.distance_miles) {
           county.distance_miles = Math.round(distance * 10) / 10;
         }
       }
     });
 
-    console.log(`📊 Distance calculation stats:`, {
-      totalRecords: locationData.length,
-      distanceCalculations,
-      countiesWithinRadius,
-      uniqueCounties: countyMap.size
-    });
+    console.log(`📊 Aggregation stats: ${distanceCalculations} distance calculations, ${countyMap.size} unique counties`);
 
     // Convert to results format
     const results = Array.from(countyMap.values()).map(county => {
@@ -337,19 +458,7 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
       };
     });
 
-    // Sort by distance
     results.sort((a, b) => a.distance_miles - b.distance_miles);
-    
-    console.log('✅ JavaScript search results:', results.length, 'counties found');
-    if (results.length > 0) {
-      console.log('🏆 Closest counties:', results.slice(0, 5).map(c => ({
-        name: `${c.county_name}, ${c.state_name}`,
-        distance: c.distance_miles,
-        cities: c.city_count,
-        population: c.total_population
-      })));
-    }
-    
     return results;
   };
 
