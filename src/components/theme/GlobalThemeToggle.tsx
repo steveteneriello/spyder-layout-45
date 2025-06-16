@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Monitor, Moon, Sun, Check, Palette } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -67,7 +68,7 @@ const GlobalThemeToggle: React.FC<GlobalThemeToggleProps> = ({
     }
   };
 
-  const getButtonSize = () => {
+  const getButtonSize = (): "default" | "sm" | "lg" | "icon" => {
     switch (variant) {
       case 'compact':
         return 'sm';

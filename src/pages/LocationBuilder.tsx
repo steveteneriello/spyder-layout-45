@@ -146,8 +146,8 @@ export default function LocationBuilder() {
   const mockProps = {
     searchResults: mockSearchResults,
     centerCoords: centerCoords,
-    onListSaved: (listName: string, counties: any[]) => {
-      console.log('Saving location list:', listName, counties);
+    onListSaved: () => {
+      console.log('List saved successfully');
       // Handle list saving logic
     },
     selectedCounties: selectedCounties,
