@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Settings, Monitor, Sun, Moon, Palette, RotateCcw } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -55,52 +54,98 @@ const AdminThemeSettings: React.FC = () => {
     }
   ];
 
-  // Color conversion utilities
+  // FIXED Color conversion utilities
   const hexToRgb = (hex: string): string => {
+    console.log('🔄 Converting hex to RGB:', hex);
+    
+    // Remove # and validate
     const cleanHex = hex.replace('#', '');
-    if (!/^[a-f0-9]{6}$/i.test(cleanHex)) return '255 255 255';
+    if (!/^[a-f0-9]{6}$/i.test(cleanHex)) {
+      console.warn('❌ Invalid hex format:', hex);
+      return '255 255 255';
+    }
     
-    const r = parseInt(cleanHex.substr(0, 2), 16);
-    const g = parseInt(cleanHex.substr(2, 2), 16);
-    const b = parseInt(cleanHex.substr(4, 2), 16);
+    // FIXED: Use substring instead of deprecated substr
+    const r = parseInt(cleanHex.substring(0, 2), 16);
+    const g = parseInt(cleanHex.substring(2, 4), 16);
+    const b = parseInt(cleanHex.substring(4, 6), 16);
     
-    return `${r} ${g} ${b}`;
+    // Validate parsed values
+    if (isNaN(r) || isNaN(g) || isNaN(b)) {
+      console.warn('❌ Failed to parse hex values:', { r, g, b });
+      return '255 255 255';
+    }
+    
+    const result = `${r} ${g} ${b}`;
+    console.log('✅ Hex to RGB conversion:', hex, '→', result);
+    return result;
   };
 
   const rgbToHex = (rgb: string): string => {
-    if (!rgb) return '#ffffff';
-    const parts = rgb.split(' ');
-    if (parts.length !== 3) return '#ffffff';
+    console.log('🔄 Converting RGB to hex:', rgb);
     
-    const r = parseInt(parts[0]);
-    const g = parseInt(parts[1]);
-    const b = parseInt(parts[2]);
+    if (!rgb || typeof rgb !== 'string') {
+      console.warn('❌ Invalid RGB input:', rgb);
+      return '#ffffff';
+    }
     
-    const toHex = (num: number) => {
-      const hex = num.toString(16);
-      return hex.length === 1 ? '0' + hex : hex;
-    };
+    // Handle hex input (already converted)
+    if (rgb.startsWith('#')) {
+      return rgb;
+    }
     
-    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    // Parse RGB values
+    const parts = rgb.trim().split(/\s+/);
+    if (parts.length !== 3) {
+      console.warn('❌ Invalid RGB format, expected 3 parts:', rgb);
+      return '#ffffff';
+    }
+    
+    // FIXED: Proper validation and clamping
+    const nums = parts.map(part => {
+      const num = parseInt(part, 10);
+      if (isNaN(num)) {
+        console.warn('❌ Invalid number in RGB:', part);
+        return 0;
+      }
+      return Math.max(0, Math.min(255, num)); // Clamp to 0-255
+    });
+    
+    // FIXED: Proper hex padding
+    const toHex = (num: number) => num.toString(16).padStart(2, '0');
+    const result = `#${toHex(nums[0])}${toHex(nums[1])}${toHex(nums[2])}`;
+    
+    console.log('✅ RGB to hex conversion:', rgb, '→', result);
+    return result;
   };
 
   const handleColorChange = (colorKey: string, mode: 'light' | 'dark', value: string) => {
-    const rgbValue = value.startsWith('#') ? hexToRgb(value) : value;
+    console.log('🎨 Color change:', { colorKey, mode, value });
     
-    setLocalColors(prev => ({
-      ...prev,
-      [colorKey]: {
-        ...prev[colorKey],
-        [mode]: rgbValue
-      }
-    }));
+    const rgbValue = value.startsWith('#') ? hexToRgb(value) : value;
+    console.log('📝 Final RGB value:', rgbValue);
+    
+    setLocalColors(prev => {
+      const newColors = {
+        ...prev,
+        [colorKey]: {
+          ...prev[colorKey],
+          [mode]: rgbValue
+        }
+      };
+      console.log('📦 Updated colors for', colorKey, ':', newColors[colorKey]);
+      return newColors;
+    });
   };
 
   const applyColors = () => {
+    console.log('🚀 Applying colors...');
+    console.log('📊 Local colors to apply:', localColors);
     updateColors(localColors);
   };
 
   const resetColors = () => {
+    console.log('🔄 Resetting colors...');
     const defaultColors = {
       'bg-primary': { light: '255 255 255', dark: '14 17 23' },
       'bg-secondary': { light: '251 252 253', dark: '22 27 34' },
@@ -126,10 +171,43 @@ const AdminThemeSettings: React.FC = () => {
     updateColors(defaultColors);
   };
 
+  // Test functions for debugging
+  const testColorConversion = () => {
+    console.log('🧪 Testing color conversion...');
+    
+    // Test blue
+    const blueHex = '#3b82f6';
+    const blueRgb = hexToRgb(blueHex);
+    const backToHex = rgbToHex(blueRgb);
+    console.log('Blue test:', { blueHex, blueRgb, backToHex });
+    
+    // Test white
+    const whiteHex = '#ffffff';
+    const whiteRgb = hexToRgb(whiteHex);
+    const whiteBackToHex = rgbToHex(whiteRgb);
+    console.log('White test:', { whiteHex, whiteRgb, whiteBackToHex });
+    
+    // Test edge cases
+    console.log('Edge case tests:');
+    console.log('Invalid hex:', hexToRgb('#invalid'));
+    console.log('Invalid RGB:', rgbToHex('invalid rgb'));
+    console.log('Empty RGB:', rgbToHex(''));
+  };
+
   // Sync local colors with global colors
   useEffect(() => {
     setLocalColors(colors);
   }, [colors]);
+
+  // Debug effect
+  useEffect(() => {
+    console.log('🔍 Current state:', {
+      themeMode,
+      actualTheme,
+      localColorsCount: Object.keys(localColors).length,
+      globalColorsCount: Object.keys(colors).length
+    });
+  }, [themeMode, actualTheme, localColors, colors]);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -139,11 +217,14 @@ const AdminThemeSettings: React.FC = () => {
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
             <Palette className="h-5 w-5 text-primary-foreground" />
           </div>
-          <h1 className="text-xl font-semibold">Global Theme Settings</h1>
+          <h1 className="text-xl font-semibold">🔧 Fixed Admin Theme Settings</h1>
         </div>
         <p className="text-muted-foreground">
-          Configure colors and appearance for the entire application
+          Configure colors with proper conversion and validation
         </p>
+        <Button onClick={testColorConversion} size="sm" variant="outline" className="mt-2">
+          🧪 Test Color Conversion
+        </Button>
       </div>
 
       {/* Navigation */}
@@ -229,13 +310,35 @@ const AdminThemeSettings: React.FC = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Palette className="h-5 w-5" />
-                Color Customization
+                🔧 Fixed Color Customization
               </CardTitle>
               <CardDescription>
-                Customize theme colors for both light and dark modes
+                Customize theme colors with proper conversion and validation
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {/* Quick Test Section */}
+              <div className="mb-6 p-4 border border-border rounded-lg bg-secondary">
+                <h4 className="text-sm font-semibold mb-3">🧪 Quick Color Tests</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <Button 
+                    size="sm" 
+                    onClick={() => handleColorChange('accent-primary', actualTheme, '#3b82f6')}
+                  >
+                    🔵 Set Blue Accent
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    onClick={() => handleColorChange('bg-primary', actualTheme, '#ffffff')}
+                  >
+                    ⚪ Set White Background
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Use these to test if color conversion is working correctly
+                </p>
+              </div>
+
               <div className="flex flex-wrap gap-2 mb-4">
                 {Object.entries(colorGroupLabels).map(([key, label]) => (
                   <Button
@@ -269,9 +372,12 @@ const AdminThemeSettings: React.FC = () => {
                             type="text"
                             value={rgbToHex(localColors[colorKey]?.light || '255 255 255')}
                             onChange={(e) => handleColorChange(colorKey, 'light', e.target.value)}
-                            className="flex-1 text-xs"
+                            className="flex-1 text-xs font-mono"
                             placeholder="#ffffff"
                           />
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1 font-mono">
+                          RGB: {localColors[colorKey]?.light || 'N/A'}
                         </div>
                       </div>
                       <div>
@@ -287,9 +393,12 @@ const AdminThemeSettings: React.FC = () => {
                             type="text"
                             value={rgbToHex(localColors[colorKey]?.dark || '14 17 23')}
                             onChange={(e) => handleColorChange(colorKey, 'dark', e.target.value)}
-                            className="flex-1 text-xs"
+                            className="flex-1 text-xs font-mono"
                             placeholder="#0e1117"
                           />
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1 font-mono">
+                          RGB: {localColors[colorKey]?.dark || 'N/A'}
                         </div>
                       </div>
                     </div>
@@ -299,7 +408,7 @@ const AdminThemeSettings: React.FC = () => {
 
               <div className="flex gap-2 mt-4 pt-4 border-t border-border">
                 <Button onClick={applyColors} className="flex-1">
-                  Apply Colors
+                  🚀 Apply Colors
                 </Button>
                 <Button onClick={resetColors} variant="outline" className="flex items-center gap-1">
                   <RotateCcw className="h-4 w-4" />
@@ -310,14 +419,14 @@ const AdminThemeSettings: React.FC = () => {
           </Card>
         )}
 
-        {/* Status Card */}
+        {/* Enhanced Status Card */}
         <Card className="mt-6">
           <CardHeader>
-            <CardTitle>Current Status</CardTitle>
-            <CardDescription>Theme configuration status</CardDescription>
+            <CardTitle>🔍 Debug Status</CardTitle>
+            <CardDescription>Current theme status and color validation</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
               <div className="p-3 bg-muted rounded-lg">
                 <div className="text-sm font-medium text-muted-foreground">Theme Mode</div>
                 <div className="text-lg font-semibold capitalize">
@@ -335,6 +444,33 @@ const AdminThemeSettings: React.FC = () => {
                 <div className="text-lg font-semibold capitalize">
                   {isSystemDark ? 'Dark' : 'Light'}
                 </div>
+              </div>
+            </div>
+
+            {/* Color Validation */}
+            <div className="p-4 border border-border rounded-lg bg-card">
+              <h4 className="text-sm font-semibold mb-3">🎨 Color Validation</h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {[
+                  { key: 'bg-primary', label: 'Primary BG', expected: 'White/Dark' },
+                  { key: 'accent-primary', label: 'Primary Accent', expected: 'Blue' },
+                  { key: 'text-primary', label: 'Primary Text', expected: 'Dark/Light' },
+                  { key: 'border-primary', label: 'Primary Border', expected: 'Gray' }
+                ].map(({ key, label, expected }) => (
+                  <div key={key} className="text-center">
+                    <div 
+                      className="w-12 h-12 mx-auto rounded border-2 border-border mb-2" 
+                      style={{ 
+                        backgroundColor: `rgb(${localColors[key]?.[actualTheme] || '255 255 255'})` 
+                      }}
+                    />
+                    <div className="text-xs text-muted-foreground">{label}</div>
+                    <div className="text-xs text-muted-foreground">({expected})</div>
+                    <div className="text-xs font-mono text-muted-foreground mt-1">
+                      {localColors[key]?.[actualTheme] || 'N/A'}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </CardContent>
