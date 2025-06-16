@@ -37,24 +37,24 @@ const useGlobalTheme = () => {
   return { themeMode, actualTheme, setThemeMode, isSystemDark };
 };
 
-// Default colors that MATCH your existing HSL format
+// SIMPLIFIED Default colors using RGB format (the working approach)
 const defaultColors: ThemeColors = {
-  // These will be converted to HSL to match your existing CSS
-  'background': { light: '0 0% 100%', dark: '222.2 84% 4.9%' },
-  'foreground': { light: '222.2 84% 4.9%', dark: '210 40% 98%' },
-  'card': { light: '0 0% 100%', dark: '222.2 84% 4.9%' },
-  'card-foreground': { light: '222.2 84% 4.9%', dark: '210 40% 98%' },
-  'primary': { light: '217 91% 60%', dark: '217 91% 60%' },
-  'primary-foreground': { light: '210 40% 98%', dark: '222.2 47.4% 11.2%' },
-  'secondary': { light: '210 40% 96.1%', dark: '217.2 32.6% 17.5%' },
-  'secondary-foreground': { light: '222.2 47.4% 11.2%', dark: '210 40% 98%' },
-  'muted': { light: '210 40% 96.1%', dark: '217.2 32.6% 17.5%' },
-  'muted-foreground': { light: '215.4 16.3% 46.9%', dark: '215 20.2% 65.1%' },
-  'accent': { light: '210 40% 96.1%', dark: '217.2 32.6% 17.5%' },
-  'accent-foreground': { light: '222.2 47.4% 11.2%', dark: '210 40% 98%' },
-  'border': { light: '214.3 31.8% 91.4%', dark: '217.2 32.6% 17.5%' },
-  'input': { light: '214.3 31.8% 91.4%', dark: '217.2 32.6% 17.5%' },
-  // Add your custom variables
+  // Use RGB format for everything - this was working!
+  'background': { light: '255 255 255', dark: '15 23 42' },
+  'foreground': { light: '15 23 42', dark: '248 250 252' },
+  'card': { light: '248 250 252', dark: '30 41 59' },
+  'card-foreground': { light: '15 23 42', dark: '248 250 252' },
+  'primary': { light: '37 99 235', dark: '59 130 246' },
+  'primary-foreground': { light: '248 250 252', dark: '15 23 42' },
+  'secondary': { light: '241 245 249', dark: '51 65 85' },
+  'secondary-foreground': { light: '71 85 105', dark: '148 163 184' },
+  'muted': { light: '241 245 249', dark: '51 65 85' },
+  'muted-foreground': { light: '148 163 184', dark: '100 116 139' },
+  'accent': { light: '226 232 240', dark: '71 85 105' },
+  'accent-foreground': { light: '15 23 42', dark: '248 250 252' },
+  'border': { light: '226 232 240', dark: '51 65 85' },
+  'input': { light: '226 232 240', dark: '51 65 85' },
+  // Custom variables
   'bg-primary': { light: '255 255 255', dark: '15 23 42' },
   'bg-secondary': { light: '248 250 252', dark: '30 41 59' },
   'bg-tertiary': { light: '241 245 249', dark: '51 65 85' },
@@ -108,114 +108,56 @@ const AdminThemeSettings = () => {
     }
   ];
 
-  // Helper functions to work with both HSL and RGB
-  const isHSLFormat = (value: string): boolean => {
-    return value.includes('%') || (!value.includes(' ') && value.split(' ').length === 3 && !value.startsWith('#'));
-  };
-
-  const hslToHex = (hsl: string): string => {
-    if (hsl.startsWith('#')) return hsl;
-    
-    // Parse HSL string like "217 91% 60%"
-    const parts = hsl.split(' ');
-    if (parts.length !== 3) return '#3b82f6';
-    
-    const h = parseInt(parts[0]) / 360;
-    const s = parseInt(parts[1]) / 100;
-    const l = parseInt(parts[2]) / 100;
-    
-    const hue2rgb = (p: number, q: number, t: number) => {
-      if (t < 0) t += 1;
-      if (t > 1) t -= 1;
-      if (t < 1/6) return p + (q - p) * 6 * t;
-      if (t < 1/2) return q;
-      if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-      return p;
-    };
-
-    let r, g, b;
-    if (s === 0) {
-      r = g = b = l;
-    } else {
-      const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-      const p = 2 * l - q;
-      r = hue2rgb(p, q, h + 1/3);
-      g = hue2rgb(p, q, h);
-      b = hue2rgb(p, q, h - 1/3);
+  // FIXED COLOR CONVERSION FUNCTIONS (from working version)
+  const hexToRgb = (hex: string): string => {
+    const cleanHex = hex.replace('#', '');
+    if (!/^[a-f0-9]{6}$/i.test(cleanHex)) {
+      console.warn('Invalid hex format:', hex);
+      return '255 255 255';
     }
-
-    const toHex = (c: number) => {
-      const hex = Math.round(c * 255).toString(16);
-      return hex.length === 1 ? '0' + hex : hex;
-    };
-
-    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    
+    const r = parseInt(cleanHex.substring(0, 2), 16);
+    const g = parseInt(cleanHex.substring(2, 4), 16);
+    const b = parseInt(cleanHex.substring(4, 6), 16);
+    
+    const result = `${r} ${g} ${b}`;
+    console.log(`✅ Converted ${hex} to RGB: ${result}`);
+    return result;
   };
 
   const rgbToHex = (rgb: string): string => {
-    if (rgb.startsWith('#')) return rgb;
-    if (isHSLFormat(rgb)) return hslToHex(rgb);
+    if (!rgb || typeof rgb !== 'string') {
+      return '#ffffff';
+    }
     
-    const parts = rgb.split(' ');
-    if (parts.length !== 3) return '#ffffff';
+    const parts = rgb.trim().split(' ').filter(p => p !== '');
+    if (parts.length !== 3) {
+      console.warn('Invalid RGB format:', rgb);
+      return '#ffffff';
+    }
     
     const r = Math.max(0, Math.min(255, parseInt(parts[0]) || 0));
     const g = Math.max(0, Math.min(255, parseInt(parts[1]) || 0));
     const b = Math.max(0, Math.min(255, parseInt(parts[2]) || 0));
     
     const toHex = (num: number) => num.toString(16).padStart(2, '0');
-    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
-  };
-
-  const hexToHSL = (hex: string): string => {
-    const r = parseInt(hex.substr(1, 2), 16) / 255;
-    const g = parseInt(hex.substr(3, 2), 16) / 255;
-    const b = parseInt(hex.substr(5, 2), 16) / 255;
-
-    const max = Math.max(r, g, b);
-    const min = Math.min(r, g, b);
-    let h = 0, s = 0, l = (max + min) / 2;
-
-    if (max !== min) {
-      const d = max - min;
-      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-      switch (max) {
-        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-        case g: h = (b - r) / d + 2; break;
-        case b: h = (r - g) / d + 4; break;
-      }
-      h /= 6;
-    }
-
-    return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
-  };
-
-  const hexToRGB = (hex: string): string => {
-    const r = parseInt(hex.substr(1, 2), 16);
-    const g = parseInt(hex.substr(3, 2), 16);
-    const b = parseInt(hex.substr(5, 2), 16);
-    return `${r} ${g} ${b}`;
+    const result = `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    
+    console.log(`✅ Converted RGB "${rgb}" to hex: ${result}`);
+    return result;
   };
 
   const handleColorChange = (colorKey: string, mode: 'light' | 'dark', value: string) => {
     console.log(`🎨 Color change: ${colorKey} (${mode}) = ${value}`);
     
-    // Determine the format based on the color key
-    let finalValue: string;
-    
-    if (colorGroups.shadcn.includes(colorKey)) {
-      // Shadcn colors should be in HSL format
-      finalValue = value.startsWith('#') ? hexToHSL(value) : value;
-    } else {
-      // Custom colors should be in RGB format
-      finalValue = value.startsWith('#') ? hexToRGB(value) : value;
-    }
+    // Use RGB format for all colors (the working approach)
+    const rgbValue = value.startsWith('#') ? hexToRgb(value) : value;
     
     setColors(prev => ({
       ...prev,
       [colorKey]: {
         ...prev[colorKey],
-        [mode]: finalValue
+        [mode]: rgbValue
       }
     }));
   };
@@ -264,30 +206,30 @@ const AdminThemeSettings = () => {
       cssRules.push(`.dark {\n${darkVars}\n}`);
     }
 
-    // Force body styling
+    // Force body styling using RGB format (the working approach)
     cssRules.push(`
       body {
-        background-color: hsl(${colors.background[actualTheme]}) !important;
-        color: hsl(${colors.foreground[actualTheme]}) !important;
+        background-color: rgb(${colors.background[actualTheme]}) !important;
+        color: rgb(${colors.foreground[actualTheme]}) !important;
       }
     `);
 
-    // Add utility class overrides
+    // Add utility class overrides using RGB format
     cssRules.push(`
-      .bg-background { background-color: hsl(${colors.background[actualTheme]}) !important; }
-      .bg-card { background-color: hsl(${colors.card[actualTheme]}) !important; }
-      .bg-primary { background-color: hsl(${colors.primary[actualTheme]}) !important; }
-      .bg-secondary { background-color: hsl(${colors.secondary[actualTheme]}) !important; }
-      .bg-muted { background-color: hsl(${colors.muted[actualTheme]}) !important; }
+      .bg-background { background-color: rgb(${colors.background[actualTheme]}) !important; }
+      .bg-card { background-color: rgb(${colors.card[actualTheme]}) !important; }
+      .bg-primary { background-color: rgb(${colors.primary[actualTheme]}) !important; }
+      .bg-secondary { background-color: rgb(${colors.secondary[actualTheme]}) !important; }
+      .bg-muted { background-color: rgb(${colors.muted[actualTheme]}) !important; }
       
-      .text-foreground { color: hsl(${colors.foreground[actualTheme]}) !important; }
-      .text-primary { color: hsl(${colors.primary[actualTheme]}) !important; }
-      .text-primary-foreground { color: hsl(${colors['primary-foreground'][actualTheme]}) !important; }
-      .text-secondary-foreground { color: hsl(${colors['secondary-foreground'][actualTheme]}) !important; }
-      .text-muted-foreground { color: hsl(${colors['muted-foreground'][actualTheme]}) !important; }
+      .text-foreground { color: rgb(${colors.foreground[actualTheme]}) !important; }
+      .text-primary { color: rgb(${colors.primary[actualTheme]}) !important; }
+      .text-primary-foreground { color: rgb(${colors['primary-foreground'][actualTheme]}) !important; }
+      .text-secondary-foreground { color: rgb(${colors['secondary-foreground'][actualTheme]}) !important; }
+      .text-muted-foreground { color: rgb(${colors['muted-foreground'][actualTheme]}) !important; }
       
-      .border-border { border-color: hsl(${colors.border[actualTheme]}) !important; }
-      .border-input { border-color: hsl(${colors.input[actualTheme]}) !important; }
+      .border-border { border-color: rgb(${colors.border[actualTheme]}) !important; }
+      .border-input { border-color: rgb(${colors.input[actualTheme]}) !important; }
     `);
 
     style.textContent = cssRules.join('\n\n');
