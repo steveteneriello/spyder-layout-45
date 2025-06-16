@@ -14,6 +14,7 @@ const SavedListsButton: React.FC<SavedListsButtonProps> = ({ onListSelect }) => 
   const [savedLists, setSavedLists] = useState<any[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingList, setIsLoadingList] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -45,9 +46,42 @@ const SavedListsButton: React.FC<SavedListsButtonProps> = ({ onListSelect }) => 
     }
   };
 
-  const handleListClick = (list: any) => {
-    onListSelect(list);
-    setIsOpen(false);
+  const handleListClick = async (list: any) => {
+    setIsLoadingList(true);
+    try {
+      console.log('Loading saved list:', list);
+      
+      // Fetch the list items to get the actual location data
+      const { data: listItems, error } = await supabase
+        .from('location_list_items')
+        .select('*')
+        .eq('list_id', list.id);
+
+      if (error) throw error;
+
+      // Pass the list with its items to the parent component
+      const listWithItems = {
+        ...list,
+        items: listItems || []
+      };
+      
+      onListSelect(listWithItems);
+      setIsOpen(false);
+      
+      toast({
+        title: "List Loaded",
+        description: `Loaded "${list.name}" with ${listItems?.length || 0} locations`,
+      });
+    } catch (error) {
+      console.error('Error loading list:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load the selected list",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingList(false);
+    }
   };
 
   return (
@@ -56,9 +90,10 @@ const SavedListsButton: React.FC<SavedListsButtonProps> = ({ onListSelect }) => 
         <Button 
           variant="outline" 
           className="bg-white border-slate-300 text-slate-700 hover:bg-slate-50"
+          disabled={isLoadingList}
         >
           <List className="h-4 w-4 mr-2" />
-          Saved Lists
+          {isLoadingList ? "Loading..." : "Saved Lists"}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-80 bg-white border border-slate-200 shadow-lg" align="start">

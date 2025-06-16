@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { MapPin, Building2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -101,13 +100,76 @@ const LocationBuilder = () => {
     setSelectedStates(newSelected);
   };
 
-  const handleListSelect = (list: any) => {
-    // TODO: Implement loading a saved list
-    console.log('Loading saved list:', list);
-    toast({
-      title: "List Selected",
-      description: `Loading ${list.name}...`,
-    });
+  const handleListSelect = async (listWithItems: any) => {
+    console.log('Loading saved list with items:', listWithItems);
+    
+    try {
+      // Set the center coordinates from the list
+      const newCenterCoords = {
+        lat: listWithItems.center_latitude,
+        lng: listWithItems.center_longitude
+      };
+      setCenterCoords(newCenterCoords);
+      
+      // If the list has items, process them
+      if (listWithItems.items && listWithItems.items.length > 0) {
+        // Convert list items to the format expected by the components
+        const cities = listWithItems.items.map((item: any, index: number) => ({
+          id: item.id || `${item.city}-${index}`,
+          city: item.city,
+          state_name: item.state_name,
+          county_name: item.county_name,
+          postal_code: item.postal_code,
+          latitude: item.latitude || newCenterCoords.lat + (Math.random() - 0.5) * 0.1,
+          longitude: item.longitude || newCenterCoords.lng + (Math.random() - 0.5) * 0.1,
+          population: item.population || Math.floor(Math.random() * 50000) + 5000,
+          income_household_median: item.income_household_median || Math.floor(Math.random() * 40000) + 40000
+        }));
+        
+        setSelectedCities(cities);
+        
+        // Create mock search results based on the counties in the list
+        const uniqueCounties = Array.from(new Set(cities.map(city => city.county_name)))
+          .map((countyName, index) => {
+            const firstCityInCounty = cities.find(city => city.county_name === countyName);
+            return {
+              county_name: countyName,
+              state_name: firstCityInCounty?.state_name || '',
+              center_lat: firstCityInCounty?.latitude || newCenterCoords.lat,
+              center_lng: firstCityInCounty?.longitude || newCenterCoords.lng,
+              total_population: cities
+                .filter(city => city.county_name === countyName)
+                .reduce((sum, city) => sum + (city.population || 0), 0),
+              city_count: cities.filter(city => city.county_name === countyName).length
+            };
+          });
+        
+        setSearchResults(uniqueCounties);
+        
+        // Select the counties that have cities in the list
+        const countyIds = new Set(uniqueCounties.map((county, index) => 
+          `${county.county_name}-${county.state_name}-${index}`
+        ));
+        setSelectedCounties(countyIds);
+        
+        // Set selected states
+        const states = new Set(cities.map(city => city.state_name));
+        setSelectedStates(states);
+      }
+      
+      toast({
+        title: "List Loaded",
+        description: `Successfully loaded "${listWithItems.name}"`,
+      });
+      
+    } catch (error) {
+      console.error('Error processing saved list:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load the saved list",
+        variant: "destructive",
+      });
+    }
   };
 
   const menuItems = [
