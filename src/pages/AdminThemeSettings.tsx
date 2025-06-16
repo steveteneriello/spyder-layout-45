@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Settings, Monitor, Sun, Moon, Palette, RotateCcw, Upload, Type, Image } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -191,6 +191,8 @@ const AdminThemeSettings = () => {
 
   const handleThemeChange = (mode: ThemeMode) => {
     setThemeMode(mode);
+    // Reapply colors after theme change to ensure they work with the new theme
+    setTimeout(() => applyColors(), 100);
   };
 
   const handleColorChange = (colorKey: string, mode: 'light' | 'dark', value: string) => {
@@ -201,12 +203,6 @@ const AdminThemeSettings = () => {
         [mode]: value
       }
     }));
-    
-    // Apply the color change immediately
-    const rgbValue = hexToRgb(value);
-    if (rgbValue) {
-      document.documentElement.style.setProperty(`--${colorKey}`, rgbValue);
-    }
   };
 
   const handleHeaderSettingChange = (mode: 'light' | 'dark', key: string, value: string) => {
@@ -254,44 +250,94 @@ const AdminThemeSettings = () => {
 
   const resetColors = () => {
     setColors(defaultColors);
-    // Reset CSS variables to defaults
-    Object.entries(defaultColors).forEach(([key, values]) => {
-      const currentTheme = actualTheme;
-      const rgbValue = values[currentTheme];
-      document.documentElement.style.setProperty(`--${key}`, rgbValue);
-    });
+    applyColors();
   };
 
   const resetHeaderSettings = () => {
     setHeaderSettings(defaultHeaderSettings);
+    applyHeaderSettings();
   };
 
   const resetTypography = () => {
     setTypographySettings(defaultTypographySettings);
+    applyTypographySettings();
   };
 
   const applyColors = () => {
+    console.log('Applying colors for theme:', actualTheme);
     Object.entries(colors).forEach(([key, values]) => {
-      const currentTheme = actualTheme;
-      document.documentElement.style.setProperty(`--${key}`, values[currentTheme]);
+      const colorValue = values[actualTheme];
+      const cssVariable = `--${key}`;
+      document.documentElement.style.setProperty(cssVariable, colorValue);
+      console.log(`Set ${cssVariable} to ${colorValue}`);
     });
   };
 
-  const applyAllSettings = () => {
-    applyColors();
-    // Apply typography settings
+  const applyHeaderSettings = () => {
+    const currentHeaderSettings = headerSettings[actualTheme];
+    console.log('Applying header settings:', currentHeaderSettings);
+    
+    // Convert hex to RGB for CSS variables
+    const bgRgb = hexToRgb(currentHeaderSettings.backgroundColor);
+    const textRgb = hexToRgb(currentHeaderSettings.textColor);
+    const borderRgb = hexToRgb(currentHeaderSettings.borderColor);
+    
+    if (bgRgb) {
+      document.documentElement.style.setProperty('--header-background', bgRgb);
+    }
+    if (textRgb) {
+      document.documentElement.style.setProperty('--header-text', textRgb);
+    }
+    if (borderRgb) {
+      document.documentElement.style.setProperty('--header-border', borderRgb);
+    }
+    
+    // Store logo settings for components to access
+    document.documentElement.style.setProperty('--header-logo-type', currentHeaderSettings.logoType);
+    document.documentElement.style.setProperty('--header-logo-text', currentHeaderSettings.logoText);
+    document.documentElement.style.setProperty('--header-logo-image', currentHeaderSettings.logoImage);
+  };
+
+  const applyTypographySettings = () => {
+    console.log('Applying typography settings:', typographySettings);
+    
+    // Apply font families
     document.documentElement.style.setProperty('--heading-font', typographySettings.headingFont);
     document.documentElement.style.setProperty('--body-font', typographySettings.bodyFont);
+    
+    // Apply page title styles
     document.documentElement.style.setProperty('--page-title-size', typographySettings.pageTitleSize);
     document.documentElement.style.setProperty('--page-title-weight', typographySettings.pageTitleWeight);
-    document.documentElement.style.setProperty('--page-title-color', typographySettings.pageTitleColor[actualTheme]);
     
-    // Apply header settings
-    const currentHeaderSettings = headerSettings[actualTheme];
-    document.documentElement.style.setProperty('--header-bg', currentHeaderSettings.backgroundColor);
-    document.documentElement.style.setProperty('--header-text', currentHeaderSettings.textColor);
-    document.documentElement.style.setProperty('--header-border', currentHeaderSettings.borderColor);
+    const titleColorRgb = hexToRgb(typographySettings.pageTitleColor[actualTheme]);
+    if (titleColorRgb) {
+      document.documentElement.style.setProperty('--page-title-color', titleColorRgb);
+    }
   };
+
+  const applyAllSettings = () => {
+    console.log('Applying all settings...');
+    applyColors();
+    applyHeaderSettings();
+    applyTypographySettings();
+    
+    // Show confirmation
+    const event = new CustomEvent('toast', {
+      detail: {
+        title: 'Settings Applied',
+        description: 'All theme settings have been applied successfully',
+        type: 'success'
+      }
+    });
+    window.dispatchEvent(event);
+  };
+
+  // Apply settings when theme changes
+  useEffect(() => {
+    applyColors();
+    applyHeaderSettings();
+    applyTypographySettings();
+  }, [actualTheme]);
 
   const renderThemeSection = () => (
     <Card>
