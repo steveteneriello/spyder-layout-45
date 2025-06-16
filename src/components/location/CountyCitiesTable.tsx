@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -41,7 +40,7 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
   // Filter states
   const [populationRange, setPopulationRange] = useState<[number, number]>([0, 1000000]);
   const [incomeRange, setIncomeRange] = useState<[number, number]>([0, 200000]);
-  const [homeValueRange, setHomeValueRange] = useState<[number, number]>([0, 1000000]);
+  const [homeValueRange, setHomeValueRange] = useState<[number, number]>([0, 1250000]);
   
   const { toast } = useToast();
 
@@ -115,7 +114,7 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
   const clearFilters = () => {
     setPopulationRange([0, 1000000]);
     setIncomeRange([0, 200000]);
-    setHomeValueRange([0, 1000000]);
+    setHomeValueRange([0, 1250000]);
   };
 
   const fetchCitiesForCounties = async () => {

@@ -40,7 +40,7 @@ const CityFilters: React.FC<CityFiltersProps> = ({
 
   const formatCurrency = (value: number) => {
     if (value >= 1000000) {
-      return '$' + (value / 1000000).toFixed(1) + 'M';
+      return '$' + (value / 1000000).toFixed(2) + 'M';
     } else if (value >= 1000) {
       return '$' + (value / 1000).toFixed(0) + 'K';
     }
@@ -118,7 +118,7 @@ const CityFilters: React.FC<CityFiltersProps> = ({
               value={homeValueRange}
               onValueChange={(value) => onHomeValueChange(value as [number, number])}
               min={0}
-              max={1000000}
+              max={1250000}
               step={5000}
               className="w-full"
             />
