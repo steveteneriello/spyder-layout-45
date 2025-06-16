@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Search, MapPin, Plus, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -260,7 +259,7 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
           return cleanCounty;
         })
         .sort((a, b) => a.distance_miles - b.distance_miles) // Sort by distance, closest first
-        .slice(0, 50); // Limit to 50 results for performance
+        ;
 
       console.log('Final search results:', results.length, 'counties found');
       console.log('Sample counties:', results.slice(0, 3).map(c => ({ name: c.county_name, state: c.state_name, distance: c.distance_miles, cities: c.city_count })));
