@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,7 +27,7 @@ const CountyLocationResults: React.FC<CountyLocationResultsProps> = ({
 }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [selectedCounty, setSelectedCounty] = useState(null);
+  const [selectedCountyId, setSelectedCountyId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const formatCurrency = (value: number | null | undefined) => {
@@ -199,13 +198,15 @@ const CountyLocationResults: React.FC<CountyLocationResultsProps> = ({
   };
 
   const handleCountyClick = (county: any) => {
-    setSelectedCounty(county);
+    // Find the county ID from the location_data table
+    const countyId = county.id || `${county.county_name}-${county.state_name}`;
+    setSelectedCountyId(countyId);
     setIsDrawerOpen(true);
   };
 
   const handleDrawerClose = () => {
     setIsDrawerOpen(false);
-    setSelectedCounty(null);
+    setSelectedCountyId(null);
   };
 
   const handleCheckboxChange = (countyId: string, checked: boolean) => {
@@ -325,7 +326,7 @@ const CountyLocationResults: React.FC<CountyLocationResultsProps> = ({
       <CountyDemographicsDrawer 
         isOpen={isDrawerOpen}
         onClose={handleDrawerClose}
-        county={selectedCounty}
+        countyId={selectedCountyId}
       />
     </div>
   );
