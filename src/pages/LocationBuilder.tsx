@@ -176,6 +176,7 @@ const LocationBuilder = () => {
               onListSaved={handleListSaved}
               selectedCounties={selectedCounties}
               onCountySelectionChange={handleCountySelectionChange}
+              selectedCities={selectedCities}
             />
           </div>
           

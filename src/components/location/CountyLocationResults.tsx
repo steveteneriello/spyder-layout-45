@@ -15,6 +15,7 @@ interface CountyLocationResultsProps {
   onListSaved: () => void;
   selectedCounties: Set<string>;
   onCountySelectionChange: (countyId: string, checked: boolean) => void;
+  selectedCities?: any[];
 }
 
 const CountyLocationResults: React.FC<CountyLocationResultsProps> = ({
@@ -22,7 +23,8 @@ const CountyLocationResults: React.FC<CountyLocationResultsProps> = ({
   centerCoords,
   onListSaved,
   selectedCounties,
-  onCountySelectionChange
+  onCountySelectionChange,
+  selectedCities = []
 }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -67,21 +69,21 @@ const CountyLocationResults: React.FC<CountyLocationResultsProps> = ({
         return;
       }
 
-      const selectedCountyData = searchResults.filter((county) => {
-        const countyId = `${county.county_name}-${county.state_name}`;
+      const selectedCountyData = searchResults.filter((county, index) => {
+        const countyId = `${county.county_name}-${county.state_name}-${index}`;
         return selectedCounties.has(countyId);
       });
 
-      if (selectedCountyData.length === 0) {
+      if (selectedCountyData.length === 0 && selectedCities.length === 0) {
         toast({
-          title: "No counties selected",
-          description: "Please select at least one county to save.",
+          title: "No locations selected",
+          description: "Please select at least one county or city to save.",
           variant: "destructive",
         });
         return;
       }
 
-      const listName = prompt("Enter a name for your list:", "My County List");
+      const listName = prompt("Enter a name for your list:", "My Location List");
       if (!listName) {
         toast({
           title: "List name required",
@@ -91,36 +93,109 @@ const CountyLocationResults: React.FC<CountyLocationResultsProps> = ({
         return;
       }
 
-      const { data, error } = await supabase
+      // Calculate center coordinates - use first county if available, otherwise first city
+      let centerLat, centerLng, centerCity;
+      if (selectedCountyData.length > 0) {
+        centerLat = selectedCountyData[0].center_lat;
+        centerLng = selectedCountyData[0].center_lng;
+        centerCity = selectedCountyData[0].county_name;
+      } else if (selectedCities.length > 0) {
+        centerLat = selectedCities[0].latitude;
+        centerLng = selectedCities[0].longitude;
+        centerCity = selectedCities[0].city;
+      } else {
+        centerLat = centerCoords?.lat || 39.8283;
+        centerLng = centerCoords?.lng || -98.5795;
+        centerCity = "United States";
+      }
+
+      // Create the location list
+      const { data: listData, error: listError } = await supabase
         .from('location_lists')
         .insert([
           {
             name: listName,
-            description: `List of ${selectedCountyData.length} counties`,
-            location_count: selectedCountyData.length,
-            center_city: selectedCountyData[0].county_name,
-            center_latitude: selectedCountyData[0].center_lat,
-            center_longitude: selectedCountyData[0].center_lng,
+            description: `List with ${selectedCountyData.length} counties and ${selectedCities.length} cities`,
+            location_count: selectedCountyData.length + selectedCities.length,
+            center_city: centerCity,
+            center_latitude: centerLat,
+            center_longitude: centerLng,
             radius_miles: 50,
-            filters: {},
+            filters: {
+              counties: selectedCountyData.length,
+              cities: selectedCities.length
+            },
             created_by: user.id,
             last_accessed_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           },
-        ]);
+        ])
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (listError) throw listError;
+
+      console.log('Created list:', listData);
+
+      // Prepare items to insert
+      const itemsToInsert = [];
+
+      // Add counties to location_list_items
+      selectedCountyData.forEach((county) => {
+        itemsToInsert.push({
+          list_id: listData.id,
+          location_data_id: county.id || crypto.randomUUID(), // Generate UUID if not present
+          city: county.county_name,
+          state_name: county.state_name,
+          county_name: county.county_name,
+          postal_code: null,
+          latitude: county.center_lat,
+          longitude: county.center_lng,
+          distance_miles: county.distance_miles || null,
+          country: 'United States'
+        });
+      });
+
+      // Add cities to location_list_items
+      selectedCities.forEach((city) => {
+        itemsToInsert.push({
+          list_id: listData.id,
+          location_data_id: city.id || crypto.randomUUID(), // Generate UUID if not present
+          city: city.city,
+          state_name: city.state_name,
+          county_name: city.county_name,
+          postal_code: city.postal_code || null,
+          latitude: city.latitude,
+          longitude: city.longitude,
+          distance_miles: null,
+          country: 'United States'
+        });
+      });
+
+      console.log('Items to insert:', itemsToInsert);
+
+      // Insert all items
+      if (itemsToInsert.length > 0) {
+        const { error: itemsError } = await supabase
+          .from('location_list_items')
+          .insert(itemsToInsert);
+
+        if (itemsError) {
+          console.error('Error inserting items:', itemsError);
+          throw itemsError;
+        }
+      }
 
       toast({
         title: "Success",
-        description: "County list saved successfully!",
+        description: `Location list "${listName}" saved successfully with ${itemsToInsert.length} locations!`,
       });
       onListSaved();
     } catch (error: any) {
-      console.error("Error saving county list:", error);
+      console.error("Error saving location list:", error);
       toast({
         title: "Error",
-        description: "Failed to save county list. Please try again.",
+        description: `Failed to save location list: ${error.message}`,
         variant: "destructive",
       });
     } finally {
@@ -142,6 +217,8 @@ const CountyLocationResults: React.FC<CountyLocationResultsProps> = ({
     onCountySelectionChange(countyId, checked);
   };
 
+  const totalSelectedItems = selectedCounties.size + selectedCities.length;
+
   return (
     <div className="h-full flex flex-col bg-white rounded-lg overflow-hidden">
       {/* Modernized header with gradient */}
@@ -160,10 +237,10 @@ const CountyLocationResults: React.FC<CountyLocationResultsProps> = ({
           size="sm" 
           className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition border-0 shadow-sm hover:shadow-md hover:scale-[1.01]"
           onClick={handleSaveList}
-          disabled={isSaving || selectedCounties.size === 0}
+          disabled={isSaving || totalSelectedItems === 0}
         >
           <Save className="h-4 w-4 mr-2" />
-          Save List
+          Save List ({totalSelectedItems})
         </Button>
       </div>
 
@@ -176,8 +253,8 @@ const CountyLocationResults: React.FC<CountyLocationResultsProps> = ({
           </div>
         ) : (
           <div className="space-y-3">
-            {searchResults.map((county) => {
-              const countyId = `${county.county_name}-${county.state_name}`;
+            {searchResults.map((county, index) => {
+              const countyId = `${county.county_name}-${county.state_name}-${index}`;
               const isSelected = selectedCounties.has(countyId);
               
               return (
