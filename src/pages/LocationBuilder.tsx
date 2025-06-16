@@ -1,8 +1,7 @@
-
 import React from 'react';
 import SidebarLayout from '@/components/layout/SidebarLayout';
 import { SideCategory } from '@/components/navigation/SideCategory';
-import CountyLocationResults from '@/components/location/CountyLocationResults';
+import { CountyLocationResults } from '@/components/location/CountyLocationResults';
 
 const allMenuItems = [
   { title: 'Dashboard', path: '/', icon: 'Home', section: 'Main' },
@@ -15,6 +14,15 @@ const allMenuItems = [
 ];
 
 export default function LocationBuilder() {
+  // Mock props for CountyLocationResults to satisfy the component requirements
+  const mockProps = {
+    searchResults: [],
+    centerCoords: { lat: 0, lng: 0 },
+    onListSaved: () => {},
+    selectedCounties: [],
+    onCountySelectionChange: () => {}
+  };
+
   return (
     <SidebarLayout
       nav={
@@ -32,9 +40,9 @@ export default function LocationBuilder() {
       menuItems={allMenuItems}
     >
       <div className="p-6 bg-background text-foreground min-h-screen">
-        <h1 className="text-2xl font-bold mb-6 text-foreground">Location Builder</h1>
-        <div className="bg-card border border-border p-6 rounded-lg">
-          <CountyLocationResults />
+        <h1 className="text-2xl font-bold mb-6">Location Builder</h1>
+        <div className="bg-card border p-6 rounded-lg">
+          <CountyLocationResults {...mockProps} />
         </div>
       </div>
     </SidebarLayout>

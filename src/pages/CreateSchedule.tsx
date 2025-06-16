@@ -1,8 +1,7 @@
-
 import React from 'react';
 import SidebarLayout from '@/components/layout/SidebarLayout';
 import { SideCategory } from '@/components/navigation/SideCategory';
-import CreateOxylabsScheduleModal from '@/components/scheduler/CreateOxylabsScheduleModal';
+import { CreateOxylabsScheduleModal } from '@/components/scheduler/CreateOxylabsScheduleModal';
 
 const allMenuItems = [
   { title: 'Dashboard', path: '/', icon: 'Home', section: 'Main' },
@@ -32,8 +31,8 @@ export default function CreateSchedule() {
       menuItems={allMenuItems}
     >
       <div className="p-6 bg-background text-foreground min-h-screen">
-        <h1 className="text-2xl font-bold mb-6 text-foreground">Create New Schedule</h1>
-        <div className="bg-card border border-border p-6 rounded-lg">
+        <h1 className="text-2xl font-bold mb-6">Create New Schedule</h1>
+        <div className="bg-card border p-6 rounded-lg">
           <CreateOxylabsScheduleModal />
         </div>
       </div>

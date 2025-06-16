@@ -1,8 +1,7 @@
-
 import React from 'react';
 import SidebarLayout from '@/components/layout/SidebarLayout';
 import { SideCategory } from '@/components/navigation/SideCategory';
-import CampaignDashboard from '@/components/campaigns/CampaignDashboard';
+import { CampaignDashboard } from '@/components/campaigns/CampaignDashboard';
 
 const allMenuItems = [
   { title: 'Dashboard', path: '/', icon: 'Home', section: 'Main' },
