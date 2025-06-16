@@ -4,11 +4,14 @@ import SidebarLayout from '@/components/layout/SidebarLayout';
 import { SideCategory } from '@/components/navigation/SideCategory';
 import OxylabsSchedulerDashboard from '@/components/scheduler/OxylabsSchedulerDashboard';
 
-const menuItems = [
+const allMenuItems = [
   { title: 'Dashboard', path: '/', icon: 'Home', section: 'Main' },
   { title: 'Campaigns', path: '/campaigns', icon: 'Target', section: 'Main' },
-  { title: 'Scheduler', path: '/scheduler', icon: 'Settings', section: 'Main' },
-  { title: 'Theme', path: '/theme', icon: 'Settings', section: 'Settings' }
+  { title: 'Scheduler', path: '/scheduler', icon: 'Calendar', section: 'Tools' },
+  { title: 'Create Schedule', path: '/scheduler/create', icon: 'Plus', section: 'Tools' },
+  { title: 'Location Builder', path: '/location-builder', icon: 'MapPin', section: 'Tools' },
+  { title: 'Theme', path: '/theme', icon: 'Palette', section: 'Settings' },
+  { title: 'Admin Theme', path: '/admin/theme', icon: 'Settings', section: 'Settings' },
 ];
 
 export default function SchedulerDashboard() {
@@ -16,16 +19,17 @@ export default function SchedulerDashboard() {
     <SidebarLayout
       nav={
         <div className="flex items-center justify-between w-full px-4">
-          {/* Logo area - title moved to main content */}
+          <h1 className="text-lg font-semibold text-white">Scheduler Dashboard</h1>
         </div>
       }
       category={
-        <SideCategory 
-          section="Main" 
-          items={menuItems.filter(item => item.section === 'Main')} 
-        />
+        <div className="space-y-4">
+          <SideCategory section="Main" items={allMenuItems.filter(item => item.section === 'Main')} />
+          <SideCategory section="Tools" items={allMenuItems.filter(item => item.section === 'Tools')} />
+          <SideCategory section="Settings" items={allMenuItems.filter(item => item.section === 'Settings')} />
+        </div>
       }
-      menuItems={menuItems}
+      menuItems={allMenuItems}
     >
       <div className="p-6">
         <h1 className="text-2xl font-bold mb-6">Scheduler Dashboard</h1>

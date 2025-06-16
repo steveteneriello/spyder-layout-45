@@ -14,7 +14,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Home, User, Settings, FileText, BarChart, Target } from 'lucide-react';
+import { Home, User, Settings, FileText, BarChart, Target, Calendar, Plus, MapPin, Palette } from 'lucide-react';
 
 interface MenuItem {
   title: string;
@@ -35,6 +35,10 @@ const getIcon = (iconName: string) => {
     FileText,
     BarChart,
     Target,
+    Calendar,
+    Plus,
+    MapPin,
+    Palette,
   };
   return iconMap[iconName] || Home;
 };

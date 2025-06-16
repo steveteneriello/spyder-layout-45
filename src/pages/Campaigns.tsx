@@ -20,13 +20,14 @@ const mockCompanies = [
   { company_id: '3', name: 'Digital Innovations', domain: 'digitalinnov.com' },
 ];
 
-const mockMenuItems = [
-  { title: 'Dashboard', path: '/dashboard', icon: 'BarChart', section: 'Main' },
-  { title: 'Projects', path: '/projects', icon: 'FileText', section: 'Main' },
-  { title: 'Team', path: '/team', icon: 'User', section: 'Main' },
-  { title: 'Campaigns', path: '/campaigns', icon: 'Target', section: 'Marketing' },
-  { title: 'Settings', path: '/settings', icon: 'Settings', section: 'Configuration' },
-  { title: 'Profile', path: '/profile', icon: 'User', section: 'Configuration' },
+const allMenuItems = [
+  { title: 'Dashboard', path: '/', icon: 'Home', section: 'Main' },
+  { title: 'Campaigns', path: '/campaigns', icon: 'Target', section: 'Main' },
+  { title: 'Scheduler', path: '/scheduler', icon: 'Calendar', section: 'Tools' },
+  { title: 'Create Schedule', path: '/scheduler/create', icon: 'Plus', section: 'Tools' },
+  { title: 'Location Builder', path: '/location-builder', icon: 'MapPin', section: 'Tools' },
+  { title: 'Theme', path: '/theme', icon: 'Palette', section: 'Settings' },
+  { title: 'Admin Theme', path: '/admin/theme', icon: 'Settings', section: 'Settings' },
 ];
 
 const Campaigns = () => {
@@ -70,9 +71,9 @@ const Campaigns = () => {
 
   const category = (
     <div className="space-y-4">
-      <SideCategory section="Main" items={mockMenuItems.filter(item => item.section === 'Main')} />
-      <SideCategory section="Marketing" items={mockMenuItems.filter(item => item.section === 'Marketing')} />
-      <SideCategory section="Configuration" items={mockMenuItems.filter(item => item.section === 'Configuration')} />
+      <SideCategory section="Main" items={allMenuItems.filter(item => item.section === 'Main')} />
+      <SideCategory section="Tools" items={allMenuItems.filter(item => item.section === 'Tools')} />
+      <SideCategory section="Settings" items={allMenuItems.filter(item => item.section === 'Settings')} />
     </div>
   );
 
@@ -82,7 +83,7 @@ const Campaigns = () => {
       nav={nav}
       category={category}
       footer={footer}
-      menuItems={mockMenuItems}
+      menuItems={allMenuItems}
     >
       <div className="min-h-screen p-6 campaign-page-bg">
         <CampaignDesigner />

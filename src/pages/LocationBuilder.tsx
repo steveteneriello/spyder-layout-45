@@ -4,6 +4,7 @@ import { MapPin, Building2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import SidebarLayout from "@/components/layout/SidebarLayout";
+import { SideCategory } from '@/components/navigation/SideCategory';
 import CountyLocationFilters from "@/components/location/CountyLocationFilters";
 import CountyLocationResults from "@/components/location/CountyLocationResults";
 import CountyLocationMap from "@/components/location/CountyLocationMap";
@@ -24,6 +25,16 @@ interface CountyLocationList {
   last_accessed_at: string;
   updated_at: string;
 }
+
+const allMenuItems = [
+  { title: 'Dashboard', path: '/', icon: 'Home', section: 'Main' },
+  { title: 'Campaigns', path: '/campaigns', icon: 'Target', section: 'Main' },
+  { title: 'Scheduler', path: '/scheduler', icon: 'Calendar', section: 'Tools' },
+  { title: 'Create Schedule', path: '/scheduler/create', icon: 'Plus', section: 'Tools' },
+  { title: 'Location Builder', path: '/location-builder', icon: 'MapPin', section: 'Tools' },
+  { title: 'Theme', path: '/theme', icon: 'Palette', section: 'Settings' },
+  { title: 'Admin Theme', path: '/admin/theme', icon: 'Settings', section: 'Settings' },
+];
 
 const LocationBuilder = () => {
   const [savedLists, setSavedLists] = useState<CountyLocationList[]>([]);
@@ -101,14 +112,6 @@ const LocationBuilder = () => {
     setSelectedStates(newSelected);
   };
 
-  const menuItems = [
-    { title: "Dashboard", path: "/", icon: "home", section: "Main" },
-    { title: "Campaigns", path: "/campaigns", icon: "megaphone", section: "Tools" },
-    { title: "Scheduler", path: "/scheduler", icon: "calendar", section: "Tools" },
-    { title: "Location Builder", path: "/location-builder", icon: "map-pin", section: "Tools" },
-    { title: "Theme", path: "/theme", icon: "palette", section: "Settings" },
-  ];
-
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -122,7 +125,7 @@ const LocationBuilder = () => {
 
   return (
     <SidebarLayout
-      menuItems={menuItems}
+      menuItems={allMenuItems}
       nav={
         <div className="flex items-center justify-between w-full px-6">
           <div className="flex items-center space-x-3">
@@ -134,9 +137,10 @@ const LocationBuilder = () => {
         </div>
       }
       category={
-        <div className="flex items-center space-x-2 text-white/80 text-sm">
-          <Building2 className="h-4 w-4" />
-          <span>Location Tools</span>
+        <div className="space-y-4">
+          <SideCategory section="Main" items={allMenuItems.filter(item => item.section === 'Main')} />
+          <SideCategory section="Tools" items={allMenuItems.filter(item => item.section === 'Tools')} />
+          <SideCategory section="Settings" items={allMenuItems.filter(item => item.section === 'Settings')} />
         </div>
       }
       footer={

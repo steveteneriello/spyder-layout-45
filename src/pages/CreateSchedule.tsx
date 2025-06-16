@@ -43,6 +43,16 @@ const availableJobs: JobOption[] = [
   }
 ];
 
+const allMenuItems = [
+  { title: 'Dashboard', path: '/', icon: 'Home', section: 'Main' },
+  { title: 'Campaigns', path: '/campaigns', icon: 'Target', section: 'Main' },
+  { title: 'Scheduler', path: '/scheduler', icon: 'Calendar', section: 'Tools' },
+  { title: 'Create Schedule', path: '/scheduler/create', icon: 'Plus', section: 'Tools' },
+  { title: 'Location Builder', path: '/location-builder', icon: 'MapPin', section: 'Tools' },
+  { title: 'Theme', path: '/theme', icon: 'Palette', section: 'Settings' },
+  { title: 'Admin Theme', path: '/admin/theme', icon: 'Settings', section: 'Settings' },
+];
+
 function CreateSchedulePage() {
   const [selectedJob, setSelectedJob] = useState<JobOption | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -178,14 +188,6 @@ function CreateSchedulePage() {
   );
 }
 
-const menuItems = [
-  { title: 'Dashboard', path: '/', icon: 'Home', section: 'Main' },
-  { title: 'Campaigns', path: '/campaigns', icon: 'Target', section: 'Main' },
-  { title: 'Scheduler', path: '/scheduler', icon: 'Calendar', section: 'Main' },
-  { title: 'Create Schedule', path: '/create-schedule', icon: 'Plus', section: 'Main' },
-  { title: 'Theme', path: '/theme', icon: 'Settings', section: 'Settings' }
-];
-
 export default function CreateSchedule() {
   return (
     <SidebarLayout
@@ -195,12 +197,13 @@ export default function CreateSchedule() {
         </div>
       }
       category={
-        <SideCategory 
-          section="Main" 
-          items={menuItems.filter(item => item.section === 'Main')} 
-        />
+        <div className="space-y-4">
+          <SideCategory section="Main" items={allMenuItems.filter(item => item.section === 'Main')} />
+          <SideCategory section="Tools" items={allMenuItems.filter(item => item.section === 'Tools')} />
+          <SideCategory section="Settings" items={allMenuItems.filter(item => item.section === 'Settings')} />
+        </div>
       }
-      menuItems={menuItems}
+      menuItems={allMenuItems}
     >
       <CreateSchedulePage />
     </SidebarLayout>
