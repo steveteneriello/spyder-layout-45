@@ -121,7 +121,7 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
 
       console.log('Bounding box with', bufferMultiplier, 'x buffer:', { minLat, maxLat, minLng, maxLng });
 
-      // Build query with state and timezone filters
+      // Build query with state and timezone filters - use centroid coordinates for better county representation
       let query = supabase
         .from('location_data')
         .select(`
@@ -130,6 +130,8 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
           city,
           latitude,
           longitude,
+          centroid_latitude,
+          centroid_longitude,
           population,
           income_household_median,
           age_median,
@@ -142,12 +144,12 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
           timezone
         `)
         .not('county_name', 'is', null)
-        .not('latitude', 'is', null)
-        .not('longitude', 'is', null)
-        .gte('latitude', minLat)
-        .lte('latitude', maxLat)
-        .gte('longitude', minLng)
-        .lte('longitude', maxLng);
+        .not('centroid_latitude', 'is', null)
+        .not('centroid_longitude', 'is', null)
+        .gte('centroid_latitude', minLat)
+        .lte('centroid_latitude', maxLat)
+        .gte('centroid_longitude', minLng)
+        .lte('centroid_longitude', maxLng);
 
       // Apply state filter if selected
       if (selectedStates.length > 0) {
@@ -175,14 +177,19 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
         return;
       }
 
-      // Calculate distances for all locations and group by county
+      // Calculate distances for all locations and group by county using centroid coordinates
       const countyMap = new Map();
       let locationsWithinRadius = 0;
       
       locationData.forEach(location => {
-        // Ensure coordinates are numbers
-        const locationLat = typeof location.latitude === 'number' ? location.latitude : parseFloat(location.latitude);
-        const locationLng = typeof location.longitude === 'number' ? location.longitude : parseFloat(location.longitude);
+        // Use centroid coordinates for county distance calculation when available
+        const useCentroid = location.centroid_latitude && location.centroid_longitude;
+        const locationLat = useCentroid 
+          ? (typeof location.centroid_latitude === 'number' ? location.centroid_latitude : parseFloat(location.centroid_latitude))
+          : (typeof location.latitude === 'number' ? location.latitude : parseFloat(location.latitude));
+        const locationLng = useCentroid 
+          ? (typeof location.centroid_longitude === 'number' ? location.centroid_longitude : parseFloat(location.centroid_longitude))
+          : (typeof location.longitude === 'number' ? location.longitude : parseFloat(location.longitude));
         
         // Skip if coordinates are invalid
         if (isNaN(locationLat) || isNaN(locationLng)) {
@@ -213,13 +220,16 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
           };
 
           if (!countyMap.has(countyKey)) {
-            // Create new county entry
+            // Create new county entry - use centroid for county center if available
+            const countyLat = useCentroid ? locationLat : (typeof location.latitude === 'number' ? location.latitude : parseFloat(location.latitude));
+            const countyLng = useCentroid ? locationLng : (typeof location.longitude === 'number' ? location.longitude : parseFloat(location.longitude));
+            
             countyMap.set(countyKey, {
               id: countyKey,
               county_name: location.county_name,
               state_name: location.state_name,
-              center_lat: locationLat,
-              center_lng: locationLng,
+              center_lat: countyLat,
+              center_lng: countyLng,
               distance_miles: Math.round(distance * 10) / 10,
               total_population: parseNumber(location.population) || 0,
               avg_income_household_median: parseNumber(location.income_household_median),
@@ -250,8 +260,11 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
             if (distance < county.min_distance) {
               county.min_distance = distance;
               county.distance_miles = Math.round(distance * 10) / 10;
-              county.center_lat = locationLat;
-              county.center_lng = locationLng;
+              // Update county center coordinates if this location is closer
+              if (useCentroid) {
+                county.center_lat = locationLat;
+                county.center_lng = locationLng;
+              }
             }
             
             // Update averages
