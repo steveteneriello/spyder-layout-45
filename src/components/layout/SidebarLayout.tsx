@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useGlobalTheme } from '@/contexts/GlobalThemeContext';
@@ -316,8 +317,8 @@ export default function SidebarLayout({
         </SidebarProvider>
       </div>
 
-      {/* FIXED: Add theme-aware CSS injection for sidebar styling */}
-      <style jsx>{`
+      {/* FIXED: Remove jsx prop from style tag */}
+      <style>{`
         .sidebar-layout {
           --sidebar-bg: ${actualTheme === 'dark' ? 'rgb(15, 23, 42)' : 'rgb(0, 0, 0)'};
           --sidebar-text: rgb(255, 255, 255);
