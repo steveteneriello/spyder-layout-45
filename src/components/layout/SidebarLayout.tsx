@@ -1,6 +1,6 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
+import { useGlobalTheme } from '@/contexts/GlobalThemeContext';
 import {
   Sidebar,
   SidebarContent,
@@ -11,7 +11,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Home } from 'lucide-react';
 
 interface MenuItem {
   title: string;
@@ -46,6 +46,7 @@ interface SidebarProps {
 
 function AppSidebar({ menuItems, category, footer }: SidebarProps) {
   const { open, toggleSidebar } = useSidebar();
+  const { colors, actualTheme } = useGlobalTheme();
 
   const sections = menuItems.reduce((acc, item) => {
     const section = item.section || 'Other';
@@ -56,9 +57,25 @@ function AppSidebar({ menuItems, category, footer }: SidebarProps) {
     return acc;
   }, {} as Record<string, MenuItem[]>);
 
+  // FIXED: Dynamic sidebar colors based on theme
+  const sidebarBg = colors['sidebar-background'] 
+    ? `rgb(${colors['sidebar-background'][actualTheme]})` 
+    : actualTheme === 'dark' ? 'rgb(15, 23, 42)' : 'rgb(0, 0, 0)';
+
+  const sidebarText = colors['sidebar-foreground']
+    ? `rgb(${colors['sidebar-foreground'][actualTheme]})`
+    : 'rgb(255, 255, 255)';
+
   return (
-    <Sidebar side="left" className="h-[calc(100vh-4rem)] mt-[4rem] !bg-black">
-      <SidebarContent className="overflow-hidden pt-6 !bg-black">
+    <Sidebar 
+      side="left" 
+      className="h-[calc(100vh-4rem)] mt-[4rem]"
+      style={{ backgroundColor: sidebarBg }}
+    >
+      <SidebarContent 
+        className="overflow-hidden pt-6"
+        style={{ backgroundColor: sidebarBg, color: sidebarText }}
+      >
         {Object.entries(sections).map(([section, items], index) => (
           <div key={index} className="mb-4">
             {category}
@@ -67,9 +84,10 @@ function AppSidebar({ menuItems, category, footer }: SidebarProps) {
       </SidebarContent>
 
       <SidebarFooter
-        className={`transition-all duration-200 ease-in-out overflow-hidden !bg-black ${
+        className={`transition-all duration-200 ease-in-out overflow-hidden ${
           open ? 'items-start' : 'items-center'
         }`}
+        style={{ backgroundColor: sidebarBg }}
       >
         <SidebarMenu className="w-full">
           <SidebarMenuItem>
@@ -79,14 +97,19 @@ function AppSidebar({ menuItems, category, footer }: SidebarProps) {
               }`}
             >
               <div
-                className="group p-2 rounded transition-all duration-200 ease-in-out bg-gray-800 text-white hover:text-white hover:opacity-75 cursor-pointer"
+                className="group p-2 rounded transition-all duration-200 ease-in-out cursor-pointer"
+                style={{ 
+                  backgroundColor: `rgb(${colors['sidebar-accent']?.[actualTheme] || '55, 65, 81'})`,
+                  color: sidebarText
+                }}
                 onClick={toggleSidebar}
               >
                 <ChevronRight
                   size={15}
-                  className={`transition-all duration-200 ease-in-out text-white ${
+                  className={`transition-all duration-200 ease-in-out ${
                     open ? 'rotate-180' : 'rotate-0'
                   }`}
+                  style={{ color: sidebarText }}
                 />
               </div>
             </div>
@@ -102,9 +125,22 @@ function AppSidebar({ menuItems, category, footer }: SidebarProps) {
 
 function Nav({ children }: NavProps) {
   const { open } = useSidebar();
+  const { colors, actualTheme } = useGlobalTheme();
+  
+  // FIXED: Dynamic header colors based on theme
+  const headerBg = colors['sidebar-background'] 
+    ? `rgb(${colors['sidebar-background'][actualTheme]})` 
+    : actualTheme === 'dark' ? 'rgb(15, 23, 42)' : 'rgb(0, 0, 0)';
+
+  const headerText = colors['sidebar-foreground']
+    ? `rgb(${colors['sidebar-foreground'][actualTheme]})`
+    : 'rgb(255, 255, 255)';
   
   return (
-    <div className="flex top-0 w-full min-h-[4rem] z-20 items-center fixed !bg-black text-white">
+    <div 
+      className="flex top-0 w-full min-h-[4rem] z-20 items-center fixed"
+      style={{ backgroundColor: headerBg, color: headerText }}
+    >
       {children}
     </div>
   );
@@ -124,6 +160,7 @@ export default function SidebarLayout({
   const [isPulsing, setIsPulsing] = useState(false);
   const animationRef = useRef<number | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const { actualTheme } = useGlobalTheme();
 
   useEffect(() => {
     return () => {
@@ -191,6 +228,25 @@ export default function SidebarLayout({
     }, 30);
   };
 
+  // FIXED: Enhanced default nav if none provided
+  const defaultNav = nav || (
+    <div className="flex items-center justify-between w-full px-4">
+      {/* FIXED: Proper logo/branding area instead of page names */}
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
+          <Home className="h-5 w-5 text-black" />
+        </div>
+        <div className="text-white">
+          <div className="font-bold text-sm">Your App Name</div>
+          <div className="text-xs opacity-75">Powered by Oxylabs</div>
+        </div>
+      </div>
+      <div className="text-white text-sm">
+        Theme: {actualTheme}
+      </div>
+    </div>
+  );
+
   return (
     <div
       ref={btnRef}
@@ -206,12 +262,13 @@ export default function SidebarLayout({
     >
       <div className={cn('h-full w-full', className)}>
         <SidebarProvider>
-          <Nav>{nav}</Nav>
+          <Nav>{defaultNav}</Nav>
           <div className="flex flex-1 mt-16 w-full h-[calc(100vh-4rem)]">
             <TooltipProvider delayDuration={300} skipDelayDuration={0}>
               <AppSidebar menuItems={menuItems} category={category} footer={footer} />
               <div className="flex flex-col flex-1 overflow-hidden relative h-full">
-                <main className="flex-1 overflow-y-auto p-0 campaign-page-bg h-full">
+                {/* FIXED: Use proper theme-aware background */}
+                <main className="flex-1 overflow-y-auto p-0 h-full bg-background">
                   <div className="main-body w-full h-full">{children}</div>
                 </main>
               </div>
@@ -219,6 +276,34 @@ export default function SidebarLayout({
           </div>
         </SidebarProvider>
       </div>
+
+      {/* FIXED: Add theme-aware CSS injection for sidebar styling */}
+      <style jsx>{`
+        .sidebar-layout {
+          --sidebar-bg: ${actualTheme === 'dark' ? 'rgb(15, 23, 42)' : 'rgb(0, 0, 0)'};
+          --sidebar-text: rgb(255, 255, 255);
+        }
+        
+        /* Override any hardcoded sidebar colors */
+        .sidebar-layout [data-sidebar] {
+          background-color: var(--sidebar-bg) !important;
+          color: var(--sidebar-text) !important;
+        }
+        
+        .sidebar-layout [data-sidebar] * {
+          color: var(--sidebar-text) !important;
+        }
+        
+        /* Fix toggle button colors */
+        .sidebar-layout .group {
+          background-color: rgba(55, 65, 81, 0.8) !important;
+        }
+        
+        .sidebar-layout .group:hover {
+          background-color: rgba(55, 65, 81, 1) !important;
+          opacity: 0.75;
+        }
+      `}</style>
     </div>
   );
 }
