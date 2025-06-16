@@ -1,10 +1,8 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { Wrapper, Status } from "@googlemaps/react-wrapper";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { MapPin, Building2 } from "lucide-react";
-import StateFilterTags from "./StateFilterTags";
 import SavedListsButton from "./SavedListsButton";
 
 interface CountyLocationMapProps {
@@ -356,7 +354,7 @@ const CountyLocationMap: React.FC<CountyLocationMapProps> = ({
     <div className="h-full w-full relative">
       {/* Top Controls Bar */}
       <div className="absolute top-4 left-4 right-4 z-10 flex items-center justify-between">
-        {/* Left side - Saved Lists Button - moved down slightly */}
+        {/* Left side - Saved Lists Button */}
         <div className="mt-12">
           <SavedListsButton onListSelect={onListSelect} />
         </div>
@@ -391,20 +389,6 @@ const CountyLocationMap: React.FC<CountyLocationMapProps> = ({
         {/* Right side - placeholder for future controls */}
         <div></div>
       </div>
-
-      {/* State Filter Tags - with toggle behavior */}
-      {searchResults.length > 0 && (
-        <div className="absolute top-20 left-4 right-4 z-10">
-          <div className="bg-white rounded-lg shadow-lg p-3">
-            <div className="text-xs font-semibold text-slate-800 mb-2">Filter by State (Toggle)</div>
-            <StateFilterTags
-              searchResults={searchResults}
-              selectedStates={selectedStates}
-              onStateToggle={onStateToggle}
-            />
-          </div>
-        </div>
-      )}
 
       {/* Map Legend */}
       {(showCounties || showCities) && (
