@@ -38,7 +38,7 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
   const [selectedCities, setSelectedCities] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [selectedCityForDrawer, setSelectedCityForDrawer] = useState<CityData | null>(null);
+  const [selectedCityForDrawer, setSelectedCityForDrawer] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   
   // Dynamic filter ranges
@@ -264,8 +264,8 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
     }
   };
 
-  const handleCityInfoClick = (city: CityData) => {
-    setSelectedCityForDrawer(city);
+  const handleCityInfoClick = (cityId: string) => {
+    setSelectedCityForDrawer(cityId);
     setDrawerOpen(true);
   };
 
@@ -386,7 +386,7 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleCityInfoClick(city)}
+                        onClick={() => handleCityInfoClick(city.id)}
                         className="h-6 w-6 p-0 hover:bg-blue-100"
                       >
                         <Info className="h-4 w-4 text-blue-600" />
@@ -443,7 +443,7 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
       <CityDemographicsDrawer
         isOpen={drawerOpen}
         onClose={handleDrawerClose}
-        city={selectedCityForDrawer}
+        cityId={selectedCityForDrawer}
       />
     </div>
   );

@@ -28,8 +28,9 @@ const CountyDemographicsDrawer: React.FC<CountyDemographicsDrawerProps> = ({ isO
     
     setIsLoading(true);
     try {
+      // Get county data by searching for a representative city in that county
       const { data, error } = await supabase
-        .from('county_demographics')
+        .from('location_data')
         .select('*')
         .eq('id', countyId)
         .single();
@@ -77,8 +78,8 @@ const CountyDemographicsDrawer: React.FC<CountyDemographicsDrawerProps> = ({ isO
     if (!value) return null;
     return (
       <div className={className}>
-        <p className="text-gray-500">{label}</p>
-        <p className="font-semibold">{value}</p>
+        <p className="text-gray-500 text-xs">{label}</p>
+        <p className="font-semibold text-xs">{value}</p>
       </div>
     );
   };
@@ -108,10 +109,9 @@ const CountyDemographicsDrawer: React.FC<CountyDemographicsDrawerProps> = ({ isO
               </CardHeader>
               <CardContent className="pt-0">
                 <div className="grid grid-cols-3 gap-3 text-xs">
-                  {renderDataPoint("Population", formatNumber(county.total_population))}
-                  {renderDataPoint("Cities", county.city_count?.toString())}
-                  {renderDataPoint("Distance", county.distance_miles ? `${county.distance_miles.toFixed(1)} miles` : null)}
-                  {renderDataPoint("Median Age", county.avg_age_median ? `${county.avg_age_median.toFixed(1)} years` : null)}
+                  {renderDataPoint("Population", formatNumber(county.population))}
+                  {renderDataPoint("State", county.state_name)}
+                  {renderDataPoint("Median Age", county.age_median ? `${parseFloat(county.age_median).toFixed(1)} years` : null)}
                 </div>
               </CardContent>
             </Card>
@@ -144,7 +144,7 @@ const CountyDemographicsDrawer: React.FC<CountyDemographicsDrawerProps> = ({ isO
               </CardHeader>
               <CardContent className="pt-0">
                 <div className="grid grid-cols-3 gap-2 text-xs">
-                  {renderDataPoint("Median Household", formatCurrency(county.avg_income_household_median))}
+                  {renderDataPoint("Median Household", formatCurrency(county.income_household_median))}
                   {renderDataPoint("Median Individual", formatCurrency(county.income_individual_median))}
                   {renderDataPoint("Six Figure", formatPercentage(county.income_household_six_figure))}
                   {renderDataPoint("Under $5K", formatPercentage(county.income_household_under_5))}
@@ -170,61 +170,28 @@ const CountyDemographicsDrawer: React.FC<CountyDemographicsDrawerProps> = ({ isO
               <CardContent className="pt-0">
                 <div className="grid grid-cols-3 gap-2 text-xs">
                   {renderDataPoint("Total Units", formatNumber(county.housing_units))}
-                  {renderDataPoint("Home Value", formatCurrency(county.avg_home_value))}
+                  {renderDataPoint("Home Value", formatCurrency(county.home_value))}
                   {renderDataPoint("Home Ownership", formatPercentage(county.home_ownership))}
-                  {renderDataPoint("Owner Occupied", formatPercentage(county.housing_owner_occupied_pct))}
-                  {renderDataPoint("Renter Occupied", formatPercentage(county.housing_renter_occupied_pct))}
-                  {renderDataPoint("Vacant Units", formatPercentage(county.housing_vacant_pct))}
                   {renderDataPoint("Rent (Median)", formatCurrency(county.rent_median))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Race & Ethnicity */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Race & Ethnicity</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="grid grid-cols-3 gap-2 text-xs">
-                  {renderDataPoint("White", formatPercentage(county.race_white_pct))}
-                  {renderDataPoint("Black", formatPercentage(county.race_black_pct))}
-                  {renderDataPoint("Asian", formatPercentage(county.race_asian_pct))}
-                  {renderDataPoint("Hispanic/Latino", formatPercentage(county.race_hispanic_pct))}
-                  {renderDataPoint("Native American", formatPercentage(county.race_native_pct))}
-                  {renderDataPoint("Other", formatPercentage(county.race_other_pct))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Employment */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Employment</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  {renderDataPoint("Unemployment Rate", formatPercentage(county.unemployment_rate))}
-                  {renderDataPoint("Labor Force", formatNumber(county.labor_force))}
                 </div>
               </CardContent>
             </Card>
 
             {/* Quick Stats */}
             <div className="flex flex-wrap gap-2">
-              {county.total_population && (
+              {county.population && (
                 <Badge variant="secondary" className="text-xs">
-                  Population: {formatNumber(county.total_population)}
+                  Population: {formatNumber(county.population)}
                 </Badge>
               )}
-              {county.distance_miles && (
+              {county.county_name && (
                 <Badge variant="secondary" className="text-xs">
-                  Distance: {county.distance_miles.toFixed(1)} miles
+                  County: {county.county_name}
                 </Badge>
               )}
-              {county.avg_income_household_median && (
+              {county.income_household_median && (
                 <Badge variant="secondary" className="text-xs">
-                  Income: {formatCurrency(county.avg_income_household_median)}
+                  Income: {formatCurrency(county.income_household_median)}
                 </Badge>
               )}
             </div>

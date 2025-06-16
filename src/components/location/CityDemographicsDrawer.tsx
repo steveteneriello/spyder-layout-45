@@ -29,7 +29,7 @@ const CityDemographicsDrawer: React.FC<CityDemographicsDrawerProps> = ({ isOpen,
     setIsLoading(true);
     try {
       const { data, error } = await supabase
-        .from('city_demographics')
+        .from('location_data')
         .select('*')
         .eq('id', cityId)
         .single();
@@ -77,8 +77,8 @@ const CityDemographicsDrawer: React.FC<CityDemographicsDrawerProps> = ({ isOpen,
     if (!value) return null;
     return (
       <div className={className}>
-        <p className="text-gray-500">{label}</p>
-        <p className="font-semibold">{value}</p>
+        <p className="text-gray-500 text-xs">{label}</p>
+        <p className="font-semibold text-xs">{value}</p>
       </div>
     );
   };
@@ -174,40 +174,7 @@ const CityDemographicsDrawer: React.FC<CityDemographicsDrawerProps> = ({ isOpen,
                   {renderDataPoint("Total Units", formatNumber(city.housing_units))}
                   {renderDataPoint("Home Value", formatCurrency(city.home_value))}
                   {renderDataPoint("Home Ownership", formatPercentage(city.home_ownership))}
-                  {renderDataPoint("Owner Occupied", formatPercentage(city.housing_owner_occupied_pct))}
-                  {renderDataPoint("Renter Occupied", formatPercentage(city.housing_renter_occupied_pct))}
-                  {renderDataPoint("Vacant Units", formatPercentage(city.housing_vacant_pct))}
                   {renderDataPoint("Rent (Median)", formatCurrency(city.rent_median))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Race & Ethnicity */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Race & Ethnicity</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="grid grid-cols-3 gap-2 text-xs">
-                  {renderDataPoint("White", formatPercentage(city.race_white_pct))}
-                  {renderDataPoint("Black", formatPercentage(city.race_black_pct))}
-                  {renderDataPoint("Asian", formatPercentage(city.race_asian_pct))}
-                  {renderDataPoint("Hispanic/Latino", formatPercentage(city.race_hispanic_pct))}
-                  {renderDataPoint("Native American", formatPercentage(city.race_native_pct))}
-                  {renderDataPoint("Other", formatPercentage(city.race_other_pct))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Employment */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Employment</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  {renderDataPoint("Unemployment Rate", formatPercentage(city.unemployment_rate))}
-                  {renderDataPoint("Labor Force", formatNumber(city.labor_force))}
                 </div>
               </CardContent>
             </Card>
