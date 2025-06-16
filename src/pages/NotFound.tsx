@@ -81,7 +81,6 @@ export default function NotFound() {
   };
 
   return (
-    {/* FIXED: Full-screen error page with proper theming */}
     <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-6">
       <div className="w-full max-w-2xl">
         
