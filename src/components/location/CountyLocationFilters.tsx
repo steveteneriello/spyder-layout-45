@@ -101,20 +101,32 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
 
     setIsSearching(true);
     try {
-      console.log('Starting county search with coords:', searchCoords, 'radius:', radiusMiles);
+      console.log('Starting search with coords:', searchCoords, 'radius:', radiusMiles);
       console.log('State filters:', selectedStates);
       console.log('Timezone filters:', selectedTimezones);
       
-      // Step 1: Get unique counties with their centroid coordinates
-      // This is the correct approach - find counties, not individual cities
+      // Calculate bounding box - use centroid coordinates for more accurate county coverage
+      const latRange = radiusMiles / 69; // degrees latitude per mile
+      const lngRange = radiusMiles / (69 * Math.cos(searchCoords.lat * Math.PI / 180)); // degrees longitude per mile
+      
+      const minLat = searchCoords.lat - latRange;
+      const maxLat = searchCoords.lat + latRange;
+      const minLng = searchCoords.lng - lngRange;
+      const maxLng = searchCoords.lng + lngRange;
+
+      console.log('Bounding box:', { minLat, maxLat, minLng, maxLng });
+
+      // Build query using centroid coordinates and county-level indexes
       let query = supabase
         .from('location_data')
         .select(`
           county_name,
           state_name,
+          city,
+          latitude,
+          longitude,
           centroid_latitude,
           centroid_longitude,
-          timezone,
           population,
           income_household_median,
           age_median,
@@ -123,11 +135,16 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
           race_white,
           race_black,
           race_asian,
-          hispanic
+          race_hispanic: hispanic,
+          timezone
         `)
         .not('county_name', 'is', null)
         .not('centroid_latitude', 'is', null)
-        .not('centroid_longitude', 'is', null);
+        .not('centroid_longitude', 'is', null)
+        .gte('centroid_latitude', minLat)
+        .lte('centroid_latitude', maxLat)
+        .gte('centroid_longitude', minLng)
+        .lte('centroid_longitude', maxLng);
 
       // Apply state filter if selected
       if (selectedStates.length > 0) {
@@ -143,10 +160,10 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
 
       if (error) throw error;
 
-      console.log('Found location records:', locationData?.length || 0);
+      console.log('Found locations in bounding box:', locationData?.length || 0);
 
       if (!locationData || locationData.length === 0) {
-        console.log('No location data found');
+        console.log('No locations found in bounding box');
         onSearchResults([], searchCoords);
         toast({
           title: "No Results",
@@ -155,13 +172,12 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
         return;
       }
 
-      // Step 2: Group by county and calculate county centroid distances
+      // Group by county and calculate distances using centroid coordinates
       const countyMap = new Map();
+      let locationsWithinRadius = 0;
       
       locationData.forEach(location => {
-        const countyKey = `${location.county_name}-${location.state_name}`;
-        
-        // Parse centroid coordinates
+        // Use centroid coordinates for county distance calculation
         const countyLat = typeof location.centroid_latitude === 'number' 
           ? location.centroid_latitude 
           : parseFloat(location.centroid_latitude);
@@ -175,7 +191,6 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
           return;
         }
 
-        // Calculate distance from search center to county centroid
         const distance = calculateDistance(
           searchCoords.lat,
           searchCoords.lng,
@@ -183,20 +198,23 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
           countyLng
         );
 
-        // Only include counties within the search radius
+        // Only process counties within the actual search radius
         if (distance <= radiusMiles) {
-          if (!countyMap.has(countyKey)) {
-            // Parse numeric values for aggregation
-            const parseNumber = (value: any) => {
-              if (typeof value === 'number') return value;
-              if (typeof value === 'string') {
-                const parsed = parseFloat(value.replace(/[,%$]/g, ''));
-                return isNaN(parsed) ? null : parsed;
-              }
-              return null;
-            };
+          locationsWithinRadius++;
+          const countyKey = `${location.county_name}-${location.state_name}`;
+          
+          // Parse numeric values
+          const parseNumber = (value: any) => {
+            if (typeof value === 'number') return value;
+            if (typeof value === 'string') {
+              const parsed = parseFloat(value.replace(/[,%$]/g, ''));
+              return isNaN(parsed) ? null : parsed;
+            }
+            return null;
+          };
 
-            // Create new county entry
+          if (!countyMap.has(countyKey)) {
+            // Create new county entry using centroid as county center
             countyMap.set(countyKey, {
               id: countyKey,
               county_name: location.county_name,
@@ -204,98 +222,62 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
               center_lat: countyLat,
               center_lng: countyLng,
               distance_miles: Math.round(distance * 10) / 10,
-              timezone: location.timezone,
-              // Initialize aggregation fields
-              population_sum: parseNumber(location.population) || 0,
+              total_population: parseNumber(location.population) || 0,
+              avg_income_household_median: parseNumber(location.income_household_median),
+              avg_home_value: parseNumber(location.home_value),
+              avg_age_median: parseNumber(location.age_median),
+              education_bachelors_pct: parseNumber(location.education_bachelors),
+              race_white_pct: parseNumber(location.race_white),
+              race_black_pct: parseNumber(location.race_black),
+              race_asian_pct: parseNumber(location.race_asian),
+              race_hispanic_pct: parseNumber(location.race_hispanic),
+              city_count: 1,
+              min_distance: distance,
+              total_population_sum: parseNumber(location.population) || 0,
               income_sum: parseNumber(location.income_household_median) || 0,
               home_value_sum: parseNumber(location.home_value) || 0,
-              age_sum: parseNumber(location.age_median) || 0,
-              education_sum: parseNumber(location.education_bachelors) || 0,
-              race_white_sum: parseNumber(location.race_white) || 0,
-              race_black_sum: parseNumber(location.race_black) || 0,
-              race_asian_sum: parseNumber(location.race_asian) || 0,
-              race_hispanic_sum: parseNumber(location.hispanic) || 0,
-              record_count: 1
+              location_count_for_avg: 1
             });
           } else {
-            // Update existing county with additional data for averaging
+            // Update existing county with aggregated data
             const county = countyMap.get(countyKey);
-            const parseNumber = (value: any) => {
-              if (typeof value === 'number') return value;
-              if (typeof value === 'string') {
-                const parsed = parseFloat(value.replace(/[,%$]/g, ''));
-                return isNaN(parsed) ? null : parsed;
-              }
-              return null;
-            };
-
-            county.population_sum += parseNumber(location.population) || 0;
+            county.city_count += 1;
+            county.total_population_sum += parseNumber(location.population) || 0;
             county.income_sum += parseNumber(location.income_household_median) || 0;
             county.home_value_sum += parseNumber(location.home_value) || 0;
-            county.age_sum += parseNumber(location.age_median) || 0;
-            county.education_sum += parseNumber(location.education_bachelors) || 0;
-            county.race_white_sum += parseNumber(location.race_white) || 0;
-            county.race_black_sum += parseNumber(location.race_black) || 0;
-            county.race_asian_sum += parseNumber(location.race_asian) || 0;
-            county.race_hispanic_sum += parseNumber(location.hispanic) || 0;
-            county.record_count += 1;
-
-            // Keep the shortest distance to search center
-            if (distance < county.distance_miles) {
+            county.location_count_for_avg += 1;
+            
+            // Keep the closest distance to search center
+            if (distance < county.min_distance) {
+              county.min_distance = distance;
               county.distance_miles = Math.round(distance * 10) / 10;
+            }
+            
+            // Update averages
+            county.total_population = county.total_population_sum;
+            if (county.location_count_for_avg > 0) {
+              county.avg_income_household_median = county.income_sum / county.location_count_for_avg;
+              county.avg_home_value = county.home_value_sum / county.location_count_for_avg;
             }
           }
         }
       });
 
-      console.log(`Found ${countyMap.size} unique counties within ${radiusMiles} miles`);
+      console.log(`Found ${locationsWithinRadius} locations within ${radiusMiles} miles`);
+      console.log(`Grouped into ${countyMap.size} counties`);
 
-      // Step 3: For each county, get the city count
-      const results = [];
-      for (const [countyKey, county] of countyMap.entries()) {
-        // Get city count for this county
-        const { count: cityCount } = await supabase
-          .from('location_data')
-          .select('*', { count: 'exact', head: true })
-          .eq('county_name', county.county_name)
-          .eq('state_name', county.state_name)
-          .not('city', 'is', null);
+      const results = Array.from(countyMap.values())
+        .map(county => {
+          // Clean up temporary aggregation fields
+          const { total_population_sum, income_sum, home_value_sum, location_count_for_avg, min_distance, ...cleanCounty } = county;
+          return cleanCounty;
+        })
+        .sort((a, b) => a.distance_miles - b.distance_miles); // Sort by distance, closest first
 
-        // Calculate averages
-        const avgRecord = county.record_count > 0 ? county.record_count : 1;
-        
-        results.push({
-          id: county.id,
-          county_name: county.county_name,
-          state_name: county.state_name,
-          center_lat: county.center_lat,
-          center_lng: county.center_lng,
-          distance_miles: county.distance_miles,
-          city_count: cityCount || 0,
-          total_population: Math.round(county.population_sum),
-          avg_income_household_median: county.income_sum / avgRecord,
-          avg_home_value: county.home_value_sum / avgRecord,
-          avg_age_median: county.age_sum / avgRecord,
-          education_bachelors_pct: county.education_sum / avgRecord,
-          race_white_pct: county.race_white_sum / avgRecord,
-          race_black_pct: county.race_black_sum / avgRecord,
-          race_asian_pct: county.race_asian_sum / avgRecord,
-          race_hispanic_pct: county.race_hispanic_sum / avgRecord,
-          timezone: county.timezone
-        });
-      }
-
-      // Sort by distance, closest first
-      results.sort((a, b) => a.distance_miles - b.distance_miles);
-
-      console.log('Final county search results:', results.length, 'counties found');
+      console.log('Final search results:', results.length, 'counties found');
       if (results.length > 0) {
-        console.log('Closest counties:', results.slice(0, 5).map(c => ({ 
-          name: c.county_name, 
-          state: c.state_name, 
-          distance: c.distance_miles,
-          cities: c.city_count 
-        })));
+        console.log('Closest counties:', results.slice(0, 5).map(c => ({ name: c.county_name, state: c.state_name, distance: c.distance_miles })));
+        console.log('Furthest counties:', results.slice(-5).map(c => ({ name: c.county_name, state: c.state_name, distance: c.distance_miles })));
       }
       
       onSearchResults(results, searchCoords);
