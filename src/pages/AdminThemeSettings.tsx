@@ -189,6 +189,12 @@ const AdminThemeSettings = () => {
     { title: "Theme Settings", path: "/admin/theme", icon: "palette", section: "Admin" },
   ];
 
+  const handleThemeChange = (mode: ThemeMode) => {
+    setThemeMode(mode);
+    // Reapply colors after theme change to ensure they work with the new theme
+    setTimeout(() => applyColors(), 100);
+  };
+
   const hexToRgb = (hex: string): string | null => {
     // Remove # if present and ensure we have a valid hex string
     const cleanHex = hex.replace('#', '');
