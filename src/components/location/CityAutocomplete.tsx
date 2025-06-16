@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -64,9 +63,9 @@ const CityAutocomplete: React.FC<CityAutocompleteProps> = ({ value, onChange, on
         }
 
         const { data, error } = await query
-          .order('population', { ascending: false, nullsLast: true })
+          .order('population', { ascending: false, nullsFirst: false })
           .order('city')
-          .limit(20);
+          .limit(50);
 
         if (error) throw error;
 
