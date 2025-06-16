@@ -11,6 +11,7 @@ import CreateSchedule from "./pages/CreateSchedule";
 import LocationBuilder from "./pages/LocationBuilder";
 import Theme from "./pages/Theme";
 import AdminThemeSettings from "./pages/admin/ThemeSettings";
+import MenuManagementPage from "./pages/admin/MenuManagement";
 import NotFound from "./pages/NotFound";
 import './styles/globals.css';
 
@@ -32,6 +33,7 @@ function App() {
                 <Route path="/location-builder" element={<LocationBuilder />} />
                 <Route path="/theme" element={<Theme />} />
                 <Route path="/admin/theme" element={<AdminThemeSettings />} />
+                <Route path="/admin/menu" element={<MenuManagementPage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
