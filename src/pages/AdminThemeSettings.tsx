@@ -196,6 +196,8 @@ const AdminThemeSettings = () => {
   };
 
   const hexToRgb = (hex: string): string | null => {
+    console.log('hexToRgb input:', hex);
+    
     // Remove # if present and ensure we have a valid hex string
     const cleanHex = hex.replace('#', '');
     
@@ -215,12 +217,40 @@ const AdminThemeSettings = () => {
   };
 
   const rgbToHex = (rgb: string): string => {
-    const [r, g, b] = rgb.split(' ').map(Number);
-    if (isNaN(r) || isNaN(g) || isNaN(b)) {
-      console.log('Invalid RGB format:', rgb);
+    console.log('rgbToHex input:', rgb);
+    
+    // Handle empty or invalid input
+    if (!rgb || typeof rgb !== 'string') {
+      console.log('Invalid RGB input, returning default black');
       return '#000000';
     }
-    return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+    
+    // Split RGB values and convert to numbers
+    const parts = rgb.trim().split(' ');
+    if (parts.length !== 3) {
+      console.log('RGB format invalid, expected 3 parts but got:', parts.length);
+      return '#000000';
+    }
+    
+    const r = parseInt(parts[0]);
+    const g = parseInt(parts[1]);
+    const b = parseInt(parts[2]);
+    
+    // Validate RGB values are in range 0-255
+    if (isNaN(r) || isNaN(g) || isNaN(b) || r < 0 || r > 255 || g < 0 || g > 255 || b < 0 || b > 255) {
+      console.log('Invalid RGB values:', { r, g, b });
+      return '#000000';
+    }
+    
+    // Convert to hex with proper padding
+    const toHex = (num: number) => {
+      const hex = num.toString(16);
+      return hex.length === 1 ? '0' + hex : hex;
+    };
+    
+    const result = `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    console.log(`Converted RGB "${rgb}" to hex: ${result}`);
+    return result;
   };
 
   const resetColors = () => {
@@ -239,7 +269,10 @@ const AdminThemeSettings = () => {
   };
 
   const handleColorChange = (colorKey: string, mode: 'light' | 'dark', value: string) => {
-    console.log('Color change:', colorKey, mode, value);
+    console.log('=== Color change start ===');
+    console.log('Color key:', colorKey);
+    console.log('Mode:', mode);
+    console.log('Input value:', value);
     
     // Convert hex to RGB if needed
     let rgbValue = value;
@@ -247,28 +280,35 @@ const AdminThemeSettings = () => {
       const rgb = hexToRgb(value);
       if (rgb) {
         rgbValue = rgb;
+        console.log('Converted to RGB:', rgbValue);
       } else {
         console.error('Failed to convert hex to RGB:', value);
         return; // Don't update if conversion failed
       }
     }
     
-    console.log('Setting color:', colorKey, mode, rgbValue);
+    console.log('Final RGB value to store:', rgbValue);
     
-    setColors(prev => ({
-      ...prev,
-      [colorKey]: {
-        ...prev[colorKey],
-        [mode]: rgbValue
-      }
-    }));
+    setColors(prev => {
+      const newColors = {
+        ...prev,
+        [colorKey]: {
+          ...prev[colorKey],
+          [mode]: rgbValue
+        }
+      };
+      console.log('Updated colors state:', newColors[colorKey]);
+      return newColors;
+    });
     
     // Apply the color immediately if it's for the current theme
     if (mode === actualTheme) {
       const cssVariable = `--${colorKey}`;
       document.documentElement.style.setProperty(cssVariable, rgbValue);
-      console.log(`Applied ${cssVariable} = ${rgbValue}`);
+      console.log(`Applied CSS: ${cssVariable} = ${rgbValue}`);
     }
+    
+    console.log('=== Color change end ===');
   };
 
   const handleHeaderSettingChange = (mode: 'light' | 'dark', key: string, value: string) => {
@@ -299,13 +339,18 @@ const AdminThemeSettings = () => {
   };
 
   const applyColors = () => {
-    console.log('Applying colors for theme:', actualTheme);
+    console.log('=== Applying colors ===');
+    console.log('Current theme:', actualTheme);
+    console.log('Colors object:', colors);
+    
     Object.entries(colors).forEach(([key, values]) => {
       const colorValue = values[actualTheme];
       const cssVariable = `--${key}`;
       document.documentElement.style.setProperty(cssVariable, colorValue);
       console.log(`Set ${cssVariable} to ${colorValue}`);
     });
+    
+    console.log('=== Colors applied ===');
   };
 
   const applyHeaderSettings = () => {
@@ -369,6 +414,7 @@ const AdminThemeSettings = () => {
 
   // Apply settings when theme changes
   useEffect(() => {
+    console.log('Theme changed, reapplying settings for:', actualTheme);
     applyColors();
     applyHeaderSettings();
     applyTypographySettings();
