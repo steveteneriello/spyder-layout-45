@@ -48,11 +48,13 @@ interface City {
 }
 
 interface CountyCitiesTableProps {
-  counties: County[];
+  counties: County[] | undefined | null;
   searchCoords: {lat: number; lng: number} | null;
 }
 
 const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({ counties, searchCoords }) => {
+  // Debug: Log what we received
+  console.log('🏛️ CountyCitiesTable received counties:', counties, 'Type:', typeof counties, 'IsArray:', Array.isArray(counties));
   const [expandedCounty, setExpandedCounty] = useState<string | null>(null);
   const [cities, setCities] = useState<City[]>([]);
   const [loadingCities, setLoadingCities] = useState(false);
@@ -142,7 +144,10 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({ counties, searchC
     }
   };
 
-  const sortedCounties = [...counties].sort((a, b) => {
+  // Ensure counties is always an array, handle undefined/null
+  const safeCounties = Array.isArray(counties) ? counties : [];
+  console.log('🔒 Safe counties array:', safeCounties.length, 'items');
+  const sortedCounties = [...safeCounties].sort((a, b) => {
     const aValue = a[sortField];
     const bValue = b[sortField];
     
@@ -311,7 +316,7 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({ counties, searchC
     </Button>
   );
 
-  if (counties.length === 0) {
+  if (!Array.isArray(counties) || counties.length === 0) {
     return (
       <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-8 text-center">
         <MapPin className="h-12 w-12 text-slate-400 mx-auto mb-4" />
