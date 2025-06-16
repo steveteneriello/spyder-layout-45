@@ -117,15 +117,7 @@ const LocationBuilder = () => {
             <div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center">
               <MapPin className="h-5 w-5 text-white" />
             </div>
-            <h1 className="text-xl font-semibold tracking-wide text-white">Location List Builder</h1>
-          </div>
-          
-          {/* Search bar in header */}
-          <div className="flex-1 max-w-3xl ml-12">
-            <CountyLocationFilters 
-              onSearchResults={handleSearchResults}
-              onListSaved={handleListSaved} 
-            />
+            <h1 className="text-xl font-semibold tracking-wide text-white">Tools</h1>
           </div>
         </div>
       }
@@ -142,6 +134,26 @@ const LocationBuilder = () => {
       }
     >
       <div className="h-full bg-slate-50">
+        {/* Page header with title and search */}
+        <div className="bg-gradient-to-r from-slate-50 to-white border-b border-slate-200 shadow-sm p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center">
+                <MapPin className="h-5 w-5 text-white" />
+              </div>
+              <h1 className="text-xl font-semibold tracking-wide text-slate-900">Location List Builder</h1>
+            </div>
+          </div>
+          
+          {/* Search bar */}
+          <div className="max-w-3xl">
+            <CountyLocationFilters 
+              onSearchResults={handleSearchResults}
+              onListSaved={handleListSaved} 
+            />
+          </div>
+        </div>
+
         {/* Map section */}
         <div className="h-[60vh] bg-white border-b border-slate-200">
           <CountyLocationMap 
