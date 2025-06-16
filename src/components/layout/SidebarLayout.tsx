@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useGlobalTheme } from '@/contexts/GlobalThemeContext';
+import { useBrandSettings } from '@/components/LogoBrandSettings';
 import {
   Sidebar,
   SidebarContent,
@@ -11,7 +12,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { ChevronRight, Home } from 'lucide-react';
+import { ChevronRight, Home, Palette } from 'lucide-react';
 
 interface MenuItem {
   title: string;
@@ -42,6 +43,53 @@ interface SidebarProps {
   category?: React.ReactNode;
   footer?: React.ReactNode;
   color?: string;
+}
+
+// ADDED: Brand Header Component
+function BrandHeader() {
+  const { actualTheme, colors } = useGlobalTheme();
+  const brandSettings = useBrandSettings();
+
+  const sidebarText = colors['sidebar-foreground']
+    ? `rgb(${colors['sidebar-foreground'][actualTheme]})`
+    : 'rgb(255, 255, 255)';
+
+  const getSizeClass = (size: string) => {
+    switch (size) {
+      case 'sm': return 'h-6 w-6';
+      case 'lg': return 'h-10 w-10';
+      default: return 'h-8 w-8';
+    }
+  };
+
+  const getCurrentLogo = () => {
+    return actualTheme === 'dark' ? brandSettings.darkModeLogo : brandSettings.lightModeLogo;
+  };
+
+  return (
+    <div className="flex items-center gap-3">
+      {/* Logo or Icon */}
+      {brandSettings.useLogo && getCurrentLogo() ? (
+        <img 
+          src={getCurrentLogo()!} 
+          alt="Logo"
+          className={`object-contain ${getSizeClass(brandSettings.logoSize)}`}
+        />
+      ) : (
+        <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
+          <Palette className="h-5 w-5 text-black" />
+        </div>
+      )}
+      
+      {/* Brand Text */}
+      <div className="text-white">
+        <div className="font-bold text-sm">{brandSettings.brandText}</div>
+        {brandSettings.showTagline && (
+          <div className="text-xs opacity-75">{brandSettings.tagline}</div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function AppSidebar({ menuItems, category, footer }: SidebarProps) {
@@ -228,19 +276,10 @@ export default function SidebarLayout({
     }, 30);
   };
 
-  // FIXED: Enhanced default nav if none provided
+  // ENHANCED: Default nav with brand settings integration
   const defaultNav = nav || (
     <div className="flex items-center justify-between w-full px-4">
-      {/* FIXED: Proper logo/branding area instead of page names */}
-      <div className="flex items-center gap-3">
-        <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-          <Home className="h-5 w-5 text-black" />
-        </div>
-        <div className="text-white">
-          <div className="font-bold text-sm">Your App Name</div>
-          <div className="text-xs opacity-75">Powered by Oxylabs</div>
-        </div>
-      </div>
+      <BrandHeader />
       <div className="text-white text-sm">
         Theme: {actualTheme}
       </div>
