@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Settings, Monitor, Sun, Moon, Palette, RotateCcw } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,6 +34,14 @@ const defaultColors: ColorSettings = {
   'border-primary': { light: '226 232 240', dark: '48 54 61' },
   'border-secondary': { light: '241 243 245', dark: '33 38 45' },
   'border-focus': { light: '49 130 206', dark: '56 139 253' },
+  'sidebar-background': { light: '0 0 0', dark: '0 0 0' },
+  'sidebar-foreground': { light: '255 255 255', dark: '255 255 255' },
+  'sidebar-primary': { light: '255 255 255', dark: '255 255 255' },
+  'sidebar-primary-foreground': { light: '0 0 0', dark: '0 0 0' },
+  'sidebar-accent': { light: '0 0 10.2', dark: '0 0 10.2' },
+  'sidebar-accent-foreground': { light: '255 255 255', dark: '255 255 255' },
+  'sidebar-border': { light: '0 0 0', dark: '0 0 0' },
+  'sidebar-ring': { light: '217 91 60', dark: '217 91 60' },
 };
 
 const AdminThemeSettings = () => {
@@ -47,7 +54,8 @@ const AdminThemeSettings = () => {
     text: ['text-primary', 'text-secondary', 'text-tertiary', 'text-inverse'],
     accents: ['accent-primary', 'accent-primary-hover', 'accent-primary-active'],
     status: ['success', 'warning', 'error'],
-    borders: ['border-primary', 'border-secondary', 'border-focus']
+    borders: ['border-primary', 'border-secondary', 'border-focus'],
+    sidebar: ['sidebar-background', 'sidebar-foreground', 'sidebar-primary', 'sidebar-primary-foreground', 'sidebar-accent', 'sidebar-accent-foreground', 'sidebar-border', 'sidebar-ring']
   };
 
   const colorGroupLabels = {
@@ -55,7 +63,8 @@ const AdminThemeSettings = () => {
     text: 'Text Colors',
     accents: 'Accent Colors',
     status: 'Status Colors',
-    borders: 'Border Colors'
+    borders: 'Border Colors',
+    sidebar: 'Sidebar Colors'
   };
 
   const themeOptions = [
