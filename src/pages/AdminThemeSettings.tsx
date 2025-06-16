@@ -81,6 +81,9 @@ export default function AdminThemeSettings() {
   });
 
   const [activeSection, setActiveSection] = useState('theme');
+  
+  // Debug: Log current active section
+  console.log('Current active section:', activeSection);
   const [unsavedChanges, setUnsavedChanges] = useState(false);
 
   // Load settings on mount
@@ -296,6 +299,10 @@ export default function AdminThemeSettings() {
 
         {/* Main Content */}
         <div className="lg:col-span-3">
+          {/* Debug: Show current section */}
+          <div className="mb-4 p-2 bg-yellow-100 border border-yellow-300 rounded text-sm">
+            <strong>Debug:</strong> Current section = "{activeSection}" | Available sections: {sections.map(s => s.id).join(', ')}
+          </div>
           {/* Theme Mode Section */}
           {activeSection === 'theme' && (
             <Card>
