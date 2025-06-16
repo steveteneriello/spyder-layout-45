@@ -37,7 +37,8 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   
-  // Filter states
+  // Dynamic filter ranges
+  const [maxPopulation, setMaxPopulation] = useState(1000000);
   const [populationRange, setPopulationRange] = useState<[number, number]>([0, 1000000]);
   const [incomeRange, setIncomeRange] = useState<[number, number]>([0, 200000]);
   const [homeValueRange, setHomeValueRange] = useState<[number, number]>([0, 1250000]);
@@ -57,6 +58,20 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
   useEffect(() => {
     applyFilters();
   }, [allCities, populationRange, incomeRange, homeValueRange]);
+
+  // Update filter ranges when cities data changes
+  useEffect(() => {
+    if (allCities.length > 0) {
+      const populations = allCities.map(c => c.population).filter(p => p !== null && p !== undefined);
+      if (populations.length > 0) {
+        const maxPop = Math.max(...populations);
+        setMaxPopulation(maxPop);
+        
+        // Update population range if current max is less than the data max
+        setPopulationRange(prevRange => [prevRange[0], maxPop]);
+      }
+    }
+  }, [allCities]);
 
   const parseNumber = (value: any) => {
     if (typeof value === 'number') return value;
@@ -112,7 +127,7 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
   };
 
   const clearFilters = () => {
-    setPopulationRange([0, 1000000]);
+    setPopulationRange([0, maxPopulation]);
     setIncomeRange([0, 200000]);
     setHomeValueRange([0, 1250000]);
   };
@@ -303,6 +318,7 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
             populationRange={populationRange}
             incomeRange={incomeRange}
             homeValueRange={homeValueRange}
+            maxPopulation={maxPopulation}
             onPopulationChange={setPopulationRange}
             onIncomeChange={setIncomeRange}
             onHomeValueChange={setHomeValueRange}
