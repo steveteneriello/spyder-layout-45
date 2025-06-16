@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Monitor, Sun, Moon, Palette, RotateCcw } from 'lucide-react';
-
 // Use your actual imports - replace these:
 // import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 // import { Button } from '@/components/ui/button';
@@ -125,26 +124,26 @@ interface ThemeColors {
   };
 }
 
-// Colors that match your existing CSS structure (HSL format)
+// UPDATED: All colors now use RGB format for consistency
 const defaultColors: ThemeColors = {
-  // Your existing shadcn variables (HSL format to match globals.css)
-  'background': { light: '0 0% 100%', dark: '222.2 84% 4.9%' },
-  'foreground': { light: '222.2 84% 4.9%', dark: '210 40% 98%' },
-  'card': { light: '0 0% 100%', dark: '222.2 84% 4.9%' },
-  'card-foreground': { light: '222.2 84% 4.9%', dark: '210 40% 98%' },
-  'primary': { light: '217 91% 60%', dark: '217 91% 60%' },
-  'primary-foreground': { light: '210 40% 98%', dark: '222.2 47.4% 11.2%' },
-  'secondary': { light: '210 40% 96.1%', dark: '217.2 32.6% 17.5%' },
-  'secondary-foreground': { light: '222.2 47.4% 11.2%', dark: '210 40% 98%' },
-  'muted': { light: '210 40% 96.1%', dark: '217.2 32.6% 17.5%' },
-  'muted-foreground': { light: '215.4 16.3% 46.9%', dark: '215 20.2% 65.1%' },
-  'accent': { light: '210 40% 96.1%', dark: '217.2 32.6% 17.5%' },
-  'accent-foreground': { light: '222.2 47.4% 11.2%', dark: '210 40% 98%' },
-  'border': { light: '214.3 31.8% 91.4%', dark: '217.2 32.6% 17.5%' },
-  'input': { light: '214.3 31.8% 91.4%', dark: '217.2 32.6% 17.5%' },
-  'ring': { light: '222.2 84% 4.9%', dark: '212.7 26.8% 83.9%' },
+  // Shadcn variables converted to RGB format
+  'background': { light: '255 255 255', dark: '15 23 42' },
+  'foreground': { light: '15 23 42', dark: '248 250 252' },
+  'card': { light: '255 255 255', dark: '15 23 42' },
+  'card-foreground': { light: '15 23 42', dark: '248 250 252' },
+  'primary': { light: '59 130 246', dark: '59 130 246' },
+  'primary-foreground': { light: '248 250 252', dark: '15 23 42' },
+  'secondary': { light: '241 245 249', dark: '51 65 85' },
+  'secondary-foreground': { light: '15 23 42', dark: '248 250 252' },
+  'muted': { light: '241 245 249', dark: '51 65 85' },
+  'muted-foreground': { light: '100 116 139', dark: '148 163 184' },
+  'accent': { light: '241 245 249', dark: '51 65 85' },
+  'accent-foreground': { light: '15 23 42', dark: '248 250 252' },
+  'border': { light: '226 232 240', dark: '51 65 85' },
+  'input': { light: '226 232 240', dark: '51 65 85' },
+  'ring': { light: '15 23 42', dark: '212 212 216' },
   
-  // Your custom RGB variables (RGB format to match your CSS comments)
+  // Custom RGB variables (unchanged)
   'bg-primary': { light: '255 255 255', dark: '14 17 23' },
   'bg-secondary': { light: '251 252 253', dark: '22 27 34' },
   'bg-tertiary': { light: '248 249 250', dark: '33 38 45' },
@@ -168,7 +167,7 @@ const AdminThemeSettings = () => {
   };
 
   const colorGroupLabels = {
-    shadcn: 'Shadcn/UI Variables (HSL)',
+    shadcn: 'Shadcn/UI Variables (RGB)',
     custom: 'Custom Variables (RGB)'
   };
 
@@ -183,119 +182,59 @@ const AdminThemeSettings = () => {
     { id: 'auto' as ThemeMode, title: 'Auto Mode', description: `Follows system (currently ${isSystemDark ? 'dark' : 'light'})`, icon: Monitor },
   ];
 
-  // Detect if a color value is HSL or RGB format
-  const isHSLFormat = (value: string): boolean => {
-    return value.includes('%') || /^\d+(\.\d+)?\s+\d+(\.\d+)?%\s+\d+(\.\d+)?%$/.test(value);
-  };
-
-  // Convert hex to HSL (for shadcn variables)
-  const hexToHSL = (hex: string): string => {
-    const r = parseInt(hex.slice(1, 3), 16) / 255;
-    const g = parseInt(hex.slice(3, 5), 16) / 255;
-    const b = parseInt(hex.slice(5, 7), 16) / 255;
-
-    const max = Math.max(r, g, b);
-    const min = Math.min(r, g, b);
-    let h = 0, s = 0, l = (max + min) / 2;
-
-    if (max !== min) {
-      const d = max - min;
-      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-      switch (max) {
-        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-        case g: h = (b - r) / d + 2; break;
-        case b: h = (r - g) / d + 4; break;
-      }
-      h /= 6;
-    }
-
-    return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
-  };
-
-  // Convert hex to RGB (for custom variables)
+  // UPDATED: Simplified conversion functions since everything is now RGB
   const hexToRGB = (hex: string): string => {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
+    const cleanHex = hex.replace('#', '');
+    if (!/^[a-f0-9]{6}$/i.test(cleanHex)) {
+      console.warn('Invalid hex format:', hex);
+      return '255 255 255';
+    }
+    
+    const r = parseInt(cleanHex.substring(0, 2), 16);
+    const g = parseInt(cleanHex.substring(2, 4), 16);
+    const b = parseInt(cleanHex.substring(4, 6), 16);
+    
+    if (isNaN(r) || isNaN(g) || isNaN(b)) {
+      console.warn('Failed to parse hex values:', { r, g, b });
+      return '255 255 255';
+    }
+    
     return `${r} ${g} ${b}`;
   };
 
-  // Convert HSL to hex for color picker
-  const hslToHex = (hsl: string): string => {
-    const parts = hsl.split(' ');
-    if (parts.length !== 3) return '#000000';
-    
-    const h = parseInt(parts[0]) / 360;
-    const s = parseInt(parts[1]) / 100;
-    const l = parseInt(parts[2]) / 100;
-
-    const hue2rgb = (p: number, q: number, t: number) => {
-      if (t < 0) t += 1;
-      if (t > 1) t -= 1;
-      if (t < 1/6) return p + (q - p) * 6 * t;
-      if (t < 1/2) return q;
-      if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-      return p;
-    };
-
-    let r, g, b;
-    if (s === 0) {
-      r = g = b = l;
-    } else {
-      const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-      const p = 2 * l - q;
-      r = hue2rgb(p, q, h + 1/3);
-      g = hue2rgb(p, q, h);
-      b = hue2rgb(p, q, h - 1/3);
-    }
-
-    const toHex = (c: number) => Math.round(c * 255).toString(16).padStart(2, '0');
-    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
-  };
-
-  // Convert RGB to hex for color picker
   const rgbToHex = (rgb: string): string => {
     if (rgb.startsWith('#')) return rgb;
     
-    const parts = rgb.split(' ');
-    if (parts.length !== 3) return '#ffffff';
+    const parts = rgb.trim().split(/\s+/);
+    if (parts.length !== 3) {
+      console.warn('Invalid RGB format:', rgb);
+      return '#ffffff';
+    }
     
-    const r = Math.max(0, Math.min(255, parseInt(parts[0]) || 0));
-    const g = Math.max(0, Math.min(255, parseInt(parts[1]) || 0));
-    const b = Math.max(0, Math.min(255, parseInt(parts[2]) || 0));
+    const nums = parts.map(part => {
+      const num = parseInt(part, 10);
+      if (isNaN(num)) return 0;
+      return Math.max(0, Math.min(255, num));
+    });
     
     const toHex = (num: number) => num.toString(16).padStart(2, '0');
-    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    return `#${toHex(nums[0])}${toHex(nums[1])}${toHex(nums[2])}`;
   };
 
-  // Smart color conversion based on variable type
+  // SIMPLIFIED: All variables now use RGB format
   const convertColorForVariable = (colorKey: string, hexValue: string): string => {
-    if (colorGroups.shadcn.includes(colorKey)) {
-      // Shadcn variables use HSL format
-      return hexToHSL(hexValue);
-    } else {
-      // Custom variables use RGB format
-      return hexToRGB(hexValue);
-    }
+    return hexToRGB(hexValue);
   };
 
-  // Smart color to hex conversion
   const colorToHex = (colorKey: string, colorValue: string): string => {
-    if (colorGroups.shadcn.includes(colorKey)) {
-      // HSL format
-      return hslToHex(colorValue);
-    } else {
-      // RGB format
-      return rgbToHex(colorValue);
-    }
+    return rgbToHex(colorValue);
   };
 
   const handleColorChange = (colorKey: string, mode: 'light' | 'dark', value: string) => {
     console.log(`🎨 Color change: ${colorKey} (${mode}) = "${value}"`);
     
-    // Convert based on variable type
     const convertedValue = convertColorForVariable(colorKey, value);
-    console.log(`🔄 Converted value: "${convertedValue}"`);
+    console.log(`🔄 Converted RGB value: "${convertedValue}"`);
     
     setColors(prev => ({
       ...prev,
@@ -306,88 +245,104 @@ const AdminThemeSettings = () => {
     }));
   };
 
-  // CSS-Compatible theme application
+  // UPDATED: CSS application now handles RGB format for all variables
   const applyTheme = () => {
-    console.log('🎯 CSS-COMPATIBLE THEME APPLICATION');
+    console.log('🎯 UNIFIED RGB THEME APPLICATION');
     console.log('Theme:', actualTheme);
 
-    // Remove existing overrides
-    const existing = document.getElementById('css-compatible-theme-override');
+    const existing = document.getElementById('unified-rgb-theme-override');
     if (existing) existing.remove();
 
-    // Apply theme classes that match your CSS
     document.documentElement.className = '';
     if (actualTheme === 'dark') {
       document.documentElement.classList.add('dark');
     }
     document.documentElement.setAttribute('data-theme', actualTheme);
 
-    // Create CSS that works with your existing structure
     const style = document.createElement('style');
-    style.id = 'css-compatible-theme-override';
+    style.id = 'unified-rgb-theme-override';
 
-    // Generate CSS that matches your existing format
+    // Generate CSS variables - all in RGB format
     const rootVars = Object.entries(colors).map(([key, values]) => {
       const value = values[actualTheme];
       return `  --${key}: ${value};`;
     }).join('\n');
 
-    const darkVars = actualTheme === 'dark' ? Object.entries(colors).map(([key, values]) => {
-      const value = values.dark;
-      return `  --${key}: ${value};`;
-    }).join('\n') : '';
+    // Convert RGB to HSL for shadcn compatibility where needed
+    const rgbToHsl = (rgb: string): string => {
+      const parts = rgb.split(' ').map(p => parseInt(p) / 255);
+      const [r, g, b] = parts;
+      
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      let h = 0, s = 0, l = (max + min) / 2;
+
+      if (max !== min) {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+          case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+          case g: h = (b - r) / d + 2; break;
+          case b: h = (r - g) / d + 4; break;
+        }
+        h /= 6;
+      }
+
+      return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
+    };
 
     const css = `
-      /* CSS-Compatible Theme Override */
+      /* Unified RGB Theme Override */
       :root {
 ${rootVars}
       }
-      
-      ${actualTheme === 'dark' ? `.dark {\n${darkVars}\n}` : ''}
 
-      /* Force body styling with proper format */
+      /* Force body styling with RGB format */
       body {
-        background-color: hsl(${colors.background[actualTheme]}) !important;
-        color: hsl(${colors.foreground[actualTheme]}) !important;
+        background-color: rgb(${colors.background[actualTheme]}) !important;
+        color: rgb(${colors.foreground[actualTheme]}) !important;
         transition: all 0.3s ease !important;
       }
 
-      /* Override utility classes with proper format */
-      .bg-background { background-color: hsl(${colors.background[actualTheme]}) !important; }
-      .bg-card { background-color: hsl(${colors.card[actualTheme]}) !important; }
-      .bg-primary { background-color: hsl(${colors.primary[actualTheme]}) !important; }
-      .bg-secondary { background-color: hsl(${colors.secondary[actualTheme]}) !important; }
-      .bg-muted { background-color: hsl(${colors.muted[actualTheme]}) !important; }
+      /* All utility classes now use RGB format consistently */
+      .bg-background { background-color: rgb(${colors.background[actualTheme]}) !important; }
+      .bg-card { background-color: rgb(${colors.card[actualTheme]}) !important; }
+      .bg-primary { background-color: rgb(${colors.primary[actualTheme]}) !important; }
+      .bg-secondary { background-color: rgb(${colors.secondary[actualTheme]}) !important; }
+      .bg-muted { background-color: rgb(${colors.muted[actualTheme]}) !important; }
+      .bg-accent { background-color: rgb(${colors.accent[actualTheme]}) !important; }
       
-      .text-foreground { color: hsl(${colors.foreground[actualTheme]}) !important; }
-      .text-card-foreground { color: hsl(${colors['card-foreground'][actualTheme]}) !important; }
-      .text-primary { color: hsl(${colors.primary[actualTheme]}) !important; }
-      .text-primary-foreground { color: hsl(${colors['primary-foreground'][actualTheme]}) !important; }
-      .text-secondary-foreground { color: hsl(${colors['secondary-foreground'][actualTheme]}) !important; }
-      .text-muted-foreground { color: hsl(${colors['muted-foreground'][actualTheme]}) !important; }
+      .text-foreground { color: rgb(${colors.foreground[actualTheme]}) !important; }
+      .text-card-foreground { color: rgb(${colors['card-foreground'][actualTheme]}) !important; }
+      .text-primary { color: rgb(${colors.primary[actualTheme]}) !important; }
+      .text-primary-foreground { color: rgb(${colors['primary-foreground'][actualTheme]}) !important; }
+      .text-secondary-foreground { color: rgb(${colors['secondary-foreground'][actualTheme]}) !important; }
+      .text-muted-foreground { color: rgb(${colors['muted-foreground'][actualTheme]}) !important; }
+      .text-accent-foreground { color: rgb(${colors['accent-foreground'][actualTheme]}) !important; }
       
-      .border-border { border-color: hsl(${colors.border[actualTheme]}) !important; }
-      .border-input { border-color: hsl(${colors.input[actualTheme]}) !important; }
+      .border-border { border-color: rgb(${colors.border[actualTheme]}) !important; }
+      .border-input { border-color: rgb(${colors.input[actualTheme]}) !important; }
 
-      /* Custom RGB variables (for your custom CSS) */
-      ${Object.entries(colors).filter(([key]) => colorGroups.custom.includes(key)).map(([key, values]) => {
-        const value = values[actualTheme];
-        return `.theme-${key.replace(/-/g, '-')} { background-color: rgb(${value}) !important; }`;
-      }).join('\n      ')}
+      /* HSL compatibility layer for any remaining shadcn components */
+      :root {
+        --background-hsl: ${rgbToHsl(colors.background[actualTheme])};
+        --foreground-hsl: ${rgbToHsl(colors.foreground[actualTheme])};
+        --primary-hsl: ${rgbToHsl(colors.primary[actualTheme])};
+        --primary-foreground-hsl: ${rgbToHsl(colors['primary-foreground'][actualTheme])};
+      }
     `;
 
     style.textContent = css;
     document.head.appendChild(style);
 
-    console.log('✅ CSS-compatible theme applied');
+    console.log('✅ Unified RGB theme applied');
   };
 
   const resetColors = () => {
-    console.log('🔄 Resetting to defaults');
+    console.log('🔄 Resetting to RGB defaults');
     setColors(defaultColors);
   };
 
-  // Apply theme when colors or actualTheme changes
   useEffect(() => {
     applyTheme();
   }, [colors, actualTheme]);
@@ -401,11 +356,11 @@ ${rootVars}
             <Palette className="h-5 w-5 text-primary-foreground" />
           </div>
           <h1 className="text-2xl font-bold text-foreground">
-            🎯 CSS-Compatible Theme System
+            🎯 Unified RGB Theme System
           </h1>
         </div>
         <p className="text-muted-foreground">
-          Properly integrated with your existing globals.css structure
+          All colors now use RGB format for consistency and better management
         </p>
       </div>
 
@@ -484,10 +439,10 @@ ${rootVars}
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Palette className="h-5 w-5 text-primary" />
-                🎯 CSS-Compatible Colors
+                🎯 Unified RGB Colors
               </CardTitle>
               <CardDescription>
-                Properly formatted for your existing CSS structure
+                All variables now use RGB format for consistency
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -507,7 +462,7 @@ ${rootVars}
 
               {/* Quick Tests */}
               <div className="mb-6 p-4 border border-border rounded-lg bg-secondary">
-                <h4 className="text-sm font-semibold mb-3 text-foreground">🧪 Quick Tests</h4>
+                <h4 className="text-sm font-semibold mb-3 text-foreground">🧪 Quick RGB Tests</h4>
                 <div className="grid grid-cols-2 gap-4">
                   <Button 
                     size="sm" 
@@ -531,7 +486,7 @@ ${rootVars}
                     <h4 className="text-sm font-medium mb-3 text-foreground">
                       --{colorKey}
                       <span className="text-xs text-muted-foreground ml-2">
-                        ({colorGroups.shadcn.includes(colorKey) ? 'HSL' : 'RGB'} format)
+                        (RGB format)
                       </span>
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -554,7 +509,7 @@ ${rootVars}
                           />
                         </div>
                         <div className="mt-1 text-xs text-muted-foreground font-mono">
-                          Value: {colors[colorKey]?.light || 'N/A'}
+                          RGB: {colors[colorKey]?.light || 'N/A'}
                         </div>
                       </div>
                       
@@ -577,7 +532,7 @@ ${rootVars}
                           />
                         </div>
                         <div className="mt-1 text-xs text-muted-foreground font-mono">
-                          Value: {colors[colorKey]?.dark || 'N/A'}
+                          RGB: {colors[colorKey]?.dark || 'N/A'}
                         </div>
                       </div>
                     </div>
@@ -588,7 +543,7 @@ ${rootVars}
               {/* Action Buttons */}
               <div className="flex gap-2 mt-6 pt-4 border-t border-border">
                 <Button onClick={applyTheme} className="flex-1">
-                  🎯 Apply Theme
+                  🎯 Apply RGB Theme
                 </Button>
                 <Button onClick={resetColors} variant="outline" className="flex items-center gap-1">
                   <RotateCcw className="h-4 w-4" />
@@ -602,8 +557,8 @@ ${rootVars}
         {/* Status */}
         <Card className="mt-6">
           <CardHeader>
-            <CardTitle>🎯 CSS Integration Status</CardTitle>
-            <CardDescription>Current theme configuration and format verification</CardDescription>
+            <CardTitle>🎯 RGB Theme Status</CardTitle>
+            <CardDescription>All colors now use RGB format for consistency</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -612,15 +567,15 @@ ${rootVars}
                 <div className="text-lg font-semibold text-foreground capitalize">{actualTheme}</div>
               </div>
               <div className="p-3 bg-muted rounded-lg">
-                <div className="text-sm font-medium text-muted-foreground">Primary (HSL)</div>
+                <div className="text-sm font-medium text-muted-foreground">Primary (RGB)</div>
                 <div className="text-sm font-mono text-foreground">
                   {colors.primary?.[actualTheme] || 'N/A'}
                 </div>
               </div>
               <div className="p-3 bg-muted rounded-lg">
-                <div className="text-sm font-medium text-muted-foreground">BG Primary (RGB)</div>
+                <div className="text-sm font-medium text-muted-foreground">Background (RGB)</div>
                 <div className="text-sm font-mono text-foreground">
-                  {colors['bg-primary']?.[actualTheme] || 'N/A'}
+                  {colors.background?.[actualTheme] || 'N/A'}
                 </div>
               </div>
             </div>
@@ -628,20 +583,20 @@ ${rootVars}
             {/* Live Preview */}
             <div className="p-4 border border-border rounded-lg bg-card">
               <h4 className="text-sm font-semibold mb-3 text-foreground">
-                🎨 Live Preview
+                🎨 RGB Live Preview
               </h4>
               <div className="space-y-3">
                 <div className="p-3 bg-background border border-border rounded">
-                  <p className="text-foreground">Background with foreground text (HSL format)</p>
+                  <p className="text-foreground">Background with foreground text (RGB format)</p>
                 </div>
                 <div className="p-3 bg-primary rounded">
-                  <p className="text-primary-foreground">Primary background with primary text (HSL format)</p>
+                  <p className="text-primary-foreground">Primary background with primary text (RGB format)</p>
                 </div>
                 <div className="p-3 bg-card border border-border rounded">
-                  <p className="text-card-foreground">Card background with card text (HSL format)</p>
+                  <p className="text-card-foreground">Card background with card text (RGB format)</p>
                 </div>
                 <div className="p-3 bg-secondary rounded">
-                  <p className="text-secondary-foreground">Secondary background (HSL format)</p>
+                  <p className="text-secondary-foreground">Secondary background (RGB format)</p>
                 </div>
               </div>
             </div>
