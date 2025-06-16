@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { MapPin, Building2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -152,8 +153,12 @@ const LocationBuilder = () => {
         ));
         setSelectedCounties(countyIds);
         
-        // Set selected states
-        const states = new Set(cities.map(city => city.state_name));
+        // Set selected states - fix the type issue by ensuring we only get string values
+        const states = new Set<string>(
+          cities
+            .map(city => city.state_name)
+            .filter((stateName): stateName is string => typeof stateName === 'string')
+        );
         setSelectedStates(states);
       }
       
