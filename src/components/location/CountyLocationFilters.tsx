@@ -28,6 +28,19 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
     setSearchValue(`${place.city}, ${place.state}`);
   };
 
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 3959; // Radius of the Earth in miles
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const distance = R * c;
+    return distance;
+  };
+
   const handleSearch = async () => {
     if (!searchValue.trim()) {
       toast({
@@ -38,37 +51,102 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
       return;
     }
 
+    if (!searchCoords) {
+      toast({
+        title: "Location Required",
+        description: "Please select a valid location from the autocomplete",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSearching(true);
     try {
-      // For now, we'll use a simple mock search since we don't have the counties table
-      const mockResults = [
-        {
-          id: '1',
-          county_name: 'Los Angeles County',
-          state_name: 'California',
-          total_population: 10000000,
-          city_count: 88,
-          distance_miles: 0,
-          latitude: 34.0522,
-          longitude: -118.2437
-        },
-        {
-          id: '2', 
-          county_name: 'Orange County',
-          state_name: 'California',
-          total_population: 3200000,
-          city_count: 34,
-          distance_miles: 25,
-          latitude: 33.7175,
-          longitude: -117.8311
-        }
-      ];
+      // Query location_data table to get counties within radius
+      const { data: locationData, error } = await supabase
+        .from('location_data')
+        .select(`
+          county_name,
+          state_name,
+          latitude,
+          longitude,
+          population,
+          income_household_median,
+          age_median,
+          education_bachelors,
+          home_value,
+          race_white,
+          race_black,
+          race_asian,
+          race_hispanic: hispanic
+        `)
+        .not('county_name', 'is', null)
+        .not('latitude', 'is', null)
+        .not('longitude', 'is', null);
 
-      onSearchResults(mockResults, searchCoords);
+      if (error) throw error;
+
+      // Group by county and calculate distances
+      const countyMap = new Map();
+      
+      locationData.forEach(location => {
+        const countyKey = `${location.county_name}-${location.state_name}`;
+        
+        if (!countyMap.has(countyKey)) {
+          const distance = calculateDistance(
+            searchCoords.lat,
+            searchCoords.lng,
+            location.latitude,
+            location.longitude
+          );
+
+          if (distance <= radiusMiles) {
+            // Parse numeric values, handling text fields
+            const parseNumber = (value: any) => {
+              if (typeof value === 'number') return value;
+              if (typeof value === 'string') {
+                const parsed = parseFloat(value.replace(/[,%$]/g, ''));
+                return isNaN(parsed) ? null : parsed;
+              }
+              return null;
+            };
+
+            countyMap.set(countyKey, {
+              id: countyKey,
+              county_name: location.county_name,
+              state_name: location.state_name,
+              center_lat: location.latitude,
+              center_lng: location.longitude,
+              distance_miles: Math.round(distance * 10) / 10,
+              total_population: parseNumber(location.population),
+              avg_income_household_median: parseNumber(location.income_household_median),
+              avg_home_value: parseNumber(location.home_value),
+              avg_age_median: parseNumber(location.age_median),
+              education_bachelors_pct: parseNumber(location.education_bachelors),
+              race_white_pct: parseNumber(location.race_white),
+              race_black_pct: parseNumber(location.race_black),
+              race_asian_pct: parseNumber(location.race_asian),
+              race_hispanic_pct: parseNumber(location.race_hispanic),
+              city_count: 1 // We'll aggregate this
+            });
+          }
+        } else {
+          // Update city count for existing county
+          const county = countyMap.get(countyKey);
+          county.city_count += 1;
+        }
+      });
+
+      const results = Array.from(countyMap.values())
+        .sort((a, b) => a.distance_miles - b.distance_miles)
+        .slice(0, 50); // Limit to 50 results for performance
+
+      console.log('Real data search results:', results);
+      onSearchResults(results, searchCoords);
       
       toast({
         title: "Search Complete",
-        description: `Found ${mockResults.length} counties within ${radiusMiles} miles`,
+        description: `Found ${results.length} counties within ${radiusMiles} miles`,
       });
     } catch (error) {
       console.error('Search error:', error);

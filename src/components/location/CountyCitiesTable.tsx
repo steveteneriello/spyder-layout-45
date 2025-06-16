@@ -15,6 +15,9 @@ interface CityData {
   longitude?: number;
   population?: number;
   country: string;
+  income_household_median?: number;
+  age_median?: number;
+  home_value?: number;
 }
 
 interface CountyCitiesTableProps {
@@ -45,44 +48,87 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
   const fetchCitiesForCounties = async () => {
     setIsLoading(true);
     try {
-      // For now, we'll use mock data since we don't have the actual cities table
-      const mockCities: CityData[] = [
-        {
-          id: '1',
-          city: 'Los Angeles',
-          state_name: 'California',
-          county_name: 'Los Angeles County',
-          postal_code: '90210',
-          latitude: 34.0522,
-          longitude: -118.2437,
-          population: 4000000,
-          country: 'United States'
-        },
-        {
-          id: '2',
-          city: 'Beverly Hills',
-          state_name: 'California', 
-          county_name: 'Los Angeles County',
-          postal_code: '90210',
-          latitude: 34.0736,
-          longitude: -118.4004,
-          population: 34000,
-          country: 'United States'
-        },
-        {
-          id: '3',
-          city: 'Santa Monica',
-          state_name: 'California',
-          county_name: 'Los Angeles County', 
-          postal_code: '90401',
-          latitude: 34.0195,
-          longitude: -118.4912,
-          population: 93000,
-          country: 'United States'
-        }
-      ];
+      // Get selected county names from search results
+      const selectedCountyData = searchResults.filter((county, index) => {
+        const countyId = `${county.county_name}-${county.state_name}-${index}`;
+        return selectedCounties.has(countyId);
+      });
 
-      setCities(mockCities);
+      if (selectedCountyData.length === 0) {
+        setCities([]);
+        return;
+      }
+
+      // Build query conditions for selected counties
+      let query = supabase
+        .from('location_data')
+        .select(`
+          id,
+          city,
+          state_name,
+          county_name,
+          postal_code,
+          latitude,
+          longitude,
+          population,
+          income_household_median,
+          age_median,
+          home_value
+        `)
+        .not('city', 'is', null)
+        .not('latitude', 'is', null)
+        .not('longitude', 'is', null);
+
+      // Add county filters
+      const countyFilters = selectedCountyData.map(county => 
+        `county_name.eq.${county.county_name},state_name.eq.${county.state_name}`
+      );
+
+      if (countyFilters.length === 1) {
+        const [countyName, stateName] = selectedCountyData[0];
+        query = query
+          .eq('county_name', selectedCountyData[0].county_name)
+          .eq('state_name', selectedCountyData[0].state_name);
+      } else {
+        // For multiple counties, we need to use OR conditions
+        const orConditions = selectedCountyData.map(county => 
+          `and(county_name.eq.${county.county_name},state_name.eq.${county.state_name})`
+        ).join(',');
+        query = query.or(orConditions);
+      }
+
+      const { data: cityData, error } = await query
+        .order('city')
+        .limit(200); // Limit for performance
+
+      if (error) throw error;
+
+      const parseNumber = (value: any) => {
+        if (typeof value === 'number') return value;
+        if (typeof value === 'string') {
+          const parsed = parseFloat(value.replace(/[,%$]/g, ''));
+          return isNaN(parsed) ? null : parsed;
+        }
+        return null;
+      };
+
+      const formattedCities: CityData[] = cityData.map(city => ({
+        id: city.id,
+        city: city.city,
+        state_name: city.state_name,
+        county_name: city.county_name,
+        postal_code: city.postal_code,
+        latitude: city.latitude,
+        longitude: city.longitude,
+        population: parseNumber(city.population),
+        country: 'United States',
+        income_household_median: parseNumber(city.income_household_median),
+        age_median: parseNumber(city.age_median),
+        home_value: parseNumber(city.home_value)
+      }));
+
+      console.log('Fetched cities for selected counties:', formattedCities.length);
+      setCities(formattedCities);
     } catch (error) {
       console.error('Error fetching cities:', error);
       toast({
@@ -118,6 +164,15 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
       setSelectedCities(allIds);
       onSelectedCitiesChange(cities);
     }
+  };
+
+  const formatCurrency = (value: number | null | undefined) => {
+    if (!value || value === 0) return 'N/A';
+    return new Intl.NumberFormat('en-US', { 
+      style: 'currency', 
+      currency: 'USD',
+      maximumFractionDigits: 0 
+    }).format(value);
   };
 
   if (selectedCounties.size === 0) {
@@ -173,12 +228,20 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
                   <div className="flex items-center justify-between">
                     <h4 className="font-medium text-slate-900 truncate">{city.city}</h4>
                     <span className="text-sm text-slate-500 ml-2">
-                      {city.population?.toLocaleString()}
+                      {city.population?.toLocaleString() || 'N/A'}
                     </span>
                   </div>
                   <p className="text-sm text-slate-600">
                     {city.county_name}, {city.state_name}
                   </p>
+                  <div className="flex gap-4 text-xs text-slate-500 mt-1">
+                    {city.income_household_median && (
+                      <span>Income: {formatCurrency(city.income_household_median)}</span>
+                    )}
+                    {city.home_value && (
+                      <span>Home: {formatCurrency(city.home_value)}</span>
+                    )}
+                  </div>
                   {city.postal_code && (
                     <p className="text-xs text-slate-500">{city.postal_code}</p>
                   )}

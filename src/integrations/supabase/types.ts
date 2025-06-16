@@ -471,7 +471,7 @@ export type Database = {
           home_ownership: string | null
           home_value: string | null
           housing_units: string | null
-          id: number
+          id: string
           income_household_10_to_15: string | null
           income_household_100_to_150: string | null
           income_household_15_to_20: string | null
@@ -574,7 +574,7 @@ export type Database = {
           home_ownership?: string | null
           home_value?: string | null
           housing_units?: string | null
-          id: number
+          id?: string
           income_household_10_to_15?: string | null
           income_household_100_to_150?: string | null
           income_household_15_to_20?: string | null
@@ -677,7 +677,7 @@ export type Database = {
           home_ownership?: string | null
           home_value?: string | null
           housing_units?: string | null
-          id?: number
+          id?: string
           income_household_10_to_15?: string | null
           income_household_100_to_150?: string | null
           income_household_15_to_20?: string | null
