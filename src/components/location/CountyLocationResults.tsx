@@ -53,23 +53,18 @@ const CountyLocationResults: React.FC<CountyLocationResultsProps> = ({
     return Math.round(value).toLocaleString();
   };
 
+  const generateUUID = () => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  };
+
   const handleSaveList = async () => {
     setIsSaving(true);
     try {
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError) throw sessionError;
-
-      const user = sessionData?.session?.user;
-      if (!user) {
-        toast({
-          title: "Not signed in",
-          description: "You must be signed in to save a list.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const selectedCountyData = searchResults.filter((county, index) => {
+      const selectedCountyData = searchResults.filter((county) => {
         const countyId = `${county.county_name}-${county.state_name}`;
         return selectedCounties.has(countyId);
       });
@@ -125,7 +120,7 @@ const CountyLocationResults: React.FC<CountyLocationResultsProps> = ({
               counties: selectedCountyData.length,
               cities: selectedCities.length
             },
-            created_by: user.id,
+            created_by: null, // Since RLS is disabled
             last_accessed_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           },
@@ -144,7 +139,7 @@ const CountyLocationResults: React.FC<CountyLocationResultsProps> = ({
       selectedCountyData.forEach((county) => {
         itemsToInsert.push({
           list_id: listData.id,
-          location_data_id: county.id || crypto.randomUUID(), // Generate UUID if not present
+          location_data_id: generateUUID(), // Generate proper UUID
           city: county.county_name,
           state_name: county.state_name,
           county_name: county.county_name,
@@ -160,7 +155,7 @@ const CountyLocationResults: React.FC<CountyLocationResultsProps> = ({
       selectedCities.forEach((city) => {
         itemsToInsert.push({
           list_id: listData.id,
-          location_data_id: city.id || crypto.randomUUID(), // Generate UUID if not present
+          location_data_id: city.id || generateUUID(), // Use city's existing ID or generate new UUID
           city: city.city,
           state_name: city.state_name,
           county_name: city.county_name,
