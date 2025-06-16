@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -62,36 +61,45 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
         return;
       }
 
-      // Create OR conditions for each selected county
-      const orConditions = selectedCountyData.map(county => 
-        `(county_name.eq.${county.county_name},state_name.eq.${county.state_name})`
-      ).join(',');
+      let cityData = [];
 
-      console.log('OR conditions:', orConditions);
+      // Fetch cities for each county separately to avoid complex OR syntax
+      for (const county of selectedCountyData) {
+        console.log(`Fetching cities for county: ${county.county_name}, ${county.state_name}`);
+        
+        const { data: countyCities, error } = await supabase
+          .from('location_data')
+          .select(`
+            id,
+            city,
+            state_name,
+            county_name,
+            postal_code,
+            latitude,
+            longitude,
+            population,
+            income_household_median,
+            age_median,
+            home_value
+          `)
+          .eq('county_name', county.county_name)
+          .eq('state_name', county.state_name)
+          .not('city', 'is', null)
+          .not('latitude', 'is', null)
+          .not('longitude', 'is', null)
+          .order('city')
+          .limit(50); // Limit per county for performance
 
-      const { data: cityData, error } = await supabase
-        .from('location_data')
-        .select(`
-          id,
-          city,
-          state_name,
-          county_name,
-          postal_code,
-          latitude,
-          longitude,
-          population,
-          income_household_median,
-          age_median,
-          home_value
-        `)
-        .not('city', 'is', null)
-        .not('latitude', 'is', null)
-        .not('longitude', 'is', null)
-        .or(orConditions)
-        .order('city')
-        .limit(200); // Limit for performance
+        if (error) {
+          console.error(`Error fetching cities for ${county.county_name}:`, error);
+          continue;
+        }
 
-      if (error) throw error;
+        if (countyCities && countyCities.length > 0) {
+          console.log(`Found ${countyCities.length} cities for ${county.county_name}`);
+          cityData.push(...countyCities);
+        }
+      }
 
       const parseNumber = (value: any) => {
         if (typeof value === 'number') return value;
@@ -117,8 +125,17 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
         home_value: parseNumber(city.home_value)
       }));
 
-      console.log('Fetched cities for selected counties:', formattedCities.length);
-      setCities(formattedCities);
+      // Remove duplicates based on city name and coordinates
+      const uniqueCities = formattedCities.filter((city, index, self) => 
+        index === self.findIndex((c) => 
+          c.city === city.city && 
+          c.state_name === city.state_name && 
+          c.county_name === city.county_name
+        )
+      );
+
+      console.log('Total unique cities found:', uniqueCities.length);
+      setCities(uniqueCities.sort((a, b) => a.city.localeCompare(b.city)));
     } catch (error) {
       console.error('Error fetching cities:', error);
       toast({
