@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Search, MapPin, Plus, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -105,7 +106,8 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
       console.log('State filters:', selectedStates);
       console.log('Timezone filters:', selectedTimezones);
       
-      // Calculate bounding box - use centroid coordinates for more accurate county coverage
+      // Use centroid coordinates consistently for bounding box calculation
+      // This ensures we're using the same coordinate system throughout
       const latRange = radiusMiles / 69; // degrees latitude per mile
       const lngRange = radiusMiles / (69 * Math.cos(searchCoords.lat * Math.PI / 180)); // degrees longitude per mile
       
@@ -116,7 +118,7 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
 
       console.log('Bounding box:', { minLat, maxLat, minLng, maxLng });
 
-      // Build query using centroid coordinates and county-level indexes
+      // Build query using ONLY centroid coordinates for consistent results
       let query = supabase
         .from('location_data')
         .select(`
@@ -141,6 +143,7 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
         .not('county_name', 'is', null)
         .not('centroid_latitude', 'is', null)
         .not('centroid_longitude', 'is', null)
+        // Use centroid coordinates for bounding box to match distance calculations
         .gte('centroid_latitude', minLat)
         .lte('centroid_latitude', maxLat)
         .gte('centroid_longitude', minLng)
@@ -172,12 +175,12 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
         return;
       }
 
-      // Group by county and calculate distances using centroid coordinates
+      // Group by county and calculate distances using centroid coordinates consistently
       const countyMap = new Map();
       let locationsWithinRadius = 0;
       
       locationData.forEach(location => {
-        // Use centroid coordinates for county distance calculation
+        // Use centroid coordinates consistently for all distance calculations
         const countyLat = typeof location.centroid_latitude === 'number' 
           ? location.centroid_latitude 
           : parseFloat(location.centroid_latitude);
