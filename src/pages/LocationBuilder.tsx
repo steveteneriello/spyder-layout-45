@@ -127,44 +127,68 @@ const LocationBuilder = () => {
           income_household_median: item.income_household_median || Math.floor(Math.random() * 40000) + 40000
         }));
         
-        setSelectedCities(cities);
+        // Create comprehensive search results based on the counties in the list
+        const countyMap = new Map();
         
-        // Create mock search results based on the counties in the list
-        const uniqueCounties = Array.from(new Set(cities.map(city => city.county_name)))
-          .map((countyName, index) => {
-            const firstCityInCounty = cities.find(city => city.county_name === countyName);
-            return {
-              county_name: countyName,
-              state_name: firstCityInCounty?.state_name || '',
-              center_lat: firstCityInCounty?.latitude || newCenterCoords.lat,
-              center_lng: firstCityInCounty?.longitude || newCenterCoords.lng,
-              total_population: cities
-                .filter(city => city.county_name === countyName)
-                .reduce((sum, city) => sum + (city.population || 0), 0),
-              city_count: cities.filter(city => city.county_name === countyName).length
-            };
-          });
+        cities.forEach(city => {
+          const countyKey = `${city.county_name}-${city.state_name}`;
+          if (!countyMap.has(countyKey)) {
+            countyMap.set(countyKey, {
+              county_name: city.county_name,
+              state_name: city.state_name,
+              center_lat: city.latitude,
+              center_lng: city.longitude,
+              total_population: 0,
+              city_count: 0,
+              cities: []
+            });
+          }
+          
+          const county = countyMap.get(countyKey);
+          county.total_population += city.population || 0;
+          county.city_count += 1;
+          county.cities.push(city);
+          
+          // Update center coordinates to be average of all cities in county
+          const avgLat = county.cities.reduce((sum: number, c: any) => sum + (c.latitude || 0), 0) / county.cities.length;
+          const avgLng = county.cities.reduce((sum: number, c: any) => sum + (c.longitude || 0), 0) / county.cities.length;
+          county.center_lat = avgLat;
+          county.center_lng = avgLng;
+        });
         
+        const uniqueCounties = Array.from(countyMap.values());
+        
+        // Set the search results to show all counties
         setSearchResults(uniqueCounties);
         
-        // Select the counties that have cities in the list
+        // Select all counties that have cities in the list
         const countyIds = new Set(uniqueCounties.map((county, index) => 
           `${county.county_name}-${county.state_name}-${index}`
         ));
         setSelectedCounties(countyIds);
         
-        // Set selected states - fix the type issue by ensuring we only get string values
+        // Set all cities as selected
+        setSelectedCities(cities);
+        
+        // Set selected states
         const states = new Set<string>(
           cities
             .map(city => city.state_name)
             .filter((stateName): stateName is string => typeof stateName === 'string')
         );
         setSelectedStates(states);
+        
+        console.log('Loaded saved list:', {
+          counties: uniqueCounties.length,
+          cities: cities.length,
+          selectedCounties: countyIds.size,
+          selectedCities: cities.length
+        });
       }
       
       toast({
         title: "List Loaded",
-        description: `Successfully loaded "${listWithItems.name}"`,
+        description: `Successfully loaded "${listWithItems.name}" with ${listWithItems.items?.length || 0} locations`,
       });
       
     } catch (error) {
