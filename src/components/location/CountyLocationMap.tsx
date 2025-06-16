@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { Wrapper, Status } from "@googlemaps/react-wrapper";
 import { Button } from "@/components/ui/button";
@@ -339,8 +340,8 @@ const CountyLocationMap: React.FC<CountyLocationMapProps> = ({
 
   return (
     <div className="h-full w-full relative">
-      {/* Toggle Controls */}
-      <div className="absolute top-4 right-4 z-10 bg-white rounded-lg shadow-lg p-2">
+      {/* Toggle Controls - moved left to accommodate expand map button */}
+      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 -translate-x-8 z-10 bg-white rounded-lg shadow-lg p-2">
         <ToggleGroup 
           type="multiple" 
           value={toggleValue}
@@ -366,9 +367,9 @@ const CountyLocationMap: React.FC<CountyLocationMapProps> = ({
         </ToggleGroup>
       </div>
 
-      {/* Map Legend */}
+      {/* Map Legend - moved up to avoid covering Google logo */}
       {(showCounties || showCities) && (
-        <div className="absolute bottom-4 left-4 z-10 bg-white rounded-lg shadow-lg p-3">
+        <div className="absolute bottom-12 left-4 z-10 bg-white rounded-lg shadow-lg p-3">
           <div className="text-xs font-semibold text-slate-600 mb-2">Map Legend</div>
           <div className="space-y-1 text-xs">
             {showCounties && (

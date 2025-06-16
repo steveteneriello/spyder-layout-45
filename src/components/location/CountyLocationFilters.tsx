@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Search, MapPin, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -231,7 +232,7 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
 
   return (
     <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-4">
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center space-x-6">
         <div className="flex-1">
           <CityAutocomplete
             value={searchValue}
@@ -240,19 +241,21 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
           />
         </div>
         
-        <div className="w-48">
-          <Label htmlFor="radius" className="text-sm font-medium text-slate-700 mb-2 block">
+        <div className="w-64">
+          <Label htmlFor="radius" className="text-sm font-medium text-slate-700 mb-3 block">
             Radius: {radiusMiles} miles
           </Label>
-          <Slider
-            id="radius"
-            min={1}
-            max={3000}
-            step={1}
-            value={[radiusMiles]}
-            onValueChange={(value) => setRadiusMiles(value[0])}
-            className="w-full"
-          />
+          <div className="flex items-center justify-center py-2">
+            <Slider
+              id="radius"
+              min={1}
+              max={3000}
+              step={1}
+              value={[radiusMiles]}
+              onValueChange={(value) => setRadiusMiles(value[0])}
+              className="w-full"
+            />
+          </div>
         </div>
         
         <Button 
