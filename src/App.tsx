@@ -17,25 +17,27 @@ const queryClient = new QueryClient();
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <GlobalThemeProvider>
+    <GlobalThemeProvider>
+      <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <Toaster />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/campaigns" element={<Campaigns />} />
-              <Route path="/scheduler" element={<SchedulerDashboard />} />
-              <Route path="/scheduler/create" element={<CreateSchedule />} />
-              <Route path="/location-builder" element={<LocationBuilder />} />
-              <Route path="/theme" element={<Theme />} />
-              <Route path="/admin/theme" element={<AdminThemeSettings />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
+          <div className="min-h-screen" style={{ backgroundColor: `rgb(var(--bg-primary))` }}>
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/campaigns" element={<Campaigns />} />
+                <Route path="/scheduler" element={<SchedulerDashboard />} />
+                <Route path="/scheduler/create" element={<CreateSchedule />} />
+                <Route path="/location-builder" element={<LocationBuilder />} />
+                <Route path="/theme" element={<Theme />} />
+                <Route path="/admin/theme" element={<AdminThemeSettings />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </div>
         </TooltipProvider>
-      </GlobalThemeProvider>
-    </QueryClientProvider>
+      </QueryClientProvider>
+    </GlobalThemeProvider>
   );
 }
 
