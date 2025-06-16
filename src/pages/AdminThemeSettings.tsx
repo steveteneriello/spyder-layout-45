@@ -1,13 +1,62 @@
 
-import React from 'react';
-import { Settings, Monitor, Sun, Moon, Palette } from 'lucide-react';
+import React, { useState } from 'react';
+import { Settings, Monitor, Sun, Moon, Palette, RotateCcw } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useGlobalTheme, ThemeMode } from '@/contexts/GlobalThemeContext';
 import SidebarLayout from '@/components/layout/SidebarLayout';
 
+interface ColorSettings {
+  [key: string]: {
+    light: string;
+    dark: string;
+  };
+}
+
+const defaultColors: ColorSettings = {
+  'bg-primary': { light: '255 255 255', dark: '14 17 23' },
+  'bg-secondary': { light: '251 252 253', dark: '22 27 34' },
+  'bg-tertiary': { light: '248 249 250', dark: '33 38 45' },
+  'bg-hover': { light: '241 243 245', dark: '48 54 61' },
+  'bg-active': { light: '233 236 239', dark: '55 62 71' },
+  'bg-selected': { light: '227 242 253', dark: '28 33 40' },
+  'text-primary': { light: '26 32 44', dark: '240 246 252' },
+  'text-secondary': { light: '74 85 104', dark: '125 133 144' },
+  'text-tertiary': { light: '113 128 150', dark: '101 109 118' },
+  'text-inverse': { light: '255 255 255', dark: '14 17 23' },
+  'accent-primary': { light: '49 130 206', dark: '56 139 253' },
+  'accent-primary-hover': { light: '44 82 130', dark: '31 111 235' },
+  'accent-primary-active': { light: '42 67 101', dark: '26 84 144' },
+  'success': { light: '56 161 105', dark: '63 185 80' },
+  'warning': { light: '221 107 32', dark: '210 153 34' },
+  'error': { light: '229 62 62', dark: '248 81 73' },
+  'border-primary': { light: '226 232 240', dark: '48 54 61' },
+  'border-secondary': { light: '241 243 245', dark: '33 38 45' },
+  'border-focus': { light: '49 130 206', dark: '56 139 253' },
+};
+
 const AdminThemeSettings = () => {
   const { themeMode, actualTheme, setThemeMode, isSystemDark } = useGlobalTheme();
+  const [colors, setColors] = useState<ColorSettings>(defaultColors);
+  const [activeColorGroup, setActiveColorGroup] = useState('backgrounds');
+
+  const colorGroups = {
+    backgrounds: ['bg-primary', 'bg-secondary', 'bg-tertiary', 'bg-hover', 'bg-active', 'bg-selected'],
+    text: ['text-primary', 'text-secondary', 'text-tertiary', 'text-inverse'],
+    accents: ['accent-primary', 'accent-primary-hover', 'accent-primary-active'],
+    status: ['success', 'warning', 'error'],
+    borders: ['border-primary', 'border-secondary', 'border-focus']
+  };
+
+  const colorGroupLabels = {
+    backgrounds: 'Background Colors',
+    text: 'Text Colors',
+    accents: 'Accent Colors',
+    status: 'Status Colors',
+    borders: 'Border Colors'
+  };
 
   const themeOptions = [
     {
@@ -43,6 +92,55 @@ const AdminThemeSettings = () => {
 
   const handleThemeChange = (mode: ThemeMode) => {
     setThemeMode(mode);
+  };
+
+  const handleColorChange = (colorKey: string, mode: 'light' | 'dark', value: string) => {
+    setColors(prev => ({
+      ...prev,
+      [colorKey]: {
+        ...prev[colorKey],
+        [mode]: value
+      }
+    }));
+    
+    // Apply the color change immediately
+    const rgbValue = hexToRgb(value);
+    if (rgbValue) {
+      document.documentElement.style.setProperty(`--${colorKey}`, rgbValue);
+    }
+  };
+
+  const hexToRgb = (hex: string): string | null => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    if (result) {
+      const r = parseInt(result[1], 16);
+      const g = parseInt(result[2], 16);
+      const b = parseInt(result[3], 16);
+      return `${r} ${g} ${b}`;
+    }
+    return null;
+  };
+
+  const rgbToHex = (rgb: string): string => {
+    const [r, g, b] = rgb.split(' ').map(Number);
+    return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+  };
+
+  const resetColors = () => {
+    setColors(defaultColors);
+    // Reset CSS variables to defaults
+    Object.entries(defaultColors).forEach(([key, values]) => {
+      const currentTheme = actualTheme;
+      const rgbValue = values[currentTheme];
+      document.documentElement.style.setProperty(`--${key}`, rgbValue);
+    });
+  };
+
+  const applyColors = () => {
+    Object.entries(colors).forEach(([key, values]) => {
+      const currentTheme = actualTheme;
+      document.documentElement.style.setProperty(`--${key}`, values[currentTheme]);
+    });
   };
 
   return (
@@ -82,77 +180,169 @@ const AdminThemeSettings = () => {
             </h1>
           </div>
           <p className="text-slate-600 dark:text-slate-400 max-w-2xl">
-            Configure the global appearance settings for all users. Changes will apply immediately and be saved as the default preference.
+            Configure the global appearance settings and customize colors for all users. Changes will apply immediately and be saved as the default preference.
           </p>
         </div>
 
         {/* Main content */}
-        <div className="p-6 max-w-4xl">
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Monitor className="h-5 w-5" />
-                Theme Preference
-              </CardTitle>
-              <CardDescription>
-                Choose how the application should appear. Your selection will be saved and applied across all sessions.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4">
-                {themeOptions.map((option) => {
-                  const Icon = option.icon;
-                  const isActive = themeMode === option.id;
-                  
-                  return (
-                    <div
-                      key={option.id}
-                      className={`relative p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 ${
-                        isActive
-                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20 shadow-md'
-                          : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800/50'
-                      }`}
-                      onClick={() => handleThemeChange(option.id)}
-                    >
-                      <div className="flex items-start gap-4">
-                        {/* Theme Preview */}
-                        <div className="flex-shrink-0">
-                          <ThemePreview mode={option.preview} />
-                        </div>
-                        
-                        {/* Theme Info */}
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Icon className={`h-5 w-5 ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400'}`} />
-                            <h3 className={`font-semibold ${isActive ? 'text-blue-900 dark:text-blue-100' : 'text-slate-900 dark:text-slate-100'}`}>
-                              {option.title}
-                            </h3>
+        <div className="p-6 max-w-6xl">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Theme Mode Selection */}
+            <Card className="mb-6 lg:mb-0">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Monitor className="h-5 w-5" />
+                  Theme Preference
+                </CardTitle>
+                <CardDescription>
+                  Choose how the application should appear. Your selection will be saved and applied across all sessions.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4">
+                  {themeOptions.map((option) => {
+                    const Icon = option.icon;
+                    const isActive = themeMode === option.id;
+                    
+                    return (
+                      <div
+                        key={option.id}
+                        className={`relative p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 ${
+                          isActive
+                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20 shadow-md'
+                            : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                        }`}
+                        onClick={() => handleThemeChange(option.id)}
+                      >
+                        <div className="flex items-start gap-4">
+                          {/* Theme Preview */}
+                          <div className="flex-shrink-0">
+                            <ThemePreview mode={option.preview} />
                           </div>
-                          <p className={`text-sm ${isActive ? 'text-blue-700 dark:text-blue-300' : 'text-slate-600 dark:text-slate-400'}`}>
-                            {option.description}
-                          </p>
+                          
+                          {/* Theme Info */}
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Icon className={`h-5 w-5 ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400'}`} />
+                              <h3 className={`font-semibold ${isActive ? 'text-blue-900 dark:text-blue-100' : 'text-slate-900 dark:text-slate-100'}`}>
+                                {option.title}
+                              </h3>
+                            </div>
+                            <p className={`text-sm ${isActive ? 'text-blue-700 dark:text-blue-300' : 'text-slate-600 dark:text-slate-400'}`}>
+                              {option.description}
+                            </p>
+                          </div>
+                          
+                          {/* Selection Indicator */}
+                          <div className="flex-shrink-0">
+                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                              isActive 
+                                ? 'border-blue-500 bg-blue-500' 
+                                : 'border-slate-300 dark:border-slate-600'
+                            }`}>
+                              {isActive && <div className="w-2 h-2 bg-white rounded-full" />}
+                            </div>
+                          </div>
                         </div>
-                        
-                        {/* Selection Indicator */}
-                        <div className="flex-shrink-0">
-                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                            isActive 
-                              ? 'border-blue-500 bg-blue-500' 
-                              : 'border-slate-300 dark:border-slate-600'
-                          }`}>
-                            {isActive && <div className="w-2 h-2 bg-white rounded-full" />}
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Color Customization */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Palette className="h-5 w-5" />
+                  Color Customization
+                </CardTitle>
+                <CardDescription>
+                  Customize theme colors for both light and dark modes.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {/* Color Group Tabs */}
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {Object.entries(colorGroupLabels).map(([key, label]) => (
+                    <Button
+                      key={key}
+                      variant={activeColorGroup === key ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setActiveColorGroup(key)}
+                      className="text-xs"
+                    >
+                      {label}
+                    </Button>
+                  ))}
+                </div>
+
+                {/* Color Controls */}
+                <div className="space-y-4 max-h-96 overflow-y-auto">
+                  {colorGroups[activeColorGroup as keyof typeof colorGroups]?.map((colorKey) => (
+                    <div key={colorKey} className="p-3 border rounded-lg">
+                      <Label className="text-sm font-medium mb-2 block capitalize">
+                        {colorKey.replace(/-/g, ' ')}
+                      </Label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-xs text-slate-500 mb-1 block">Light Mode</Label>
+                          <div className="flex gap-2">
+                            <Input
+                              type="color"
+                              value={rgbToHex(colors[colorKey]?.light || '255 255 255')}
+                              onChange={(e) => handleColorChange(colorKey, 'light', e.target.value)}
+                              className="w-12 h-8 p-1 rounded"
+                            />
+                            <Input
+                              type="text"
+                              value={rgbToHex(colors[colorKey]?.light || '255 255 255')}
+                              onChange={(e) => handleColorChange(colorKey, 'light', e.target.value)}
+                              className="text-xs flex-1"
+                              placeholder="#ffffff"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <Label className="text-xs text-slate-500 mb-1 block">Dark Mode</Label>
+                          <div className="flex gap-2">
+                            <Input
+                              type="color"
+                              value={rgbToHex(colors[colorKey]?.dark || '14 17 23')}
+                              onChange={(e) => handleColorChange(colorKey, 'dark', e.target.value)}
+                              className="w-12 h-8 p-1 rounded"
+                            />
+                            <Input
+                              type="text"
+                              value={rgbToHex(colors[colorKey]?.dark || '14 17 23')}
+                              onChange={(e) => handleColorChange(colorKey, 'dark', e.target.value)}
+                              className="text-xs flex-1"
+                              placeholder="#0e1117"
+                            />
                           </div>
                         </div>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+                  ))}
+                </div>
+
+                {/* Color Actions */}
+                <div className="flex gap-2 mt-4 pt-4 border-t">
+                  <Button onClick={applyColors} size="sm" className="flex-1">
+                    Apply Colors
+                  </Button>
+                  <Button onClick={resetColors} variant="outline" size="sm" className="flex items-center gap-1">
+                    <RotateCcw className="h-4 w-4" />
+                    Reset
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
           {/* Current Status */}
-          <Card>
+          <Card className="mt-6">
             <CardHeader>
               <CardTitle>Current Status</CardTitle>
               <CardDescription>
