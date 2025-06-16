@@ -1,9 +1,9 @@
-
 import React, { useState } from 'react';
 import { Search, MapPin, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import CityAutocomplete from "./CityAutocomplete";
@@ -240,19 +240,18 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
           />
         </div>
         
-        <div className="w-32">
-          <Label htmlFor="radius" className="text-sm font-medium text-slate-700 mb-1 block">
-            Radius
+        <div className="w-48">
+          <Label htmlFor="radius" className="text-sm font-medium text-slate-700 mb-2 block">
+            Radius: {radiusMiles} miles
           </Label>
-          <Input
+          <Slider
             id="radius"
-            type="number"
-            placeholder="Miles"
-            value={radiusMiles}
-            onChange={(e) => setRadiusMiles(parseInt(e.target.value) || 50)}
-            min="1"
-            max="500"
-            className="text-center"
+            min={1}
+            max={3000}
+            step={1}
+            value={[radiusMiles]}
+            onValueChange={(value) => setRadiusMiles(value[0])}
+            className="w-full"
           />
         </div>
         
