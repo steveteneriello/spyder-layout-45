@@ -62,14 +62,12 @@ interface BrandSettings {
 export default function AdminThemeSettings() {
   const { themeMode, setThemeMode, actualTheme, colors, updateColors } = useGlobalTheme();
   
-  // Debug settings state
   const [debugSettings, setDebugSettings] = useState<DebugSettings>({
     showThemeDebug: false,
     showColorPreview: true,
     showThemeInfo: true
   });
 
-  // Brand settings state
   const [brandSettings, setBrandSettings] = useState<BrandSettings>({
     useLogo: false,
     brandText: 'Oxylabs Dashboard',
@@ -84,9 +82,7 @@ export default function AdminThemeSettings() {
   const [activeSection, setActiveSection] = useState('theme');
   const [unsavedChanges, setUnsavedChanges] = useState(false);
 
-  // Load settings on mount
   useEffect(() => {
-    // Load debug settings
     const savedDebugSettings = localStorage.getItem('theme-debug-settings');
     if (savedDebugSettings) {
       try {
@@ -96,7 +92,6 @@ export default function AdminThemeSettings() {
       }
     }
 
-    // Load brand settings
     const savedBrandSettings = localStorage.getItem('brand-settings');
     if (savedBrandSettings) {
       try {
@@ -107,42 +102,31 @@ export default function AdminThemeSettings() {
     }
   }, []);
 
-  // Save debug settings
   const updateDebugSettings = (updates: Partial<DebugSettings>) => {
     const newSettings = { ...debugSettings, ...updates };
     setDebugSettings(newSettings);
-    setUnsavedChanges(true); // Mark as having unsaved changes
-    
-    // Don't auto-save here - wait for explicit save
+    setUnsavedChanges(true);
   };
 
-  // Save brand settings
   const updateBrandSettings = (updates: Partial<BrandSettings>) => {
     const newSettings = { ...brandSettings, ...updates };
     setBrandSettings(newSettings);
-    setUnsavedChanges(true); // Mark as having unsaved changes
-    
-    // Don't auto-save here - wait for explicit save
+    setUnsavedChanges(true);
   };
 
-  // Save all settings function
   const saveAllSettings = () => {
-    // Save debug settings
     localStorage.setItem('theme-debug-settings', JSON.stringify(debugSettings));
     window.dispatchEvent(new CustomEvent('themeDebugSettingsChanged', { 
       detail: debugSettings 
     }));
 
-    // Save brand settings
     localStorage.setItem('brand-settings', JSON.stringify(brandSettings));
     window.dispatchEvent(new CustomEvent('brandSettingsChanged', { 
       detail: brandSettings 
     }));
 
-    // Save color settings (already handled by updateColors)
     setUnsavedChanges(false);
     
-    // Show success feedback
     const event = new CustomEvent('showToast', { 
       detail: { 
         title: 'Settings Saved', 
@@ -153,7 +137,6 @@ export default function AdminThemeSettings() {
     window.dispatchEvent(event);
   };
 
-  // Handle logo upload
   const handleLogoUpload = (file: File, mode: 'light' | 'dark') => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -165,14 +148,12 @@ export default function AdminThemeSettings() {
     reader.readAsDataURL(file);
   };
 
-  // Remove logo
   const removeLogo = (mode: 'light' | 'dark') => {
     updateBrandSettings({
       [mode === 'light' ? 'lightModeLogo' : 'darkModeLogo']: null
     });
   };
 
-  // Color groups for organization
   const colorGroups: ColorGroup[] = [
     {
       name: 'Core Colors',
@@ -222,7 +203,6 @@ export default function AdminThemeSettings() {
   ];
 
   const resetColors = () => {
-    // Reset to default colors for current theme
     const defaultColors = {
       'bg-primary': { light: '255 255 255', dark: '14 17 23' },
       'bg-secondary': { light: '251 252 253', dark: '22 27 34' },
@@ -265,11 +245,9 @@ export default function AdminThemeSettings() {
 
   return (
     <div className="min-h-screen bg-background text-foreground p-6">
-      {/* Header */}
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {/* Back Navigation */}
             <Button
               variant="outline"
               size="sm"
@@ -287,7 +265,6 @@ export default function AdminThemeSettings() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {/* Quick Navigation Links */}
             <Button
               variant="ghost"
               size="sm"
@@ -310,7 +287,6 @@ export default function AdminThemeSettings() {
             {unsavedChanges && (
               <Badge variant="destructive">Unsaved Changes</Badge>
             )}
-            {/* Save All Button */}
             <Button
               onClick={saveAllSettings}
               className="bg-primary text-primary-foreground"
@@ -324,7 +300,6 @@ export default function AdminThemeSettings() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Left Sidebar - Navigation */}
         <div className="lg:col-span-1">
           <Card>
             <CardHeader>
@@ -349,7 +324,6 @@ export default function AdminThemeSettings() {
                 })}
               </nav>
               
-              {/* Quick Navigation Section */}
               <div className="mt-6 pt-4 border-t border-border">
                 <h4 className="text-sm font-medium mb-2 text-muted-foreground">Quick Navigation</h4>
                 <div className="space-y-2">
@@ -383,7 +357,6 @@ export default function AdminThemeSettings() {
                 </div>
               </div>
               
-              {/* Save Status */}
               <div className="mt-4 pt-4 border-t border-border">
                 <div className="text-xs text-muted-foreground text-center">
                   {unsavedChanges ? (
@@ -401,9 +374,7 @@ export default function AdminThemeSettings() {
           </Card>
         </div>
 
-        {/* Main Content */}
         <div className="lg:col-span-3">
-          {/* Theme Mode Section */}
           {activeSection === 'theme' && (
             <Card>
               <CardHeader>
@@ -433,7 +404,6 @@ export default function AdminThemeSettings() {
             </Card>
           )}
 
-          {/* Color Editor Section */}
           {activeSection === 'colors' && (
             <Card>
               <CardHeader>
@@ -485,7 +455,6 @@ export default function AdminThemeSettings() {
             </Card>
           )}
 
-          {/* Sidebar & Header Section */}
           {activeSection === 'sidebar' && (
             <Card>
               <CardHeader>
@@ -561,7 +530,6 @@ export default function AdminThemeSettings() {
             </Card>
           )}
 
-          {/* Logo & Branding Section */}
           {activeSection === 'branding' && (
             <Card>
               <CardHeader>
@@ -570,7 +538,6 @@ export default function AdminThemeSettings() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-6">
-                  {/* Logo Toggle */}
                   <div className="flex items-center justify-between">
                     <div>
                       <Label className="text-base font-medium">Use Logo Instead of Text</Label>
@@ -582,10 +549,8 @@ export default function AdminThemeSettings() {
                     />
                   </div>
 
-                  {/* Logo Upload Section */}
                   {brandSettings.useLogo && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Light Mode Logo */}
                       <div className="space-y-3">
                         <Label className="text-sm font-medium">Light Mode Logo</Label>
                         <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
@@ -639,7 +604,6 @@ export default function AdminThemeSettings() {
                         </div>
                       </div>
 
-                      {/* Dark Mode Logo */}
                       <div className="space-y-3">
                         <Label className="text-sm font-medium">Dark Mode Logo</Label>
                         <div className="border-2 border-dashed border-border rounded-lg p-6 text-center bg-muted/50">
@@ -695,7 +659,6 @@ export default function AdminThemeSettings() {
                     </div>
                   )}
 
-                  {/* Logo Settings */}
                   {brandSettings.useLogo && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
@@ -732,7 +695,6 @@ export default function AdminThemeSettings() {
                     </div>
                   )}
 
-                  {/* Text Branding */}
                   <div className="space-y-4">
                     <h3 className="font-semibold">Text Branding</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -769,7 +731,6 @@ export default function AdminThemeSettings() {
                     </div>
                   </div>
 
-                  {/* Brand Preview */}
                   <div className="border border-border rounded-lg p-4 bg-muted/30">
                     <Label className="text-sm font-medium mb-2 block">Preview</Label>
                     <div className={`flex items-center gap-3 ${brandSettings.logoPosition === 'center' ? 'justify-center' : ''}`}>
@@ -794,44 +755,11 @@ export default function AdminThemeSettings() {
                       </div>
                     </div>
                   </div>
-
-                  {/* Brand Settings Save Actions */}
-                  <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
-                    <h4 className="font-semibold text-amber-900 dark:text-amber-100 mb-2">💾 Save Branding Changes</h4>
-                    <p className="text-sm text-amber-800 dark:text-amber-200 mb-3">
-                      Your branding changes are ready to be saved. Click "Save All Settings" to apply them across your app.
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        onClick={saveAllSettings}
-                        className="bg-primary text-primary-foreground"
-                        disabled={!unsavedChanges}
-                      >
-                        <Save className="h-4 w-4 mr-2" />
-                        Save Branding
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          // Reset to saved state
-                          const savedSettings = localStorage.getItem('brand-settings');
-                          if (savedSettings) {
-                            setBrandSettings(JSON.parse(savedSettings));
-                          }
-                          setUnsavedChanges(false);
-                        }}
-                      >
-                        <RotateCcw className="h-4 w-4 mr-2" />
-                        Reset Changes
-                      </Button>
-                    </div>
-                  </div>
                 </div>
               </CardContent>
             </Card>
           )}
 
-          {/* Debug Settings Section */}
           {activeSection === 'debug' && (
             <Card>
               <CardHeader>
@@ -873,7 +801,6 @@ export default function AdminThemeSettings() {
                     />
                   </div>
 
-                  {/* Debug Status */}
                   <div className="border border-border rounded-lg p-4 bg-muted/30">
                     <h3 className="font-semibold mb-3">Current Debug Status</h3>
                     <div className="grid grid-cols-2 gap-4 text-sm">
@@ -904,7 +831,6 @@ export default function AdminThemeSettings() {
                     </div>
                   </div>
 
-                  {/* Save Actions */}
                   <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
                     <h4 className="font-semibold text-amber-900 dark:text-amber-100 mb-2">💾 Save Changes</h4>
                     <p className="text-sm text-amber-800 dark:text-amber-200 mb-3">
@@ -922,7 +848,6 @@ export default function AdminThemeSettings() {
                       <Button
                         variant="outline"
                         onClick={() => {
-                          // Reset to saved state
                           const savedSettings = localStorage.getItem('theme-debug-settings');
                           if (savedSettings) {
                             setDebugSettings(JSON.parse(savedSettings));
@@ -936,7 +861,6 @@ export default function AdminThemeSettings() {
                     </div>
                   </div>
 
-                  {/* Instructions */}
                   <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                     <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">How it Works</h4>
                     <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
@@ -951,7 +875,6 @@ export default function AdminThemeSettings() {
             </Card>
           )}
 
-          {/* Live Preview Section */}
           {activeSection === 'preview' && (
             <Card>
               <CardHeader>
@@ -960,7 +883,6 @@ export default function AdminThemeSettings() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Light Theme Preview */}
                   <div className="border border-border rounded-lg p-4 bg-white text-black">
                     <h3 className="font-semibold mb-3 flex items-center gap-2">
                       <Sun className="h-4 w-4" />
@@ -978,7 +900,6 @@ export default function AdminThemeSettings() {
                     </div>
                   </div>
 
-                  {/* Dark Theme Preview */}
                   <div className="border border-border rounded-lg p-4 bg-gray-900 text-white">
                     <h3 className="font-semibold mb-3 flex items-center gap-2">
                       <Moon className="h-4 w-4" />
@@ -997,7 +918,6 @@ export default function AdminThemeSettings() {
                   </div>
                 </div>
 
-                {/* Current Theme Status */}
                 <div className="mt-6 p-4 border border-border rounded-lg bg-muted/30">
                   <h3 className="font-semibold mb-3">Current Theme Status</h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
