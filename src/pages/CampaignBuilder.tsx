@@ -4,7 +4,8 @@ import { useMenuConfig } from '@/hooks/useMenuConfig';
 import SidebarLayout from '@/components/layout/SidebarLayout';
 import { SideCategory } from '@/components/navigation/SideCategory';
 
-// COMPLETELY CLEAN VERSION - NO DEBUG LOGGER v9
+// CACHE BUSTER v7 - NO DEBUG LOGGER ANYWHERE
+
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,27 +18,28 @@ import {
   Activity,
   AlertCircle,
   Settings,
-  Filter
+  Filter,
+  Zap,
+  Bookmark
 } from 'lucide-react';
 import { BrandLogo } from '@/components/ui/brand-logo';
+import { useToast } from "@/hooks/use-toast";
 
-// Enhanced Campaign Management
-import { useCampaigns, useCampaignFilters, Campaign } from '@/hooks/useCampaignManagement';
+// Enhanced Components
+import { useCampaignManagement, type Campaign, type CampaignFilters } from '@/hooks/useCampaignManagement';
 import { CampaignSearchFilters } from '@/components/campaigns/enhanced/CampaignSearchFilters';
 import { CampaignBulkActions } from '@/components/campaigns/enhanced/CampaignBulkActions';
 import { EnhancedCampaignList } from '@/components/campaigns/enhanced/EnhancedCampaignList';
 import { EnhancedCampaignEditor } from '@/components/campaigns/enhanced/EnhancedCampaignEditor';
-import { useToast } from "@/hooks/use-toast";
+import { CampaignQuickCreator } from '@/components/campaigns/enhanced/CampaignQuickCreator';
+import { CampaignAnalyticsDashboard } from '@/components/campaigns/enhanced/CampaignAnalyticsDashboard';
+import { CampaignTemplateManager } from '@/components/campaigns/enhanced/CampaignTemplateManager';
 
 // Types
 interface Category {
   id: string;
   name: string;
   description?: string;
-  parent_category_id?: string;
-  created_at?: string;
-  updated_at?: string;
-  parent_category?: Category;
 }
 
 interface Stats {
@@ -47,16 +49,8 @@ interface Stats {
   totalNegativeKeywords: number;
 }
 
-// Sample data for categories (replace with real API calls)
-const SAMPLE_CATEGORIES: Category[] = [
-  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', name: 'Plumbing', description: 'Plumbing services and related categories' },
-  { id: 'b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12', name: 'HVAC', description: 'Heating, ventilation, and air conditioning services' },
-  { id: 'c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13', name: 'Electrical', description: 'Electrical services and contractors' },
-  { id: 'd0eebc99-9c0b-4ef8-bb6d-6bb9bd380a14', name: 'Roofing', description: 'Roofing services and contractors' }
-];
-
 function CampaignBuilderPage() {
-  const { actualTheme, themeMode } = useGlobalTheme();
+  const { actualTheme } = useGlobalTheme();
   const { getMenuItems, getSections } = useMenuConfig();
   const { toast } = useToast();
   
@@ -66,163 +60,158 @@ function CampaignBuilderPage() {
   // Enhanced Campaign Management
   const {
     campaigns,
+    categories,
     isLoading,
     error,
-    loadCampaigns,
+    stats,
+    filters,
+    selectedCampaigns,
+    currentCampaign,
+    setFilters,
+    setSelectedCampaigns,
     createCampaign,
     updateCampaign,
+    deleteCampaign,
     duplicateCampaign,
     archiveCampaign,
     restoreCampaign,
-    deleteCampaign,
-    bulkUpdateCampaigns
-  } = useCampaigns();
-
-  const {
-    filters,
-    updateFilter,
-    resetFilters,
-    filterCampaigns
-  } = useCampaignFilters();
+    bulkUpdateStatus,
+    bulkArchive,
+    bulkDelete,
+    exportCampaigns,
+    searchCampaigns,
+    refreshData
+  } = useCampaignManagement();
 
   // State
   const [activeTab, setActiveTab] = useState<string>('campaigns');
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
-  const [editMode, setEditMode] = useState<'create' | 'edit' | 'duplicate'>('create');
-  const [selectedCampaigns, setSelectedCampaigns] = useState<string[]>([]);
-  const [showFilters, setShowFilters] = useState(false);
-  const [stats, setStats] = useState<Stats>({
-    activeCampaigns: 0,
-    totalCategories: 0,
-    totalKeywords: 0,
-    totalNegativeKeywords: 0
-  });
+  const [showEditor, setShowEditor] = useState(false);
+  const [showQuickCreator, setShowQuickCreator] = useState(false);
+  const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
+  const [analyticsDateRange, setAnalyticsDateRange] = useState('30d');
 
-  // Load initial data
-  useEffect(() => {
-    loadInitialData();
-  }, []);
-
-  // Update stats when campaigns change
-  useEffect(() => {
-    if (campaigns.length > 0) {
-      setStats({
-        activeCampaigns: campaigns.filter(c => c.status === 'active').length,
-        totalCategories: categories.length,
-        totalKeywords: 0, // TODO: Implement keyword counting
-        totalNegativeKeywords: 0 // TODO: Implement negative keyword counting
-      });
-    }
-  }, [campaigns, categories]);
-
-  const loadInitialData = async () => {
-    try {
-      // Load categories (simulate API call)
-      await new Promise(resolve => setTimeout(resolve, 300));
-      setCategories(SAMPLE_CATEGORIES);
-      
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load initial data';
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive"
-      });
-    }
-  };
-
-  // Filter campaigns based on current filters
-  const filteredCampaigns = filterCampaigns(campaigns);
-
-  // Campaign CRUD handlers
+  // Event Handlers
   const handleCreateCampaign = () => {
-    setSelectedCampaign(null);
-    setEditMode('create');
-    setActiveTab('editor');
+    setEditingCampaign(null);
+    setShowEditor(true);
   };
 
-  const handleEditCampaign = (campaign: Campaign) => {
-    setSelectedCampaign(campaign);
-    setEditMode('edit');
-    setActiveTab('editor');
+  const handleQuickCreate = () => {
+    setShowQuickCreator(true);
   };
 
-  const handleDuplicateCampaign = async (campaignId: string, newName: string) => {
+  const handleQuickCreateSave = async (campaignData: Partial<Campaign>) => {
     try {
-      const duplicated = await duplicateCampaign(campaignId, newName);
+      await createCampaign(campaignData);
       toast({
         title: "Success",
-        description: "Campaign duplicated successfully"
+        description: "Campaign created successfully"
       });
+      setShowQuickCreator(false);
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to duplicate campaign",
+        description: error instanceof Error ? error.message : 'Failed to create campaign',
         variant: "destructive"
       });
     }
   };
 
-  const handleSaveCampaign = async (campaignData: Campaign) => {
+  const handleUseTemplate = (template: any) => {
+    // Apply template data to a new campaign
+    setEditingCampaign(null);
+    // Pre-populate the editor with template data
+    setShowEditor(true);
+    toast({
+      title: "Template Applied",
+      description: `Template "${template.name}" loaded for editing`
+    });
+  };
+
+  const handleEditCampaign = (campaign: Campaign) => {
+    setEditingCampaign(campaign);
+    setShowEditor(true);
+  };
+
+  const handleSaveCampaign = async (campaignData: Partial<Campaign>) => {
     try {
-      if (editMode === 'create') {
-        await createCampaign(campaignData);
-        toast({
-          title: "Success",
-          description: "Campaign created successfully"
-        });
-      } else {
-        await updateCampaign(campaignData.id, campaignData);
+      if (editingCampaign) {
+        await updateCampaign(editingCampaign.id, campaignData);
         toast({
           title: "Success",
           description: "Campaign updated successfully"
         });
+      } else {
+        await createCampaign(campaignData);
+        toast({
+          title: "Success", 
+          description: "Campaign created successfully"
+        });
       }
-      
-      setActiveTab('campaigns');
-      setSelectedCampaign(null);
+      setShowEditor(false);
+      setEditingCampaign(null);
     } catch (error) {
       toast({
         title: "Error",
-        description: `Failed to ${editMode} campaign`,
+        description: error instanceof Error ? error.message : 'Failed to save campaign',
         variant: "destructive"
       });
     }
   };
 
-  const handleCancelEdit = () => {
-    setActiveTab('campaigns');
-    setSelectedCampaign(null);
-    setSelectedCampaigns([]);
-  };
-
-  // Bulk action handlers
-  const handleBulkArchive = async (campaignIds: string[]) => {
-    for (const id of campaignIds) {
-      await archiveCampaign(id);
+  const handleDeleteCampaign = async (campaignId: string) => {
+    try {
+      await deleteCampaign(campaignId);
+      toast({
+        title: "Success",
+        description: "Campaign deleted successfully"
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : 'Failed to delete campaign',
+        variant: "destructive"
+      });
     }
   };
 
-  const handleBulkRestore = async (campaignIds: string[]) => {
-    for (const id of campaignIds) {
-      await restoreCampaign(id);
+  const handleBulkAction = async (action: string, campaignIds: string[]) => {
+    try {
+      switch (action) {
+        case 'activate':
+          await bulkUpdateStatus(campaignIds, 'active');
+          break;
+        case 'pause':
+          await bulkUpdateStatus(campaignIds, 'paused');
+          break;
+        case 'archive':
+          await bulkArchive(campaignIds);
+          break;
+        case 'delete':
+          await bulkDelete(campaignIds);
+          break;
+        default:
+          throw new Error(`Unknown action: ${action}`);
+      }
+      
+      setSelectedCampaigns([]);
+      toast({
+        title: "Success",
+        description: `Bulk ${action} completed successfully`
+      });
+    } catch (error) {
+      toast({
+        title: "Error", 
+        description: error instanceof Error ? error.message : `Failed to ${action} campaigns`,
+        variant: "destructive"
+      });
     }
   };
 
-  const handleBulkDelete = async (campaignIds: string[]) => {
-    for (const id of campaignIds) {
-      await deleteCampaign(id);
-    }
-  };
-
-  const handleExportCampaigns = (campaignIds: string[]) => {
-    toast({
-      title: "Export Started",
-      description: `Exporting ${campaignIds.length} campaigns...`
-    });
-    // TODO: Implement export functionality
-  };
+  // Load initial data
+  useEffect(() => {
+    refreshData();
+  }, [refreshData]);
 
   return (
     <SidebarLayout
@@ -261,7 +250,7 @@ function CampaignBuilderPage() {
               Campaign Builder
             </h1>
             <p className="text-muted-foreground">
-              Manage your advertising campaigns, keywords, and categories with enhanced tools and filters
+              Enhanced campaign management system - Ready for integration
             </p>
           </div>
 
@@ -313,8 +302,8 @@ function CampaignBuilderPage() {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">Filtered Results</p>
-                    <p className="text-3xl font-semibold text-card-foreground">{filteredCampaigns.length}</p>
+                    <p className="text-sm text-muted-foreground mb-1">Keywords</p>
+                    <p className="text-3xl font-semibold text-card-foreground">{stats.totalKeywords}</p>
                   </div>
                   <div className="h-12 w-12 bg-muted/10 flex items-center justify-center rounded-lg">
                     <Filter className="h-6 w-6 text-muted-foreground" />
@@ -352,116 +341,149 @@ function CampaignBuilderPage() {
               </CardContent>
             </Card>
           ) : (
-            /* Main Content */
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="mb-6 bg-muted border-border">
-                <TabsTrigger value="campaigns" className="text-foreground">
-                  Campaigns ({filteredCampaigns.length})
-                </TabsTrigger>
-                <TabsTrigger value="editor" className="text-foreground">
-                  {editMode === 'create' ? 'New Campaign' : editMode === 'edit' ? 'Edit Campaign' : 'Duplicate Campaign'}
-                </TabsTrigger>
-                <TabsTrigger value="categories" className="text-foreground">
-                  Categories ({categories.length})
-                </TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="campaigns" className="space-y-6">
-                {/* Action Bar */}
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-2">
-                    <Button onClick={handleCreateCampaign} className="bg-primary text-primary-foreground hover:bg-primary/90">
-                      <Plus className="h-4 w-4 mr-2" />
-                      New Campaign
-                    </Button>
-                    
-                    <Button 
-                      variant="outline" 
-                      onClick={() => setShowFilters(!showFilters)}
-                      className={showFilters ? 'bg-muted' : ''}
-                    >
-                      <Filter className="h-4 w-4 mr-2" />
-                      {showFilters ? 'Hide Filters' : 'Show Filters'}
-                    </Button>
-                  </div>
-
-                  <div className="text-sm text-muted-foreground">
-                    Showing {filteredCampaigns.length} of {campaigns.length} campaigns
-                  </div>
-                </div>
-
-                {/* Filters */}
-                {showFilters && (
-                  <CampaignSearchFilters
-                    filters={filters}
-                    onUpdateFilter={updateFilter}
-                    onResetFilters={resetFilters}
-                    categories={categories}
-                  />
-                )}
-
-                {/* Bulk Actions */}
-                <CampaignBulkActions
-                  campaigns={filteredCampaigns}
-                  selectedCampaigns={selectedCampaigns}
-                  onSelectionChange={setSelectedCampaigns}
-                  onBulkUpdate={bulkUpdateCampaigns}
-                  onDuplicate={handleDuplicateCampaign}
-                  onArchive={handleBulkArchive}
-                  onRestore={handleBulkRestore}
-                  onDelete={handleBulkDelete}
-                  onExport={handleExportCampaigns}
-                />
-
-                {/* Campaign List */}
-                <EnhancedCampaignList
-                  campaigns={filteredCampaigns}
-                  selectedCampaigns={selectedCampaigns}
-                  onSelectionChange={setSelectedCampaigns}
-                  onEdit={handleEditCampaign}
-                  onDuplicate={handleDuplicateCampaign}
-                  onArchive={archiveCampaign}
-                  onRestore={restoreCampaign}
-                  onDelete={deleteCampaign}
-                  onStatusChange={async (id, status) => await updateCampaign(id, { status })}
-                  categories={categories}
-                />
-              </TabsContent>
-              
-              <TabsContent value="editor">
+            /* Enhanced Campaign Management Interface */
+            <div className="space-y-6">
+              {/* Campaign Editor Modal */}
+              {showEditor && (
                 <EnhancedCampaignEditor
-                  campaign={selectedCampaign}
-                  mode={editMode}
+                  campaign={editingCampaign}
                   categories={categories}
                   onSave={handleSaveCampaign}
-                  onCancel={handleCancelEdit}
+                  onClose={() => {
+                    setShowEditor(false);
+                    setEditingCampaign(null);
+                  }}
                 />
-              </TabsContent>
-              
-              <TabsContent value="categories">
-                <Card className="bg-card border-border">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Layers className="h-5 w-5" />
-                      Category Management
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-center py-8">
-                      <Settings className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                      <h3 className="text-lg font-semibold text-foreground mb-2">Category Management</h3>
-                      <p className="text-muted-foreground">
-                        Enhanced category management features are coming soon. 
-                        You'll be able to create, edit, and organize categories with advanced tools.
-                      </p>
+              )}
+
+              {/* Campaign Quick Creator */}
+              <CampaignQuickCreator
+                categories={categories}
+                onSave={handleQuickCreateSave}
+                onClose={() => setShowQuickCreator(false)}
+                isOpen={showQuickCreator}
+              />
+
+              {/* Main Content Tabs */}
+              <Tabs value={activeTab} onValueChange={setActiveTab}>
+                <TabsList className="mb-6 bg-muted border-border">
+                  <TabsTrigger value="campaigns" className="text-foreground">
+                    Campaigns ({campaigns.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="templates" className="text-foreground">
+                    Templates
+                  </TabsTrigger>
+                  <TabsTrigger value="categories" className="text-foreground">
+                    Categories ({categories.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="analytics" className="text-foreground">
+                    Analytics
+                  </TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="campaigns" className="space-y-6">
+                  {/* Campaign Header Actions */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-xl font-semibold text-foreground">Campaign Management</h2>
+                      <p className="text-muted-foreground">Create, manage, and optimize your campaigns</p>
                     </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
+                    <div className="flex items-center gap-3">
+                      <Button 
+                        variant="outline" 
+                        onClick={handleCreateCampaign} 
+                        className="border-border"
+                      >
+                        <Settings className="h-4 w-4 mr-2" />
+                        Advanced Creator
+                      </Button>
+                      <Button 
+                        onClick={handleQuickCreate} 
+                        className="bg-primary text-primary-foreground"
+                      >
+                        <Zap className="h-4 w-4 mr-2" />
+                        Quick Create
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Search and Filters */}
+                  <CampaignSearchFilters
+                    filters={filters}
+                    categories={categories}
+                    onFiltersChange={setFilters}
+                    onSearch={searchCampaigns}
+                  />
+
+                  {/* Bulk Actions */}
+                  {selectedCampaigns.length > 0 && (
+                    <CampaignBulkActions
+                      selectedCount={selectedCampaigns.length}
+                      onAction={handleBulkAction}
+                      onExport={() => exportCampaigns(selectedCampaigns)}
+                      onClearSelection={() => setSelectedCampaigns([])}
+                    />
+                  )}
+
+                  {/* Campaign List */}
+                  <EnhancedCampaignList
+                    campaigns={campaigns}
+                    categories={categories}
+                    selectedCampaigns={selectedCampaigns}
+                    onSelectionChange={setSelectedCampaigns}
+                    onEdit={handleEditCampaign}
+                    onDelete={handleDeleteCampaign}
+                    onDuplicate={duplicateCampaign}
+                    onArchive={archiveCampaign}
+                    onRestore={restoreCampaign}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="templates" className="space-y-6">
+                  <CampaignTemplateManager
+                    onUseTemplate={handleUseTemplate}
+                    onCreateFromCampaign={(campaign) => {
+                      // Future enhancement: create template from existing campaign
+                      toast({
+                        title: "Feature Coming Soon",
+                        description: "Create templates from existing campaigns will be available soon."
+                      });
+                    }}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="categories" className="space-y-6">
+                  <Card className="bg-card border-border">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Layers className="h-5 w-5" />
+                        Category Management
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {categories.map((category) => (
+                          <div key={category.id} className="p-3 rounded-lg border border-border bg-muted/50">
+                            <h4 className="font-medium text-foreground">{category.name}</h4>
+                            <p className="text-sm text-muted-foreground">{category.description}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="analytics" className="space-y-6">
+                  <CampaignAnalyticsDashboard
+                    campaigns={campaigns}
+                    dateRange={analyticsDateRange}
+                    onDateRangeChange={setAnalyticsDateRange}
+                  />
+                </TabsContent>
+              </Tabs>
+            </div>
           )}
         </div>
-        <DebugPanel />
       </div>
     </SidebarLayout>
   );

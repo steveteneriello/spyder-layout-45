@@ -1,0 +1,470 @@
+import React, { useState, useEffect } from 'react';
+import { useGlobalTheme } from '@/contexts/GlobalThemeContext';
+import { useMenuConfig } from '@/hooks/useMenuConfig';
+import SidebarLayout from '@/components/layout/SidebarLayout';
+import { SideCategory } from '@/components/navigation/SideCategory';
+
+// COMPLETELY CLEAN VERSION - NO DEBUG LOGGER v9
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { 
+  BarChart3, 
+  Layers, 
+  Target, 
+  Plus, 
+  Activity,
+  AlertCircle,
+  Settings,
+  Filter
+} from 'lucide-react';
+import { BrandLogo } from '@/components/ui/brand-logo';
+
+// Enhanced Campaign Management
+import { useCampaigns, useCampaignFilters, Campaign } from '@/hooks/useCampaignManagement';
+import { CampaignSearchFilters } from '@/components/campaigns/enhanced/CampaignSearchFilters';
+import { CampaignBulkActions } from '@/components/campaigns/enhanced/CampaignBulkActions';
+import { EnhancedCampaignList } from '@/components/campaigns/enhanced/EnhancedCampaignList';
+import { EnhancedCampaignEditor } from '@/components/campaigns/enhanced/EnhancedCampaignEditor';
+import { useToast } from "@/hooks/use-toast";
+
+// Types
+interface Category {
+  id: string;
+  name: string;
+  description?: string;
+  parent_category_id?: string;
+  created_at?: string;
+  updated_at?: string;
+  parent_category?: Category;
+}
+
+interface Stats {
+  activeCampaigns: number;
+  totalCategories: number;
+  totalKeywords: number;
+  totalNegativeKeywords: number;
+}
+
+// Sample data for categories (replace with real API calls)
+const SAMPLE_CATEGORIES: Category[] = [
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', name: 'Plumbing', description: 'Plumbing services and related categories' },
+  { id: 'b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12', name: 'HVAC', description: 'Heating, ventilation, and air conditioning services' },
+  { id: 'c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13', name: 'Electrical', description: 'Electrical services and contractors' },
+  { id: 'd0eebc99-9c0b-4ef8-bb6d-6bb9bd380a14', name: 'Roofing', description: 'Roofing services and contractors' }
+];
+
+function CampaignBuilderPage() {
+  const { actualTheme, themeMode } = useGlobalTheme();
+  const { getMenuItems, getSections } = useMenuConfig();
+  const { toast } = useToast();
+  
+  const allMenuItems = getMenuItems();
+  const menuSections = getSections();
+
+  // Enhanced Campaign Management
+  const {
+    campaigns,
+    isLoading,
+    error,
+    loadCampaigns,
+    createCampaign,
+    updateCampaign,
+    duplicateCampaign,
+    archiveCampaign,
+    restoreCampaign,
+    deleteCampaign,
+    bulkUpdateCampaigns
+  } = useCampaigns();
+
+  const {
+    filters,
+    updateFilter,
+    resetFilters,
+    filterCampaigns
+  } = useCampaignFilters();
+
+  // State
+  const [activeTab, setActiveTab] = useState<string>('campaigns');
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
+  const [editMode, setEditMode] = useState<'create' | 'edit' | 'duplicate'>('create');
+  const [selectedCampaigns, setSelectedCampaigns] = useState<string[]>([]);
+  const [showFilters, setShowFilters] = useState(false);
+  const [stats, setStats] = useState<Stats>({
+    activeCampaigns: 0,
+    totalCategories: 0,
+    totalKeywords: 0,
+    totalNegativeKeywords: 0
+  });
+
+  // Load initial data
+  useEffect(() => {
+    loadInitialData();
+  }, []);
+
+  // Update stats when campaigns change
+  useEffect(() => {
+    if (campaigns.length > 0) {
+      setStats({
+        activeCampaigns: campaigns.filter(c => c.status === 'active').length,
+        totalCategories: categories.length,
+        totalKeywords: 0, // TODO: Implement keyword counting
+        totalNegativeKeywords: 0 // TODO: Implement negative keyword counting
+      });
+    }
+  }, [campaigns, categories]);
+
+  const loadInitialData = async () => {
+    try {
+      // Load categories (simulate API call)
+      await new Promise(resolve => setTimeout(resolve, 300));
+      setCategories(SAMPLE_CATEGORIES);
+      
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load initial data';
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Filter campaigns based on current filters
+  const filteredCampaigns = filterCampaigns(campaigns);
+
+  // Campaign CRUD handlers
+  const handleCreateCampaign = () => {
+    setSelectedCampaign(null);
+    setEditMode('create');
+    setActiveTab('editor');
+  };
+
+  const handleEditCampaign = (campaign: Campaign) => {
+    setSelectedCampaign(campaign);
+    setEditMode('edit');
+    setActiveTab('editor');
+  };
+
+  const handleDuplicateCampaign = async (campaignId: string, newName: string) => {
+    try {
+      const duplicated = await duplicateCampaign(campaignId, newName);
+      toast({
+        title: "Success",
+        description: "Campaign duplicated successfully"
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to duplicate campaign",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleSaveCampaign = async (campaignData: Campaign) => {
+    try {
+      if (editMode === 'create') {
+        await createCampaign(campaignData);
+        toast({
+          title: "Success",
+          description: "Campaign created successfully"
+        });
+      } else {
+        await updateCampaign(campaignData.id, campaignData);
+        toast({
+          title: "Success",
+          description: "Campaign updated successfully"
+        });
+      }
+      
+      setActiveTab('campaigns');
+      setSelectedCampaign(null);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: `Failed to ${editMode} campaign`,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setActiveTab('campaigns');
+    setSelectedCampaign(null);
+    setSelectedCampaigns([]);
+  };
+
+  // Bulk action handlers
+  const handleBulkArchive = async (campaignIds: string[]) => {
+    for (const id of campaignIds) {
+      await archiveCampaign(id);
+    }
+  };
+
+  const handleBulkRestore = async (campaignIds: string[]) => {
+    for (const id of campaignIds) {
+      await restoreCampaign(id);
+    }
+  };
+
+  const handleBulkDelete = async (campaignIds: string[]) => {
+    for (const id of campaignIds) {
+      await deleteCampaign(id);
+    }
+  };
+
+  const handleExportCampaigns = (campaignIds: string[]) => {
+    toast({
+      title: "Export Started",
+      description: `Exporting ${campaignIds.length} campaigns...`
+    });
+    // TODO: Implement export functionality
+  };
+
+  return (
+    <SidebarLayout
+      nav={
+        <div className="flex items-center justify-between w-full px-4">
+          <div className="flex items-center gap-3">
+            <BrandLogo
+              size="md"
+              showText={true}
+              className="flex items-center gap-3 text-primary-foreground"
+            />
+          </div>
+          <Badge variant="outline" className="text-primary-foreground border-primary-foreground/20">
+            {actualTheme}
+          </Badge>
+        </div>
+      }
+      category={
+        <div className="space-y-4">
+          {menuSections.map((section) => (
+            <SideCategory 
+              key={section.name}
+              section={section.name} 
+              items={section.items} 
+            />
+          ))}
+        </div>
+      }
+      menuItems={allMenuItems}
+    >
+      <div className="p-6 bg-background text-foreground min-h-screen">
+        <div className="p-6">
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-foreground mb-2">
+              Campaign Builder
+            </h1>
+            <p className="text-muted-foreground">
+              Manage your advertising campaigns, keywords, and categories with enhanced tools and filters
+            </p>
+          </div>
+
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <Card className="bg-card border-border">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Active Campaigns</p>
+                    <p className="text-3xl font-semibold text-card-foreground">{stats.activeCampaigns}</p>
+                  </div>
+                  <div className="h-12 w-12 bg-primary/10 flex items-center justify-center rounded-lg">
+                    <BarChart3 className="h-6 w-6 text-primary" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-card border-border">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Categories</p>
+                    <p className="text-3xl font-semibold text-card-foreground">{stats.totalCategories}</p>
+                  </div>
+                  <div className="h-12 w-12 bg-secondary/10 flex items-center justify-center rounded-lg">
+                    <Layers className="h-6 w-6 text-secondary" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-card border-border">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Total Campaigns</p>
+                    <p className="text-3xl font-semibold text-card-foreground">{campaigns.length}</p>
+                  </div>
+                  <div className="h-12 w-12 bg-accent/10 flex items-center justify-center rounded-lg">
+                    <Target className="h-6 w-6 text-accent" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-card border-border">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Filtered Results</p>
+                    <p className="text-3xl font-semibold text-card-foreground">{filteredCampaigns.length}</p>
+                  </div>
+                  <div className="h-12 w-12 bg-muted/10 flex items-center justify-center rounded-lg">
+                    <Filter className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Error Display */}
+          {error && (
+            <Card className="mb-6 border-destructive bg-destructive/10">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3">
+                  <AlertCircle className="h-5 w-5 text-destructive" />
+                  <div>
+                    <h3 className="font-medium text-destructive">Error</h3>
+                    <p className="text-destructive/80">{error}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Loading State */}
+          {isLoading ? (
+            <Card className="bg-card border-border">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-center py-12">
+                  <div className="flex items-center gap-3">
+                    <Activity className="h-5 w-5 animate-spin text-primary" />
+                    <p className="text-muted-foreground">Loading campaigns...</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            /* Main Content */
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="mb-6 bg-muted border-border">
+                <TabsTrigger value="campaigns" className="text-foreground">
+                  Campaigns ({filteredCampaigns.length})
+                </TabsTrigger>
+                <TabsTrigger value="editor" className="text-foreground">
+                  {editMode === 'create' ? 'New Campaign' : editMode === 'edit' ? 'Edit Campaign' : 'Duplicate Campaign'}
+                </TabsTrigger>
+                <TabsTrigger value="categories" className="text-foreground">
+                  Categories ({categories.length})
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="campaigns" className="space-y-6">
+                {/* Action Bar */}
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-2">
+                    <Button onClick={handleCreateCampaign} className="bg-primary text-primary-foreground hover:bg-primary/90">
+                      <Plus className="h-4 w-4 mr-2" />
+                      New Campaign
+                    </Button>
+                    
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setShowFilters(!showFilters)}
+                      className={showFilters ? 'bg-muted' : ''}
+                    >
+                      <Filter className="h-4 w-4 mr-2" />
+                      {showFilters ? 'Hide Filters' : 'Show Filters'}
+                    </Button>
+                  </div>
+
+                  <div className="text-sm text-muted-foreground">
+                    Showing {filteredCampaigns.length} of {campaigns.length} campaigns
+                  </div>
+                </div>
+
+                {/* Filters */}
+                {showFilters && (
+                  <CampaignSearchFilters
+                    filters={filters}
+                    onUpdateFilter={updateFilter}
+                    onResetFilters={resetFilters}
+                    categories={categories}
+                  />
+                )}
+
+                {/* Bulk Actions */}
+                <CampaignBulkActions
+                  campaigns={filteredCampaigns}
+                  selectedCampaigns={selectedCampaigns}
+                  onSelectionChange={setSelectedCampaigns}
+                  onBulkUpdate={bulkUpdateCampaigns}
+                  onDuplicate={handleDuplicateCampaign}
+                  onArchive={handleBulkArchive}
+                  onRestore={handleBulkRestore}
+                  onDelete={handleBulkDelete}
+                  onExport={handleExportCampaigns}
+                />
+
+                {/* Campaign List */}
+                <EnhancedCampaignList
+                  campaigns={filteredCampaigns}
+                  selectedCampaigns={selectedCampaigns}
+                  onSelectionChange={setSelectedCampaigns}
+                  onEdit={handleEditCampaign}
+                  onDuplicate={handleDuplicateCampaign}
+                  onArchive={archiveCampaign}
+                  onRestore={restoreCampaign}
+                  onDelete={deleteCampaign}
+                  onStatusChange={async (id, status) => await updateCampaign(id, { status })}
+                  categories={categories}
+                />
+              </TabsContent>
+              
+              <TabsContent value="editor">
+                <EnhancedCampaignEditor
+                  campaign={selectedCampaign}
+                  mode={editMode}
+                  categories={categories}
+                  onSave={handleSaveCampaign}
+                  onCancel={handleCancelEdit}
+                />
+              </TabsContent>
+              
+              <TabsContent value="categories">
+                <Card className="bg-card border-border">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Layers className="h-5 w-5" />
+                      Category Management
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-center py-8">
+                      <Settings className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                      <h3 className="text-lg font-semibold text-foreground mb-2">Category Management</h3>
+                      <p className="text-muted-foreground">
+                        Enhanced category management features are coming soon. 
+                        You'll be able to create, edit, and organize categories with advanced tools.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          )}
+        </div>
+        <DebugPanel />
+      </div>
+    </SidebarLayout>
+  );
+}
+
+export default CampaignBuilderPage;
