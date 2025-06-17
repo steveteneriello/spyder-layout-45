@@ -1,8 +1,15 @@
-import React from 'react';
-import { Settings, Palette } from 'lucide-react';
+
+import React, { useState, useEffect } from 'react';
+import { Settings, Palette, Eye } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useGlobalTheme } from '@/contexts/GlobalThemeContext';
+
+interface DebugSettings {
+  showThemeDebug: boolean;
+  showColorPreview: boolean;
+  showThemeInfo: boolean;
+}
 
 interface ThemeDebugProps {
   title: string;
@@ -15,7 +22,38 @@ interface ThemeDebugProps {
 }
 
 function ThemeDebugSection({ title, description, pageSpecificColors = [] }: ThemeDebugProps) {
-  const { themeMode, actualTheme, colors, debugSettings } = useGlobalTheme();
+  const { themeMode, actualTheme, colors } = useGlobalTheme();
+  const [debugSettings, setDebugSettings] = useState<DebugSettings>({
+    showThemeDebug: false,
+    showColorPreview: true,
+    showThemeInfo: true
+  });
+
+  // Load debug settings and listen for changes
+  useEffect(() => {
+    const loadDebugSettings = () => {
+      const savedSettings = localStorage.getItem('theme-debug-settings');
+      if (savedSettings) {
+        try {
+          setDebugSettings(JSON.parse(savedSettings));
+        } catch (error) {
+          console.error('Failed to load debug settings:', error);
+        }
+      }
+    };
+
+    loadDebugSettings();
+
+    // Listen for debug settings changes
+    const handleDebugSettingsChange = (event: CustomEvent) => {
+      setDebugSettings(event.detail);
+    };
+
+    window.addEventListener('themeDebugSettingsChanged', handleDebugSettingsChange as EventListener);
+    return () => {
+      window.removeEventListener('themeDebugSettingsChanged', handleDebugSettingsChange as EventListener);
+    };
+  }, []);
 
   // Don't render if debug is disabled
   if (!debugSettings.showThemeDebug) {
@@ -33,9 +71,9 @@ function ThemeDebugSection({ title, description, pageSpecificColors = [] }: Them
   const allColors = [...coreColors, ...pageSpecificColors];
 
   return (
-    <Card className="mb-6 border-l-4 border-l-primary bg-card">
+    <Card className="mb-6 border-l-4 border-l-primary">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-card-foreground">
+        <CardTitle className="flex items-center gap-2 text-foreground">
           <Settings className="h-5 w-5 text-primary" />
           🎯 {title}
         </CardTitle>
@@ -56,7 +94,7 @@ function ThemeDebugSection({ title, description, pageSpecificColors = [] }: Them
                     className="w-full h-12 rounded-lg border border-border mb-2"
                     style={{ backgroundColor: `rgb(${currentColor})` }}
                   />
-                  <p className="text-xs font-medium text-card-foreground">{name}</p>
+                  <p className="text-xs font-medium text-foreground">{name}</p>
                   <p className="text-xs text-muted-foreground">rgb({currentColor})</p>
                 </div>
               );
@@ -88,8 +126,7 @@ function ThemeDebugSection({ title, description, pageSpecificColors = [] }: Them
         <p className="text-xs text-muted-foreground mt-3">
           🎨 Theme Status: Blue colors should appear blue (not maroon), white backgrounds should appear white (not yellow). 
           Current theme mode: <strong>{themeMode}</strong> | Active theme: <strong>{actualTheme}</strong> | 
-          Colors are loading from GlobalThemeContext ✓ | 
-          <strong>Debug can be toggled in Admin Theme Settings</strong>
+          Colors are loading from GlobalThemeContext ✓
         </p>
       </CardContent>
     </Card>
@@ -167,12 +204,6 @@ export function LocationBuilderThemeDebug() {
 }
 
 export function NotFoundThemeDebug() {
-  const { colors, actualTheme, debugSettings } = useGlobalTheme();
-  
-  if (!debugSettings.showThemeDebug) {
-    return null;
-  }
-  
   return (
     <div className="mb-6 p-4 bg-muted/50 border border-border rounded-lg">
       <h3 className="text-sm font-semibold text-foreground mb-3">
@@ -180,31 +211,19 @@ export function NotFoundThemeDebug() {
       </h3>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="text-center">
-          <div 
-            className="w-full h-8 rounded border mb-2" 
-            style={{ backgroundColor: `rgb(${colors['accent-primary'][actualTheme]})` }}
-          />
+          <div className="w-full h-8 rounded bg-primary mb-2" />
           <p className="text-xs">Primary (Blue)</p>
         </div>
         <div className="text-center">
-          <div 
-            className="w-full h-8 rounded border mb-2" 
-            style={{ backgroundColor: `rgb(${colors['bg-primary'][actualTheme]})` }}
-          />
+          <div className="w-full h-8 rounded bg-background border border-border mb-2" />
           <p className="text-xs">Background</p>
         </div>
         <div className="text-center">
-          <div 
-            className="w-full h-8 rounded border mb-2" 
-            style={{ backgroundColor: `rgb(${colors['bg-secondary'][actualTheme]})` }}
-          />
+          <div className="w-full h-8 rounded bg-card border border-border mb-2" />
           <p className="text-xs">Card</p>
         </div>
         <div className="text-center">
-          <div 
-            className="w-full h-8 rounded border mb-2" 
-            style={{ backgroundColor: `rgb(${colors['bg-tertiary'][actualTheme]})` }}
-          />
+          <div className="w-full h-8 rounded bg-muted mb-2" />
           <p className="text-xs">Muted</p>
         </div>
       </div>

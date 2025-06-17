@@ -1,244 +1,348 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 export type ThemeMode = 'light' | 'dark' | 'auto';
 
-interface ColorTheme {
-  light: string;
-  dark: string;
-}
-
-interface Colors {
-  [key: string]: ColorTheme;
-}
-
-interface DebugSettings {
-  showThemeDebug: boolean;
-  showColorPreview: boolean;
-  showThemeInfo: boolean;
-}
-
-interface BrandSettings {
-  useLogo: boolean;
-  brandText: string;
-  tagline: string;
-  lightModeLogo: string | null;
-  darkModeLogo: string | null;
-  logoSize: 'sm' | 'md' | 'lg';
-  showTagline: boolean;
-  logoPosition: 'left' | 'center';
+interface ThemeColors {
+  [key: string]: {
+    light: string;
+    dark: string;
+  };
 }
 
 interface GlobalThemeContextType {
   themeMode: ThemeMode;
-  setThemeMode: (mode: ThemeMode) => void;
   actualTheme: 'light' | 'dark';
-  colors: Colors;
-  updateColors: (newColors: Colors) => void;
-  debugSettings: DebugSettings;
-  brandSettings: BrandSettings;
+  setThemeMode: (mode: ThemeMode) => void;
+  isSystemDark: boolean;
+  colors: ThemeColors;
+  updateColors: (newColors: ThemeColors) => void;
+  resetColors: () => void;
 }
 
-const defaultColors: Colors = {
-  'bg-primary': { light: '255 255 255', dark: '14 17 23' },
-  'bg-secondary': { light: '251 252 253', dark: '22 27 34' },
-  'bg-tertiary': { light: '248 249 250', dark: '30 35 42' },
-  'text-primary': { light: '26 32 44', dark: '240 246 252' },
-  'text-secondary': { light: '74 85 104', dark: '125 133 144' },
-  'text-tertiary': { light: '113 128 150', dark: '156 163 175' },
-  'accent-primary': { light: '49 130 206', dark: '56 189 248' },
-  'success': { light: '56 161 105', dark: '72 187 120' },
-  'warning': { light: '221 107 32', dark: '251 146 60' },
-  'error': { light: '229 62 62', dark: '248 113 113' },
-  'border-primary': { light: '226 232 240', dark: '52 64 84' },
-  'border-secondary': { light: '241 243 245', dark: '45 55 72' },
-  'border-focus': { light: '49 130 206', dark: '56 189 248' },
-  'sidebar-background': { light: '0 0 0', dark: '15 23 42' },
-  'sidebar-foreground': { light: '255 255 255', dark: '240 246 252' },
-  'sidebar-accent': { light: '49 130 206', dark: '56 189 248' },
-  'header-background': { light: '255 255 255', dark: '22 27 34' },
-  'header-foreground': { light: '26 32 44', dark: '240 246 252' },
-};
+// CORRECTED: Proper color mappings - blue stays blue, white stays white
+const defaultColors: ThemeColors = {
+  // Core theme colors with CORRECT mappings
+  'background': { 
+    light: '255 255 255',  // WHITE (not yellow!)
+    dark: '15 23 42'       // Dark slate
+  },
+  'foreground': { 
+    light: '15 23 42',     // Dark text
+    dark: '248 250 252'    // Light text
+  },
+  'card': { 
+    light: '255 255 255',  // WHITE cards
+    dark: '15 23 42'       // Dark cards
+  },
+  'card-foreground': { 
+    light: '15 23 42',     // Dark text on white
+    dark: '248 250 252'    // Light text on dark
+  },
+  'primary': { 
+    light: '59 130 246',   // BLUE (not maroon!)
+    dark: '59 130 246'     // Same blue in dark mode
+  },
+  'primary-foreground': { 
+    light: '255 255 255',  // White text on blue
+    dark: '15 23 42'       // Dark text on blue
+  },
+  'secondary': { 
+    light: '241 245 249',  // Light gray
+    dark: '51 65 85'       // Dark gray
+  },
+  'secondary-foreground': { 
+    light: '15 23 42', 
+    dark: '248 250 252' 
+  },
+  'muted': { 
+    light: '241 245 249', 
+    dark: '51 65 85' 
+  },
+  'muted-foreground': { 
+    light: '100 116 139', 
+    dark: '148 163 184' 
+  },
+  'accent': { 
+    light: '241 245 249', 
+    dark: '51 65 85' 
+  },
+  'accent-foreground': { 
+    light: '15 23 42', 
+    dark: '248 250 252' 
+  },
+  'border': { 
+    light: '226 232 240',  // Light border
+    dark: '51 65 85'       // Dark border
+  },
+  'input': { 
+    light: '226 232 240', 
+    dark: '51 65 85' 
+  },
+  'ring': { 
+    light: '59 130 246',   // Blue focus ring
+    dark: '59 130 246' 
+  },
 
-const defaultDebugSettings: DebugSettings = {
-  showThemeDebug: false,
-  showColorPreview: true,
-  showThemeInfo: true,
-};
-
-const defaultBrandSettings: BrandSettings = {
-  useLogo: false,
-  brandText: 'Your App Name',
-  tagline: 'Powered by Oxylabs',
-  lightModeLogo: null,
-  darkModeLogo: null,
-  logoSize: 'md',
-  showTagline: true,
-  logoPosition: 'left',
+  // Custom variables (maintaining correct colors)
+  'bg-primary': { 
+    light: '255 255 255',  // WHITE background
+    dark: '15 23 42' 
+  },
+  'bg-secondary': { 
+    light: '248 250 252', 
+    dark: '30 41 59' 
+  },
+  'bg-tertiary': { 
+    light: '241 245 249', 
+    dark: '51 65 85' 
+  },
+  'bg-hover': { 
+    light: '226 232 240', 
+    dark: '71 85 105' 
+  },
+  'text-primary': { 
+    light: '15 23 42',     // Dark text
+    dark: '248 250 252'    // Light text
+  },
+  'text-secondary': { 
+    light: '71 85 105', 
+    dark: '148 163 184' 
+  },
+  'text-tertiary': { 
+    light: '148 163 184', 
+    dark: '100 116 139' 
+  },
+  'text-inverse': { 
+    light: '255 255 255',  // White text
+    dark: '15 23 42' 
+  },
+  'accent-primary': { 
+    light: '59 130 246',   // BLUE accent (not maroon!)
+    dark: '59 130 246' 
+  },
+  'accent-hover': { 
+    light: '37 99 235',    // Darker blue on hover
+    dark: '37 99 235' 
+  },
+  'success': { 
+    light: '22 163 74',    // Green
+    dark: '34 197 94' 
+  },
+  'warning': { 
+    light: '234 179 8',    // Yellow
+    dark: '250 204 21' 
+  },
+  'error': { 
+    light: '220 38 38',    // Red
+    dark: '248 113 113' 
+  },
+  'border-primary': { 
+    light: '226 232 240', 
+    dark: '51 65 85' 
+  },
+  'border-focus': { 
+    light: '59 130 246',   // Blue focus
+    dark: '59 130 246' 
+  },
 };
 
 const GlobalThemeContext = createContext<GlobalThemeContextType | undefined>(undefined);
 
-export function GlobalThemeProvider({ children }: { children: React.ReactNode }) {
+interface GlobalThemeProviderProps {
+  children: ReactNode;
+}
+
+export function GlobalThemeProvider({ children }: GlobalThemeProviderProps) {
   const [themeMode, setThemeModeState] = useState<ThemeMode>('auto');
-  const [actualTheme, setActualTheme] = useState<'light' | 'dark'>('light');
-  const [colors, setColors] = useState<Colors>(defaultColors);
-  const [debugSettings, setDebugSettings] = useState<DebugSettings>(defaultDebugSettings);
-  const [brandSettings, setBrandSettings] = useState<BrandSettings>(defaultBrandSettings);
+  const [isSystemDark, setIsSystemDark] = useState(false);
+  const [colors, setColors] = useState<ThemeColors>(defaultColors);
 
-  // Function to apply colors to CSS custom properties
-  const applyColorsToCSS = (colorData: Colors, currentTheme: 'light' | 'dark') => {
-    const root = document.documentElement;
-    
-    Object.entries(colorData).forEach(([colorKey, themeValues]) => {
-      if (themeValues && themeValues[currentTheme]) {
-        const cssVarName = `--${colorKey}`;
-        root.style.setProperty(cssVarName, themeValues[currentTheme]);
-        
-        // Also set for Tailwind RGB format
-        root.style.setProperty(`${cssVarName}-rgb`, themeValues[currentTheme]);
-      }
-    });
-
-    // Set theme-aware CSS variables for shadcn/ui compatibility
-    if (currentTheme === 'light') {
-      root.style.setProperty('--background', themeValues['bg-primary']?.light || '255 255 255');
-      root.style.setProperty('--foreground', themeValues['text-primary']?.light || '26 32 44');
-      root.style.setProperty('--card', themeValues['bg-secondary']?.light || '251 252 253');
-      root.style.setProperty('--card-foreground', themeValues['text-primary']?.light || '26 32 44');
-      root.style.setProperty('--primary', themeValues['accent-primary']?.light || '49 130 206');
-      root.style.setProperty('--primary-foreground', '255 255 255');
-      root.style.setProperty('--muted', themeValues['bg-tertiary']?.light || '248 249 250');
-      root.style.setProperty('--muted-foreground', themeValues['text-secondary']?.light || '74 85 104');
-      root.style.setProperty('--border', themeValues['border-primary']?.light || '226 232 240');
-    } else {
-      root.style.setProperty('--background', themeValues['bg-primary']?.dark || '14 17 23');
-      root.style.setProperty('--foreground', themeValues['text-primary']?.dark || '240 246 252');
-      root.style.setProperty('--card', themeValues['bg-secondary']?.dark || '22 27 34');
-      root.style.setProperty('--card-foreground', themeValues['text-primary']?.dark || '240 246 252');
-      root.style.setProperty('--primary', themeValues['accent-primary']?.dark || '56 189 248');
-      root.style.setProperty('--primary-foreground', '14 17 23');
-      root.style.setProperty('--muted', themeValues['bg-tertiary']?.dark || '30 35 42');
-      root.style.setProperty('--muted-foreground', themeValues['text-secondary']?.dark || '125 133 144');
-      root.style.setProperty('--border', themeValues['border-primary']?.dark || '52 64 84');
-    }
-  };
-
-  // Load saved settings on mount
+  // Detect system theme
   useEffect(() => {
-    // Load theme mode
-    const savedThemeMode = localStorage.getItem('theme-mode') as ThemeMode;
-    if (savedThemeMode) {
-      setThemeModeState(savedThemeMode);
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    setIsSystemDark(mediaQuery.matches);
+
+    const handleChange = (e: MediaQueryListEvent) => {
+      setIsSystemDark(e.matches);
+    };
+
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+
+  // Load theme from localStorage
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme-mode') as ThemeMode;
+    if (savedTheme && ['light', 'dark', 'auto'].includes(savedTheme)) {
+      setThemeModeState(savedTheme);
     }
 
-    // Load colors
     const savedColors = localStorage.getItem('theme-colors');
     if (savedColors) {
       try {
         const parsedColors = JSON.parse(savedColors);
         setColors({ ...defaultColors, ...parsedColors });
       } catch (error) {
-        console.error('Failed to load colors:', error);
-      }
-    }
-
-    // Load debug settings
-    const savedDebugSettings = localStorage.getItem('theme-debug-settings');
-    if (savedDebugSettings) {
-      try {
-        setDebugSettings(JSON.parse(savedDebugSettings));
-      } catch (error) {
-        console.error('Failed to load debug settings:', error);
-      }
-    }
-
-    // Load brand settings
-    const savedBrandSettings = localStorage.getItem('brand-settings');
-    if (savedBrandSettings) {
-      try {
-        setBrandSettings(JSON.parse(savedBrandSettings));
-      } catch (error) {
-        console.error('Failed to load brand settings:', error);
+        console.warn('Failed to parse saved colors, using defaults');
       }
     }
   }, []);
 
-  // Determine actual theme based on mode
-  useEffect(() => {
-    const updateActualTheme = () => {
-      if (themeMode === 'auto') {
-        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-        setActualTheme(mediaQuery.matches ? 'dark' : 'light');
-        
-        const handleChange = () => {
-          setActualTheme(mediaQuery.matches ? 'dark' : 'light');
-        };
-        
-        mediaQuery.addEventListener('change', handleChange);
-        return () => mediaQuery.removeEventListener('change', handleChange);
-      } else {
-        setActualTheme(themeMode);
-      }
-    };
+  // Calculate actual theme
+  const actualTheme: 'light' | 'dark' = themeMode === 'auto' 
+    ? (isSystemDark ? 'dark' : 'light') 
+    : themeMode as 'light' | 'dark';
 
-    updateActualTheme();
-  }, [themeMode]);
-
-  // Apply colors when theme or colors change
-  useEffect(() => {
-    applyColorsToCSS(colors, actualTheme);
-    
-    // Apply theme class to document
-    document.documentElement.classList.remove('light', 'dark');
-    document.documentElement.classList.add(actualTheme);
-    document.documentElement.setAttribute('data-theme', actualTheme);
-  }, [colors, actualTheme]);
-
-  // Listen for external setting changes
-  useEffect(() => {
-    const handleThemeDebugChange = (event: CustomEvent) => {
-      setDebugSettings(event.detail);
-    };
-
-    const handleBrandChange = (event: CustomEvent) => {
-      setBrandSettings(event.detail);
-    };
-
-    const handleColorChange = (event: CustomEvent) => {
-      setColors(event.detail);
-    };
-
-    window.addEventListener('themeDebugSettingsChanged', handleThemeDebugChange as EventListener);
-    window.addEventListener('brandSettingsChanged', handleBrandChange as EventListener);
-    window.addEventListener('themeColorsChanged', handleColorChange as EventListener);
-
-    return () => {
-      window.removeEventListener('themeDebugSettingsChanged', handleThemeDebugChange as EventListener);
-      window.removeEventListener('brandSettingsChanged', handleBrandChange as EventListener);
-      window.removeEventListener('themeColorsChanged', handleColorChange as EventListener);
-    };
-  }, []);
-
+  // Set theme mode with persistence
   const setThemeMode = (mode: ThemeMode) => {
+    console.log('🔄 Setting theme mode:', mode);
     setThemeModeState(mode);
     localStorage.setItem('theme-mode', mode);
   };
 
-  const updateColors = (newColors: Colors) => {
-    const mergedColors = { ...colors, ...newColors };
-    setColors(mergedColors);
-    localStorage.setItem('theme-colors', JSON.stringify(mergedColors));
-    applyColorsToCSS(mergedColors, actualTheme);
+  // Update colors with persistence
+  const updateColors = (newColors: ThemeColors) => {
+    console.log('🎨 Updating colors:', newColors);
+    setColors(newColors);
+    localStorage.setItem('theme-colors', JSON.stringify(newColors));
   };
+
+  // Reset colors to defaults
+  const resetColors = () => {
+    console.log('🔄 Resetting colors to defaults');
+    setColors(defaultColors);
+    localStorage.removeItem('theme-colors');
+  };
+
+  // Apply theme to document
+  useEffect(() => {
+    console.log('🎯 APPLYING CORRECTED THEME SYSTEM');
+    console.log('Mode:', themeMode, '| Actual:', actualTheme);
+    console.log('✅ Blue should be blue:', colors.primary[actualTheme]);
+    console.log('✅ White should be white:', colors.background[actualTheme]);
+
+    // Remove existing theme
+    document.documentElement.className = '';
+    const existing = document.getElementById('corrected-theme-system');
+    if (existing) existing.remove();
+    
+    // Set theme class and attribute
+    if (actualTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    }
+    document.documentElement.setAttribute('data-theme', actualTheme);
+
+    // Create corrected theme CSS
+    const style = document.createElement('style');
+    style.id = 'corrected-theme-system';
+
+    // RGB variables (primary system)
+    const rgbVars = Object.entries(colors).map(([key, values]) => {
+      const colorValue = values[actualTheme];
+      return `  --${key}: ${colorValue};`;
+    }).join('\n');
+
+    // Convert RGB to HSL for shadcn compatibility
+    const rgbToHsl = (rgb: string): string => {
+      if (!rgb || !rgb.includes(' ')) return '0 0% 100%';
+      
+      const parts = rgb.split(' ').map(p => parseInt(p) / 255);
+      if (parts.length !== 3 || parts.some(isNaN)) return '0 0% 100%';
+      
+      const [r, g, b] = parts;
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      let h = 0, s = 0, l = (max + min) / 2;
+
+      if (max !== min) {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+          case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+          case g: h = (b - r) / d + 2; break;
+          case b: h = (r - g) / d + 4; break;
+        }
+        h /= 6;
+      }
+
+      return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
+    };
+
+    // HSL variables for shadcn compatibility
+    const hslVars = [
+      `--background: ${rgbToHsl(colors.background[actualTheme])}`,
+      `--foreground: ${rgbToHsl(colors.foreground[actualTheme])}`,
+      `--card: ${rgbToHsl(colors.card[actualTheme])}`,
+      `--card-foreground: ${rgbToHsl(colors['card-foreground'][actualTheme])}`,
+      `--primary: ${rgbToHsl(colors.primary[actualTheme])}`,
+      `--primary-foreground: ${rgbToHsl(colors['primary-foreground'][actualTheme])}`,
+      `--secondary: ${rgbToHsl(colors.secondary[actualTheme])}`,
+      `--secondary-foreground: ${rgbToHsl(colors['secondary-foreground'][actualTheme])}`,
+      `--muted: ${rgbToHsl(colors.muted[actualTheme])}`,
+      `--muted-foreground: ${rgbToHsl(colors['muted-foreground'][actualTheme])}`,
+      `--accent: ${rgbToHsl(colors.accent[actualTheme])}`,
+      `--accent-foreground: ${rgbToHsl(colors['accent-foreground'][actualTheme])}`,
+      `--border: ${rgbToHsl(colors.border[actualTheme])}`,
+      `--input: ${rgbToHsl(colors.input[actualTheme])}`,
+      `--ring: ${rgbToHsl(colors.ring[actualTheme])}`,
+    ].join(';\n  ') + ';';
+
+    // Complete CSS with both RGB and HSL support
+    style.textContent = `
+      /* CORRECTED THEME SYSTEM - Blue stays blue, white stays white */
+      :root {
+        /* RGB Variables (primary system) */
+${rgbVars}
+        
+        /* HSL Variables (shadcn compatibility) */
+        ${hslVars}
+      }
+
+      /* Force correct body styling */
+      body {
+        background-color: rgb(${colors.background[actualTheme]}) !important;
+        color: rgb(${colors.foreground[actualTheme]}) !important;
+        transition: background-color 0.3s ease, color 0.3s ease !important;
+      }
+
+      /* Essential utility class overrides */
+      .bg-background { background-color: rgb(${colors.background[actualTheme]}) !important; }
+      .bg-card { background-color: rgb(${colors.card[actualTheme]}) !important; }
+      .bg-primary { background-color: rgb(${colors.primary[actualTheme]}) !important; }
+      .bg-secondary { background-color: rgb(${colors.secondary[actualTheme]}) !important; }
+      .bg-muted { background-color: rgb(${colors.muted[actualTheme]}) !important; }
+      .bg-accent { background-color: rgb(${colors.accent[actualTheme]}) !important; }
+      
+      .text-foreground { color: rgb(${colors.foreground[actualTheme]}) !important; }
+      .text-card-foreground { color: rgb(${colors['card-foreground'][actualTheme]}) !important; }
+      .text-primary { color: rgb(${colors.primary[actualTheme]}) !important; }
+      .text-primary-foreground { color: rgb(${colors['primary-foreground'][actualTheme]}) !important; }
+      .text-secondary-foreground { color: rgb(${colors['secondary-foreground'][actualTheme]}) !important; }
+      .text-muted-foreground { color: rgb(${colors['muted-foreground'][actualTheme]}) !important; }
+      .text-accent-foreground { color: rgb(${colors['accent-foreground'][actualTheme]}) !important; }
+      
+      .border-border { border-color: rgb(${colors.border[actualTheme]}) !important; }
+      .border-input { border-color: rgb(${colors.input[actualTheme]}) !important; }
+
+      /* Ensure theme transitions */
+      * {
+        transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+      }
+    `;
+
+    document.head.appendChild(style);
+    console.log('✅ Corrected theme system applied successfully');
+
+  }, [colors, actualTheme, themeMode]);
 
   const value: GlobalThemeContextType = {
     themeMode,
-    setThemeMode,
     actualTheme,
+    setThemeMode,
+    isSystemDark,
     colors,
     updateColors,
-    debugSettings,
-    brandSettings,
+    resetColors,
   };
 
   return (
@@ -248,7 +352,7 @@ export function GlobalThemeProvider({ children }: { children: React.ReactNode })
   );
 }
 
-export function useGlobalTheme() {
+export function useGlobalTheme(): GlobalThemeContextType {
   const context = useContext(GlobalThemeContext);
   if (context === undefined) {
     throw new Error('useGlobalTheme must be used within a GlobalThemeProvider');
