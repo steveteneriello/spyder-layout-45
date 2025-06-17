@@ -47,14 +47,16 @@ export interface ScheduleConfig {
 export interface BudgetConfig {
   totalBudget?: number;
   dailyBudget: number;
-  bidAdjustments?: Record<string, number>;
+  bidStrategy: 'cpc' | 'cpm' | 'cpa' | 'auto';
+  maxCpc?: number;
+  targetCpa?: number;
 }
 
 export interface LocationTargeting {
   included: string[];
   excluded: string[];
   radius?: number;
-  radiusUnit?: 'miles' | 'kilometers';
+  radiusUnit: 'miles' | 'km';
 }
 
 export interface CampaignFilters {
@@ -64,28 +66,28 @@ export interface CampaignFilters {
   createdDateRange: [Date, Date] | null;
   lastModifiedRange: [Date, Date] | null;
   assignedTo: string[];
-  keywordCount: { min: number; max: number; } | null;
-  sortBy: keyof Campaign;
+  keywordCount: { min: number; max: number } | null;
+  sortBy: 'name' | 'created_at' | 'updated_at' | 'status';
   sortOrder: 'asc' | 'desc';
 }
 
 export interface CampaignTemplate {
   id: string;
   name: string;
-  description?: string;
+  description: string;
   category_id: string;
-  settings: Partial<CampaignSettings>;
-  locationTargeting?: Partial<LocationTargeting>;
-  keywordTargeting?: Partial<KeywordTargeting>;
-  scheduleConfig?: Partial<ScheduleConfig>;
-  budgetConfig?: Partial<BudgetConfig>;
+  settings: CampaignSettings;
+  keywords: string[];
+  negativeKeywords: string[];
+  locationTargeting: LocationTargeting;
   isPublic: boolean;
-  created_by: string;
+  createdBy: string;
+  tags: string[];
   created_at: string;
   updated_at: string;
 }
 
-// Campaign CRUD Hook
+// Enhanced Campaign Management Hook
 export const useCampaigns = () => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -186,6 +188,13 @@ export const useCampaigns = () => {
         ...campaignData
       };
 
+      // In real implementation:
+      // const { data, error } = await supabase
+      //   .from('campaign_manager_campaigns')
+      //   .insert(newCampaign)
+      //   .select()
+      //   .single();
+
       setCampaigns(prev => [newCampaign, ...prev]);
       
       return newCampaign;
@@ -197,151 +206,186 @@ export const useCampaigns = () => {
 
   // Update campaign
   const updateCampaign = useCallback(async (id: string, updates: Partial<Campaign>): Promise<Campaign> => {
+    debugLogger.info('Updating campaign', { id, updates });
+    
     try {
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 800));
       
       const updatedCampaign = {
+        ...campaigns.find(c => c.id === id),
         ...updates,
         updated_at: new Date().toISOString()
-      };
+      } as Campaign;
 
-      setCampaigns(prev => 
-        prev.map(campaign => 
-          campaign.id === id 
-            ? { ...campaign, ...updatedCampaign }
-            : campaign
-        )
-      );
+      // In real implementation:
+      // const { data, error } = await supabase
+      //   .from('campaign_manager_campaigns')
+      //   .update(updates)
+      //   .eq('id', id)
+      //   .select()
+      //   .single();
+
+      setCampaigns(prev => prev.map(c => c.id === id ? updatedCampaign : c));
+      debugLogger.info('Campaign updated successfully', { id });
       
-      const updated = campaigns.find(c => c.id === id);
-      if (!updated) throw new Error('Campaign not found');
-      
-      return { ...updated, ...updatedCampaign };
+      return updatedCampaign;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to update campaign';
+      debugLogger.error('Failed to update campaign', { error: err, id });
       throw new Error(errorMessage);
     }
-  }, [campaigns]);
+  }, [campaigns]); // Remove debugLogger dependency to prevent infinite loop
 
   // Duplicate campaign
-  const duplicateCampaign = useCallback(async (id: string, newName?: string): Promise<Campaign> => {
+  const duplicateCampaign = useCallback(async (id: string, newName: string): Promise<Campaign> => {
+    debugLogger.info('Duplicating campaign', { id, newName });
+    
     try {
       const originalCampaign = campaigns.find(c => c.id === id);
       if (!originalCampaign) {
         throw new Error('Campaign not found');
       }
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
       const duplicatedCampaign: Campaign = {
         ...originalCampaign,
         id: `campaign_${Date.now()}`,
-        name: newName || `${originalCampaign.name} (Copy)`,
+        name: newName,
         status: 'draft',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         archived_at: undefined
       };
 
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
       setCampaigns(prev => [duplicatedCampaign, ...prev]);
+      debugLogger.info('Campaign duplicated successfully', { originalId: id, newId: duplicatedCampaign.id });
       
       return duplicatedCampaign;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to duplicate campaign';
+      debugLogger.error('Failed to duplicate campaign', { error: err, id });
       throw new Error(errorMessage);
     }
-  }, [campaigns]);
+  }, [campaigns]); // Remove debugLogger dependency to prevent infinite loop
 
-  // Archive campaign
+  // Archive campaign (soft delete)
   const archiveCampaign = useCallback(async (id: string): Promise<void> => {
+    debugLogger.info('Archiving campaign', { id });
+    
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 500));
       
       const archivedAt = new Date().toISOString();
       
-      setCampaigns(prev => 
-        prev.map(campaign => 
-          campaign.id === id 
-            ? { 
-                ...campaign, 
-                status: 'archived' as const,
-                archived_at: archivedAt,
-                updated_at: archivedAt
-              }
-            : campaign
-        )
-      );
+      // In real implementation:
+      // const { error } = await supabase
+      //   .from('campaign_manager_campaigns')
+      //   .update({ 
+      //     status: 'archived', 
+      //     archived_at: archivedAt,
+      //     updated_at: archivedAt 
+      //   })
+      //   .eq('id', id);
+
+      setCampaigns(prev => prev.map(c => 
+        c.id === id 
+          ? { ...c, status: 'archived' as const, archived_at: archivedAt, updated_at: archivedAt }
+          : c
+      ));
+      
+      debugLogger.info('Campaign archived successfully', { id });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to archive campaign';
+      debugLogger.error('Failed to archive campaign', { error: err, id });
       throw new Error(errorMessage);
     }
-  }, []);
+  }, []); // Remove debugLogger dependency to prevent infinite loop
 
-  // Restore campaign
+  // Restore campaign from archive
   const restoreCampaign = useCallback(async (id: string): Promise<void> => {
+    debugLogger.info('Restoring campaign', { id });
+    
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      setCampaigns(prev => 
-        prev.map(campaign => 
-          campaign.id === id 
-            ? { 
-                ...campaign, 
-                status: 'draft' as const,
-                archived_at: undefined,
-                updated_at: new Date().toISOString()
-              }
-            : campaign
-        )
-      );
+      const updatedAt = new Date().toISOString();
+      
+      setCampaigns(prev => prev.map(c => 
+        c.id === id 
+          ? { ...c, status: 'draft' as const, archived_at: undefined, updated_at: updatedAt }
+          : c
+      ));
+      
+      debugLogger.info('Campaign restored successfully', { id });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to restore campaign';
+      debugLogger.error('Failed to restore campaign', { error: err, id });
       throw new Error(errorMessage);
     }
-  }, []);
+  }, []); // Remove debugLogger dependency to prevent infinite loop
 
-  // Delete campaign
+  // Delete campaign (hard delete - drafts only)
   const deleteCampaign = useCallback(async (id: string): Promise<void> => {
+    debugLogger.info('Deleting campaign', { id });
+    
     try {
+      const campaign = campaigns.find(c => c.id === id);
+      if (!campaign) {
+        throw new Error('Campaign not found');
+      }
+      
+      if (campaign.status !== 'draft') {
+        throw new Error('Only draft campaigns can be permanently deleted');
+      }
+
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      setCampaigns(prev => prev.filter(campaign => campaign.id !== id));
+      // In real implementation:
+      // const { error } = await supabase
+      //   .from('campaign_manager_campaigns')
+      //   .delete()
+      //   .eq('id', id);
+
+      setCampaigns(prev => prev.filter(c => c.id !== id));
+      debugLogger.info('Campaign deleted successfully', { id });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to delete campaign';
+      debugLogger.error('Failed to delete campaign', { error: err, id });
       throw new Error(errorMessage);
     }
-  }, []);
+  }, [campaigns]); // Remove debugLogger dependency to prevent infinite loop
 
   // Bulk update campaigns
   const bulkUpdateCampaigns = useCallback(async (ids: string[], updates: Partial<Campaign>): Promise<void> => {
+    debugLogger.info('Bulk updating campaigns', { ids, updates });
+    
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      const updateData = {
-        ...updates,
-        updated_at: new Date().toISOString()
-      };
-
-      setCampaigns(prev => 
-        prev.map(campaign => 
-          ids.includes(campaign.id) 
-            ? { ...campaign, ...updateData }
-            : campaign
-        )
-      );
+      const updatedAt = new Date().toISOString();
+      
+      setCampaigns(prev => prev.map(c => 
+        ids.includes(c.id) 
+          ? { ...c, ...updates, updated_at: updatedAt }
+          : c
+      ));
+      
+      debugLogger.info('Campaigns bulk updated successfully', { count: ids.length });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to bulk update campaigns';
+      debugLogger.error('Failed to bulk update campaigns', { error: err, ids });
       throw new Error(errorMessage);
     }
-  }, []);
+  }, []); // Remove debugLogger dependency to prevent infinite loop
 
-  // Initialize campaigns on mount
+  // Load campaigns on mount
   useEffect(() => {
     loadCampaigns();
   }, [loadCampaigns]);
@@ -482,31 +526,38 @@ export const useCampaignManagement = () => {
 
   // Enhanced campaign operations
   const createCampaign = useCallback(async (campaignData: Partial<Campaign>) => {
+    debugLogger?.debug('Creating campaign:', campaignData);
     return campaignHook.createCampaign(campaignData);
   }, [campaignHook.createCampaign]);
 
   const updateCampaign = useCallback(async (id: string, campaignData: Partial<Campaign>) => {
+    debugLogger?.debug('Updating campaign:', id, campaignData);
     return campaignHook.updateCampaign(id, campaignData);
   }, [campaignHook.updateCampaign]);
 
   const deleteCampaign = useCallback(async (id: string) => {
+    debugLogger?.debug('Deleting campaign:', id);
     return campaignHook.deleteCampaign(id);
   }, [campaignHook.deleteCampaign]);
 
   const duplicateCampaign = useCallback(async (id: string, newName?: string) => {
+    debugLogger?.debug('Duplicating campaign:', id);
     return campaignHook.duplicateCampaign(id, newName);
   }, [campaignHook.duplicateCampaign]);
 
   const archiveCampaign = useCallback(async (id: string) => {
+    debugLogger?.debug('Archiving campaign:', id);
     return campaignHook.archiveCampaign(id);
   }, [campaignHook.archiveCampaign]);
 
   const restoreCampaign = useCallback(async (id: string) => {
+    debugLogger?.debug('Restoring campaign:', id);
     return campaignHook.restoreCampaign(id);
   }, [campaignHook.restoreCampaign]);
 
   // Bulk operations
   const bulkUpdateStatus = useCallback(async (campaignIds: string[], status: Campaign['status']) => {
+    debugLogger?.debug('Bulk updating status:', campaignIds, status);
     try {
       for (const id of campaignIds) {
         await updateCampaign(id, { status });
@@ -514,34 +565,41 @@ export const useCampaignManagement = () => {
       // Refresh data after bulk operation
       await campaignHook.loadCampaigns();
     } catch (error) {
+      debugLogger?.error('Bulk status update failed:', error);
       throw error;
     }
   }, [updateCampaign, campaignHook.loadCampaigns]);
 
   const bulkArchive = useCallback(async (campaignIds: string[]) => {
+    debugLogger?.debug('Bulk archiving:', campaignIds);
     try {
       for (const id of campaignIds) {
         await archiveCampaign(id);
       }
       await campaignHook.loadCampaigns();
     } catch (error) {
+      debugLogger?.error('Bulk archive failed:', error);
       throw error;
     }
   }, [archiveCampaign, campaignHook.loadCampaigns]);
 
   const bulkDelete = useCallback(async (campaignIds: string[]) => {
+    debugLogger?.debug('Bulk deleting:', campaignIds);
     try {
       for (const id of campaignIds) {
         await deleteCampaign(id);
       }
       await campaignHook.loadCampaigns();
     } catch (error) {
+      debugLogger?.error('Bulk delete failed:', error);
       throw error;
     }
   }, [deleteCampaign, campaignHook.loadCampaigns]);
 
   // Export functionality
   const exportCampaigns = useCallback(async (campaignIds?: string[], format: 'csv' | 'json' = 'csv') => {
+    debugLogger?.debug('Exporting campaigns:', campaignIds, format);
+    
     const campaignsToExport = campaignIds 
       ? campaignHook.campaigns.filter(c => campaignIds.includes(c.id))
       : campaignHook.campaigns;
@@ -582,12 +640,14 @@ export const useCampaignManagement = () => {
 
   // Search functionality
   const searchCampaigns = useCallback(async (query: string) => {
+    debugLogger?.debug('Searching campaigns:', query);
     filtersHook.updateFilter('search', query);
     return filtersHook.filterCampaigns(campaignHook.campaigns);
   }, [filtersHook.updateFilter, filtersHook.filterCampaigns, campaignHook.campaigns]);
 
   // Refresh data - use loadCampaigns as the refresh function
   const refreshData = useCallback(async () => {
+    debugLogger?.debug('Refreshing campaign data');
     await campaignHook.loadCampaigns();
   }, [campaignHook.loadCampaigns]);
 

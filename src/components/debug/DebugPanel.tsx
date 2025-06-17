@@ -342,9 +342,13 @@ export const useDebugLogger = (componentName: string) => {
     if (process.env.NODE_ENV === 'development') {
       console[level](`[${componentName}] ${message}`, data);
       
-      // Send to global debug panel if available
-      if ((window as any).debugPanel) {
-        (window as any).debugPanel[level](message, data);
+      // Send to global debug panel if available - safely check for methods
+      if ((window as any).debugPanel && typeof (window as any).debugPanel[level] === 'function') {
+        try {
+          (window as any).debugPanel[level](message, data);
+        } catch (e) {
+          // Silently fail if debug panel method doesn't work
+        }
       }
     }
   };

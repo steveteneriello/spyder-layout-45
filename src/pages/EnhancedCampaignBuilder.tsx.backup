@@ -3,8 +3,9 @@ import { useGlobalTheme } from '@/contexts/GlobalThemeContext';
 import { useMenuConfig } from '@/hooks/useMenuConfig';
 import SidebarLayout from '@/components/layout/SidebarLayout';
 import { SideCategory } from '@/components/navigation/SideCategory';
-
-// COMPLETELY CLEAN VERSION - NO DEBUG LOGGER v9
+import { DebugPanel } from '@/components/debug/DebugPanel';
+import { DebugErrorBoundary } from '@/components/debug/DebugPanel';
+import { useDebugLogger } from '@/components/debug/DebugPanel';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -58,6 +59,7 @@ const SAMPLE_CATEGORIES: Category[] = [
 function CampaignBuilderPage() {
   const { actualTheme, themeMode } = useGlobalTheme();
   const { getMenuItems, getSections } = useMenuConfig();
+  const debugLogger = useDebugLogger('CampaignBuilder');
   const { toast } = useToast();
   
   const allMenuItems = getMenuItems();
@@ -118,12 +120,16 @@ function CampaignBuilderPage() {
 
   const loadInitialData = async () => {
     try {
+      debugLogger.log('Loading initial data');
+      
       // Load categories (simulate API call)
       await new Promise(resolve => setTimeout(resolve, 300));
       setCategories(SAMPLE_CATEGORIES);
       
+      debugLogger.log('Initial data loaded successfully');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load initial data';
+      debugLogger.error('Failed to load initial data', { error: err });
       toast({
         title: "Error",
         description: errorMessage,
@@ -137,12 +143,14 @@ function CampaignBuilderPage() {
 
   // Campaign CRUD handlers
   const handleCreateCampaign = () => {
+    debugLogger.log('Creating new campaign');
     setSelectedCampaign(null);
     setEditMode('create');
     setActiveTab('editor');
   };
 
   const handleEditCampaign = (campaign: Campaign) => {
+    debugLogger.log('Editing campaign', { campaignId: campaign.id });
     setSelectedCampaign(campaign);
     setEditMode('edit');
     setActiveTab('editor');
@@ -151,11 +159,13 @@ function CampaignBuilderPage() {
   const handleDuplicateCampaign = async (campaignId: string, newName: string) => {
     try {
       const duplicated = await duplicateCampaign(campaignId, newName);
+      debugLogger.log('Campaign duplicated successfully', { originalId: campaignId, newId: duplicated.id });
       toast({
         title: "Success",
         description: "Campaign duplicated successfully"
       });
     } catch (error) {
+      debugLogger.error('Failed to duplicate campaign', { campaignId, error });
       toast({
         title: "Error",
         description: "Failed to duplicate campaign",
@@ -183,6 +193,7 @@ function CampaignBuilderPage() {
       setActiveTab('campaigns');
       setSelectedCampaign(null);
     } catch (error) {
+      debugLogger.error('Failed to save campaign', { error });
       toast({
         title: "Error",
         description: `Failed to ${editMode} campaign`,
@@ -217,6 +228,7 @@ function CampaignBuilderPage() {
   };
 
   const handleExportCampaigns = (campaignIds: string[]) => {
+    debugLogger.log('Exporting campaigns', { campaignIds });
     toast({
       title: "Export Started",
       description: `Exporting ${campaignIds.length} campaigns...`
@@ -467,4 +479,11 @@ function CampaignBuilderPage() {
   );
 }
 
-export default CampaignBuilderPage;
+// Wrap with DebugErrorBoundary
+const CampaignBuilder = () => (
+  <DebugErrorBoundary componentName="CampaignBuilder">
+    <CampaignBuilderPage />
+  </DebugErrorBoundary>
+);
+
+export default CampaignBuilder;
