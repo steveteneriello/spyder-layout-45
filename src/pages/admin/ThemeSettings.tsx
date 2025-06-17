@@ -32,16 +32,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-interface ColorGroup {
-  name: string;
-  colors: {
-    [key: string]: {
-      light: string;
-      dark: string;
-    };
-  };
-}
-
 interface DebugSettings {
   showThemeDebug: boolean;
   showColorPreview: boolean;
@@ -126,15 +116,6 @@ export default function AdminThemeSettings() {
     }));
 
     setUnsavedChanges(false);
-    
-    const event = new CustomEvent('showToast', { 
-      detail: { 
-        title: 'Settings Saved', 
-        description: 'All theme settings have been saved successfully.',
-        type: 'success'
-      } 
-    });
-    window.dispatchEvent(event);
   };
 
   const handleLogoUpload = (file: File, mode: 'light' | 'dark') => {
@@ -154,7 +135,7 @@ export default function AdminThemeSettings() {
     });
   };
 
-  const colorGroups: ColorGroup[] = [
+  const colorGroups = [
     {
       name: 'Core Colors',
       colors: {
@@ -181,14 +162,6 @@ export default function AdminThemeSettings() {
         'success': colors['success'] || { light: '56 161 105', dark: '72 187 120' },
         'warning': colors['warning'] || { light: '221 107 32', dark: '251 146 60' },
         'error': colors['error'] || { light: '229 62 62', dark: '248 113 113' },
-      }
-    },
-    {
-      name: 'Borders',
-      colors: {
-        'border-primary': colors['border-primary'] || { light: '226 232 240', dark: '52 64 84' },
-        'border-secondary': colors['border-secondary'] || { light: '241 243 245', dark: '45 55 72' },
-        'border-focus': colors['border-focus'] || { light: '49 130 206', dark: '56 189 248' },
       }
     }
   ];
@@ -659,42 +632,6 @@ export default function AdminThemeSettings() {
                     </div>
                   )}
 
-                  {brandSettings.useLogo && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label className="text-sm font-medium">Logo Size</Label>
-                        <Select
-                          value={brandSettings.logoSize}
-                          onValueChange={(value: 'sm' | 'md' | 'lg') => updateBrandSettings({ logoSize: value })}
-                        >
-                          <SelectTrigger className="mt-1">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="sm">Small (24px)</SelectItem>
-                            <SelectItem value="md">Medium (32px)</SelectItem>
-                            <SelectItem value="lg">Large (40px)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium">Logo Position</Label>
-                        <Select
-                          value={brandSettings.logoPosition}
-                          onValueChange={(value: 'left' | 'center') => updateBrandSettings({ logoPosition: value })}
-                        >
-                          <SelectTrigger className="mt-1">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="left">Left Aligned</SelectItem>
-                            <SelectItem value="center">Centered</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  )}
-
                   <div className="space-y-4">
                     <h3 className="font-semibold">Text Branding</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -719,23 +656,13 @@ export default function AdminThemeSettings() {
                         />
                       </div>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label className="text-sm font-medium">Show Tagline</Label>
-                        <p className="text-xs text-muted-foreground">Display tagline below brand name</p>
-                      </div>
-                      <Switch
-                        checked={brandSettings.showTagline}
-                        onCheckedChange={(checked) => updateBrandSettings({ showTagline: checked })}
-                      />
-                    </div>
                   </div>
 
                   <div className="border border-border rounded-lg p-4 bg-muted/30">
                     <Label className="text-sm font-medium mb-2 block">Preview</Label>
-                    <div className={`flex items-center gap-3 ${brandSettings.logoPosition === 'center' ? 'justify-center' : ''}`}>
+                    <div className="flex items-center gap-3">
                       {brandSettings.useLogo && (brandSettings.lightModeLogo || brandSettings.darkModeLogo) ? (
-                        <div className={`${brandSettings.logoSize === 'sm' ? 'w-6 h-6' : brandSettings.logoSize === 'md' ? 'w-8 h-8' : 'w-10 h-10'}`}>
+                        <div className="w-8 h-8">
                           <img 
                             src={actualTheme === 'light' ? brandSettings.lightModeLogo || brandSettings.darkModeLogo : brandSettings.darkModeLogo || brandSettings.lightModeLogo} 
                             alt="Logo preview" 
@@ -820,44 +747,6 @@ export default function AdminThemeSettings() {
                         )}
                         Color Previews
                       </div>
-                      <div className="flex items-center gap-2">
-                        {debugSettings.showThemeInfo ? (
-                          <Check className="h-4 w-4 text-green-600" />
-                        ) : (
-                          <X className="h-4 w-4 text-red-600" />
-                        )}
-                        Theme Information
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
-                    <h4 className="font-semibold text-amber-900 dark:text-amber-100 mb-2">💾 Save Changes</h4>
-                    <p className="text-sm text-amber-800 dark:text-amber-200 mb-3">
-                      Your debug settings changes are ready to be saved. Click "Save All Settings" to apply them globally.
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        onClick={saveAllSettings}
-                        className="bg-primary text-primary-foreground"
-                        disabled={!unsavedChanges}
-                      >
-                        <Save className="h-4 w-4 mr-2" />
-                        Save Debug Settings
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          const savedSettings = localStorage.getItem('theme-debug-settings');
-                          if (savedSettings) {
-                            setDebugSettings(JSON.parse(savedSettings));
-                          }
-                          setUnsavedChanges(false);
-                        }}
-                      >
-                        <RotateCcw className="h-4 w-4 mr-2" />
-                        Reset
-                      </Button>
                     </div>
                   </div>
 
