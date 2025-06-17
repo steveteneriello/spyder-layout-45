@@ -1,7 +1,9 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import SidebarLayout from '@/components/layout/SidebarLayout';
 import { SideCategory } from '@/components/navigation/SideCategory';
 import { useGlobalTheme } from '@/contexts/GlobalThemeContext';
+import { DashboardThemeDebug } from '@/components/theme/ThemeDebugSection';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,16 +22,8 @@ import {
   CheckCircle,
   AlertCircle
 } from 'lucide-react';
-
-const allMenuItems = [
-  { title: 'Dashboard', path: '/', icon: 'Home', section: 'Main' },
-  { title: 'Campaigns', path: '/campaigns', icon: 'Target', section: 'Main' },
-  { title: 'Scheduler', path: '/scheduler', icon: 'Calendar', section: 'Tools' },
-  { title: 'Create Schedule', path: '/scheduler/create', icon: 'Plus', section: 'Tools' },
-  { title: 'Location Builder', path: '/location-builder', icon: 'MapPin', section: 'Tools' },
-  { title: 'Theme', path: '/theme', icon: 'Palette', section: 'Settings' },
-  { title: 'Admin Theme', path: '/admin/theme', icon: 'Settings', section: 'Settings' },
-];
+import { BrandLogo } from '@/components/ui/brand-logo';
+import { useMenuConfig } from '@/hooks/useMenuConfig';
 
 // Dashboard Cards Data
 const dashboardStats = [
@@ -133,30 +127,47 @@ const quickActions = [
   },
 ];
 
-export default function Index() {
-  const { actualTheme, themeMode } = useGlobalTheme();
+function Index() {
+  const { actualTheme, themeMode, debugSettings } = useGlobalTheme();
+  const { getMenuItems, getSections } = useMenuConfig();
+  
+  const allMenuItems = getMenuItems();
+  const sections = getSections();
 
   return (
     <SidebarLayout
       nav={
         <div className="flex items-center justify-between w-full px-4">
-          <h1 className="text-lg font-semibold text-white">Dashboard</h1>
-          <Badge variant="outline" className="text-white border-white/20">
+          <div className="flex items-center gap-3">
+            <BrandLogo 
+              size="md" 
+              showText={true} 
+              className="flex items-center gap-3 text-primary-foreground"
+            />
+          </div>
+          <Badge variant="outline" className="text-primary-foreground border-primary-foreground/20">
             {actualTheme} mode
           </Badge>
         </div>
       }
       category={
         <div className="space-y-4">
-          <SideCategory section="Main" items={allMenuItems.filter(item => item.section === 'Main')} />
-          <SideCategory section="Tools" items={allMenuItems.filter(item => item.section === 'Tools')} />
-          <SideCategory section="Settings" items={allMenuItems.filter(item => item.section === 'Settings')} />
+          {sections.map((section) => (
+            <SideCategory 
+              key={section.name}
+              section={section.name} 
+              items={section.items} 
+            />
+          ))}
         </div>
       }
       menuItems={allMenuItems}
     >
       {/* FIXED: Use proper theme-aware classes */}
       <div className="p-6 bg-background text-foreground min-h-screen">
+        {/* Debug Section - Only show when debug setting is enabled */}
+        {debugSettings.showThemeDebug && <DashboardThemeDebug />}
+        
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
@@ -169,47 +180,6 @@ export default function Index() {
             Welcome back! Here's what's happening with your campaigns and schedules.
           </p>
         </div>
-
-        {/* Theme Status Debug Card */}
-        <Card className="mb-6 border-2 border-primary/20">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-foreground">
-              <Palette className="h-5 w-5 text-primary" />
-              🎯 Theme Status (Fixed)
-            </CardTitle>
-            <CardDescription>
-              Verifying that colors are correctly applied
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="p-3 bg-muted rounded-lg">
-                <div className="text-sm font-medium text-muted-foreground">Theme Mode</div>
-                <div className="text-lg font-semibold text-foreground capitalize">
-                  {themeMode}
-                </div>
-              </div>
-              <div className="p-3 bg-muted rounded-lg">
-                <div className="text-sm font-medium text-muted-foreground">Active Theme</div>
-                <div className="text-lg font-semibold text-foreground capitalize">
-                  {actualTheme}
-                </div>
-              </div>
-              <div className="p-3 bg-primary rounded-lg">
-                <div className="text-sm font-medium text-primary-foreground">Primary Color</div>
-                <div className="text-lg font-semibold text-primary-foreground">
-                  Should be BLUE
-                </div>
-              </div>
-              <div className="p-3 bg-card border border-border rounded-lg">
-                <div className="text-sm font-medium text-muted-foreground">Background</div>
-                <div className="text-lg font-semibold text-card-foreground">
-                  Should be WHITE/DARK
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -269,13 +239,13 @@ export default function Index() {
                         className="h-auto p-4 flex flex-col items-start space-y-2 hover:scale-105 transition-transform"
                         asChild
                       >
-                        <a href={action.href}>
+                        <Link to={action.href}>
                           <Icon className="h-5 w-5" />
                           <div className="text-left">
                             <div className="font-semibold">{action.title}</div>
                             <div className="text-xs opacity-80">{action.description}</div>
                           </div>
-                        </a>
+                        </Link>
                       </Button>
                     );
                   })}
@@ -302,10 +272,10 @@ export default function Index() {
                     const Icon = activity.icon;
                     return (
                       <div key={activity.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
-                        <div className={`p-2 rounded-full ${
-                          activity.status === 'success' ? 'bg-green-100 text-green-600' :
-                          activity.status === 'warning' ? 'bg-yellow-100 text-yellow-600' :
-                          'bg-gray-100 text-gray-600'
+                        <div                        className={`p-2 rounded-full ${
+                          activity.status === 'success' ? 'bg-success-bg text-success' :
+                          activity.status === 'warning' ? 'bg-warning-bg text-warning' :
+                          'bg-muted text-muted-foreground'
                         }`}>
                           <Icon className="h-4 w-4" />
                         </div>
@@ -329,54 +299,58 @@ export default function Index() {
           </div>
         </div>
 
-        {/* Color Test Section */}
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle className="text-foreground">🧪 Color Test Section</CardTitle>
-            <CardDescription>
-              Visual confirmation that theme colors are working correctly
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="space-y-2">
-                <div className="w-full h-16 bg-primary rounded flex items-center justify-center">
-                  <span className="text-primary-foreground font-semibold">Primary (Blue)</span>
+        {/* Color Test Section - Only show when debug setting is enabled */}
+        {debugSettings.showColorTest && (
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="text-foreground">🧪 Color Test Section</CardTitle>
+              <CardDescription>
+                Visual confirmation that theme colors are working correctly
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <div className="w-full h-16 bg-primary rounded flex items-center justify-center">
+                    <span className="text-primary-foreground font-semibold">Primary (Blue)</span>
+                  </div>
+                  <p className="text-xs text-center text-muted-foreground">Should be blue, not maroon</p>
                 </div>
-                <p className="text-xs text-center text-muted-foreground">Should be blue, not maroon</p>
+                
+                <div className="space-y-2">
+                  <div className="w-full h-16 bg-secondary rounded flex items-center justify-center border border-border">
+                    <span className="text-secondary-foreground font-semibold">Secondary</span>
+                  </div>
+                  <p className="text-xs text-center text-muted-foreground">Light gray / dark gray</p>
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="w-full h-16 bg-background border-2 border-border rounded flex items-center justify-center">
+                    <span className="text-foreground font-semibold">Background</span>
+                  </div>
+                  <p className="text-xs text-center text-muted-foreground">Should be white/dark, not yellow</p>
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="w-full h-16 bg-card border border-border rounded flex items-center justify-center">
+                    <span className="text-card-foreground font-semibold">Card</span>
+                  </div>
+                  <p className="text-xs text-center text-muted-foreground">Card background</p>
+                </div>
               </div>
               
-              <div className="space-y-2">
-                <div className="w-full h-16 bg-secondary rounded flex items-center justify-center border border-border">
-                  <span className="text-secondary-foreground font-semibold">Secondary</span>
-                </div>
-                <p className="text-xs text-center text-muted-foreground">Light gray / dark gray</p>
+              <div className="mt-4 p-3 bg-muted rounded-lg">
+                <p className="text-sm text-muted-foreground">
+                  <strong>✅ If you see:</strong> Blue primary colors, white/dark backgrounds, proper contrast<br/>
+                  <strong>❌ If you still see:</strong> Maroon instead of blue, yellow instead of white - check for conflicting CSS files
+                </p>
               </div>
-              
-              <div className="space-y-2">
-                <div className="w-full h-16 bg-background border-2 border-border rounded flex items-center justify-center">
-                  <span className="text-foreground font-semibold">Background</span>
-                </div>
-                <p className="text-xs text-center text-muted-foreground">Should be white/dark, not yellow</p>
-              </div>
-              
-              <div className="space-y-2">
-                <div className="w-full h-16 bg-card border border-border rounded flex items-center justify-center">
-                  <span className="text-card-foreground font-semibold">Card</span>
-                </div>
-                <p className="text-xs text-center text-muted-foreground">Card background</p>
-              </div>
-            </div>
-            
-            <div className="mt-4 p-3 bg-muted rounded-lg">
-              <p className="text-sm text-muted-foreground">
-                <strong>✅ If you see:</strong> Blue primary colors, white/dark backgrounds, proper contrast<br/>
-                <strong>❌ If you still see:</strong> Maroon instead of blue, yellow instead of white - check for conflicting CSS files
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </SidebarLayout>
   );
 }
+
+export default Index;

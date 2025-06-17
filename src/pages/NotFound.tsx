@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useGlobalTheme } from '@/contexts/GlobalThemeContext';
+import { NotFoundThemeDebug } from '@/components/theme/ThemeDebugSection';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -129,35 +130,8 @@ export default function NotFound() {
 
             <Separator className="my-6" />
 
-            {/* Theme Test Section */}
-            <div className="mb-6 p-4 bg-muted/50 border border-border rounded-lg">
-              <h3 className="text-sm font-semibold text-foreground mb-3">
-                🎯 404 Page Theme Status
-              </h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="p-2 bg-primary rounded text-primary-foreground text-center text-xs">
-                  Primary<br/>
-                  <span className="opacity-75">BLUE</span>
-                </div>
-                <div className="p-2 bg-card border border-border rounded text-card-foreground text-center text-xs">
-                  Card<br/>
-                  <span className="opacity-75">WHITE/DARK</span>
-                </div>
-                <div className="p-2 bg-background border border-border rounded text-foreground text-center text-xs">
-                  Background<br/>
-                  <span className="opacity-75">Page BG</span>
-                </div>
-                <div className="p-2 bg-muted rounded text-muted-foreground text-center text-xs">
-                  Muted<br/>
-                  <span className="opacity-75">Secondary</span>
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground mt-2 text-center">
-                Mode: <span className="font-mono">{themeMode}</span> | 
-                Active: <span className="font-mono">{actualTheme}</span> | 
-                404 Page: <span className="text-green-600">✅ Theme working</span>
-              </p>
-            </div>
+            {/* Theme Debug Section - Controlled by debug toggle */}
+            <NotFoundThemeDebug />
 
             {/* Quick Navigation */}
             <div className="text-left">

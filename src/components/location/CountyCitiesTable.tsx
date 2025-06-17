@@ -317,7 +317,7 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
   if (selectedCounties.size === 0) {
     return (
       <div className="h-full flex items-center justify-center">
-        <div className="text-center text-slate-500">
+        <div className="text-center text-muted-foreground">
           <p className="text-lg font-medium">Select Counties</p>
           <p className="text-sm mt-1">Choose counties from the search results to view their cities</p>
         </div>
@@ -327,10 +327,10 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex items-center justify-between p-4 border-b border-slate-200">
+      <div className="flex items-center justify-between p-4 border-b border-border">
         <div className="flex items-center space-x-3">
-          <h3 className="text-lg font-semibold text-slate-900">Cities</h3>
-          <span className="text-sm text-slate-500">
+          <h3 className="text-lg font-semibold text-foreground">Cities</h3>
+          <span className="text-sm text-muted-foreground">
             {filteredCities.length} of {allCities.length} cities
           </span>
         </div>
@@ -340,7 +340,7 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
             variant="outline"
             size="sm"
             onClick={handleSelectAll}
-            className="text-slate-600 border-slate-300"
+            className="text-muted-foreground border-border"
           >
             {selectedCities.size === filteredCities.length ? 'Deselect All' : 'Select All'}
           </Button>
@@ -348,7 +348,7 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
       </div>
 
       {/* Filters */}
-      <div className="border-b border-slate-200">
+      <div className="border-b border-border">
         <div className="p-4">
           <CityFilters
             populationRange={populationRange}
@@ -370,14 +370,14 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
       <div className="flex-1 overflow-auto">
         {isLoading ? (
           <div className="flex items-center justify-center h-32">
-            <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-900 border-t-transparent"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-foreground border-t-transparent"></div>
           </div>
         ) : filteredCities.length > 0 ? (
           <div className="space-y-1 p-2">
             {filteredCities.map((city) => (
               <div
                 key={city.id}
-                className="flex items-center space-x-3 p-3 rounded-lg hover:bg-slate-50 border border-transparent hover:border-slate-200 transition-colors"
+                className="flex items-center space-x-3 p-3 rounded-lg hover:bg-accent/50 border border-transparent hover:border-border transition-colors"
               >
                 <Checkbox
                   checked={selectedCities.has(city.id)}
@@ -385,9 +385,9 @@ const CountyCitiesTable: React.FC<CountyCitiesTableProps> = ({
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <h4 className="font-medium text-slate-900 truncate">{city.city}</h4>
+                    <h4 className="font-medium text-foreground truncate">{city.city}</h4>
                     <div className="flex items-center space-x-2">
-                      <span className="text-sm text-slate-500">
+                      <span className="text-sm text-muted-foreground">
                         {city.population?.toLocaleString() || 'N/A'}
                       </span>
                       <Button

@@ -32,8 +32,6 @@ interface DebugSettings {
   showThemeDebug: boolean;
   showColorPreview: boolean;
   showThemeInfo: boolean;
-  showFlashTest: boolean;
-  showColorTest: boolean;
 }
 
 interface BrandSettings {
@@ -161,42 +159,6 @@ const defaultColors: ThemeColors = {
     dark: '56 139 253'         // #388BFD - Focus ring color
   },
 
-  // === SIDEBAR COLORS ===
-  'sidebar-background': { 
-    light: '251 252 253',      // #FBFCFD - Sidebar background
-    dark: '22 27 34'           // #161B22 - Sidebar background
-  },
-  'sidebar-text': { 
-    light: '74 85 104',        // #4A5568 - Sidebar text
-    dark: '125 133 144'        // #7D8590 - Sidebar text
-  },
-  'sidebar-text-active': { 
-    light: '26 32 44',         // #1A202C - Active item text
-    dark: '240 246 252'        // #F0F6FC - Active item text
-  },
-  'sidebar-hover': { 
-    light: '241 243 245',      // #F1F3F5 - Sidebar hover background
-    dark: '48 54 61'           // #30363D - Sidebar hover background
-  },
-  'sidebar-active': { 
-    light: '227 242 253',      // #E3F2FD - Active item background
-    dark: '28 33 40'           // #1C2128 - Active item background
-  },
-  'sidebar-border': { 
-    light: '226 232 240',      // #E2E8F0 - Sidebar borders
-    dark: '48 54 61'           // #30363D - Sidebar borders
-  },
-
-  // === HEADER COLORS ===
-  'header-background': { 
-    light: '49 130 206',       // #3182CE - Header background
-    dark: '22 27 34'           // #161B22 - Header background  
-  },
-  'header-text': { 
-    light: '255 255 255',      // #FFFFFF - Header text
-    dark: '240 246 252'        // #F0F6FC - Header text
-  },
-
   // === SHADOWS ===
   'shadow-sm': { 
     light: '0 0 0',            // Placeholder for shadow (handled separately)
@@ -301,9 +263,7 @@ export function GlobalThemeProvider({ children }: GlobalThemeProviderProps) {
   const [debugSettings, setDebugSettings] = useState<DebugSettings>({
     showThemeDebug: false,
     showColorPreview: true,
-    showThemeInfo: true,
-    showFlashTest: false,
-    showColorTest: false
+    showThemeInfo: true
   });
 
   const [brandSettings, setBrandSettings] = useState<BrandSettings>({
@@ -330,30 +290,12 @@ export function GlobalThemeProvider({ children }: GlobalThemeProviderProps) {
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
 
-  // Load theme from localStorage and sync with early theme detection
+  // Load theme from localStorage
   useEffect(() => {
-    console.log('🔄 Initializing theme system and syncing with early detection...');
-    
-    // Check if early theme detection ran and get its result
-    let initialTheme: ThemeMode = 'auto';
-    
-    if (typeof window !== 'undefined' && window.__EARLY_THEME_APPLIED__) {
-      // Early theme ran - get the theme preference it used
-      const earlyTheme = localStorage.getItem('theme-preference') || localStorage.getItem('theme-mode');
-      if (earlyTheme && ['light', 'dark', 'auto'].includes(earlyTheme)) {
-        initialTheme = earlyTheme as ThemeMode;
-        console.log('🎯 Syncing with early theme detection:', earlyTheme);
-      }
-    } else {
-      // Fallback to standard localStorage lookup
-      const savedTheme = localStorage.getItem('theme-mode') as ThemeMode;
-      if (savedTheme && ['light', 'dark', 'auto'].includes(savedTheme)) {
-        initialTheme = savedTheme;
-      }
+    const savedTheme = localStorage.getItem('theme-mode') as ThemeMode;
+    if (savedTheme && ['light', 'dark', 'auto'].includes(savedTheme)) {
+      setThemeModeState(savedTheme);
     }
-    
-    setThemeModeState(initialTheme);
-    console.log('✅ Initial theme set to:', initialTheme);
 
     const savedColors = localStorage.getItem('theme-colors');
     if (savedColors) {
@@ -391,22 +333,11 @@ export function GlobalThemeProvider({ children }: GlobalThemeProviderProps) {
     ? (isSystemDark ? 'dark' : 'light') 
     : themeMode as 'light' | 'dark';
 
-  // Set theme mode with persistence and early theme sync
+  // Set theme mode with persistence
   const setThemeMode = (mode: ThemeMode) => {
     console.log('🔄 Setting theme mode:', mode);
     setThemeModeState(mode);
-    
-    // Save to both localStorage keys for compatibility
     localStorage.setItem('theme-mode', mode);
-    localStorage.setItem('theme-preference', mode);
-    
-    // If early theme system is available, sync immediately
-    if (typeof window !== 'undefined' && window.__APPLY_EARLY_THEME__) {
-      console.log('🚀 Triggering early theme re-application for navigation');
-      window.__APPLY_EARLY_THEME__();
-    }
-    
-    setHasUnsavedChanges(true);
   };
 
   // Update colors with persistence
@@ -476,25 +407,23 @@ export function GlobalThemeProvider({ children }: GlobalThemeProviderProps) {
     console.log('🏷️ Brand:', brandSettings);
   };
 
-  // Apply theme to document with immediate application to prevent flash
+  // Apply theme to document
   useEffect(() => {
     console.log('🎯 APPLYING COMPLETE THEME SYSTEM - Implementation Guide Aligned');
     console.log('Mode:', themeMode, '| Actual:', actualTheme);
     console.log('✅ Primary blue:', colors.primary[actualTheme]);
     console.log('✅ Background:', colors.background[actualTheme]);
 
-    // IMMEDIATE THEME APPLICATION - Prevent any flash
-    // Apply theme class and attribute immediately (synchronously)
-    document.documentElement.className = actualTheme === 'dark' ? 'dark' : '';
-    document.documentElement.setAttribute('data-theme', actualTheme);
-    
-    // Update body background immediately to prevent flash
-    document.body.style.backgroundColor = actualTheme === 'dark' ? '#0E1117' : '#FFFFFF';
-    document.body.style.color = actualTheme === 'dark' ? '#F0F6FC' : '#1A202C';
-    
-    // Remove existing theme styles
+    // Remove existing theme
+    document.documentElement.className = '';
     const existing = document.getElementById('complete-theme-system');
     if (existing) existing.remove();
+    
+    // Set theme class and attribute for early detection
+    if (actualTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    }
+    document.documentElement.setAttribute('data-theme', actualTheme);
     
     // Update meta theme-color for mobile browsers
     const metaThemeColor = document.querySelector('meta[name="theme-color"]');
@@ -569,16 +498,7 @@ export function GlobalThemeProvider({ children }: GlobalThemeProviderProps) {
       `--input: ${rgbToHsl(colors.input[actualTheme])}`,
       `--ring: ${rgbToHsl(colors.ring[actualTheme])}`,
       `--destructive: ${rgbToHsl(colors.destructive?.[actualTheme] || colors.error[actualTheme])}`,
-      `--destructive-foreground: ${rgbToHsl(colors['destructive-foreground']?.[actualTheme] || colors['text-inverse'][actualTheme])}`,
-      // Custom sidebar and header variables
-      `--sidebar-background: ${rgbToHsl(colors['sidebar-background'][actualTheme])}`,
-      `--sidebar-text: ${rgbToHsl(colors['sidebar-text'][actualTheme])}`,
-      `--sidebar-text-active: ${rgbToHsl(colors['sidebar-text-active'][actualTheme])}`,
-      `--sidebar-hover: ${rgbToHsl(colors['sidebar-hover'][actualTheme])}`,
-      `--sidebar-active: ${rgbToHsl(colors['sidebar-active'][actualTheme])}`,
-      `--sidebar-border: ${rgbToHsl(colors['sidebar-border'][actualTheme])}`,
-      `--header-background: ${rgbToHsl(colors['header-background'][actualTheme])}`,
-      `--header-text: ${rgbToHsl(colors['header-text'][actualTheme])}`
+      `--destructive-foreground: ${rgbToHsl(colors['destructive-foreground']?.[actualTheme] || colors['text-inverse'][actualTheme])}`
     ].join(';\n  ');
 
     // Base component styles with proper interactions
@@ -749,6 +669,59 @@ ${componentStyles}`;
     
     console.log('✅ Complete theme system applied with component styles');
   }, [actualTheme, colors]);
+      `--accent-foreground: ${rgbToHsl(colors['accent-foreground'][actualTheme])}`,
+      `--border: ${rgbToHsl(colors.border[actualTheme])}`,
+      `--input: ${rgbToHsl(colors.input[actualTheme])}`,
+      `--ring: ${rgbToHsl(colors.ring[actualTheme])}`,
+    ].join(';\n  ') + ';';
+
+    // Complete CSS with both RGB and HSL support
+    style.textContent = `
+      /* CORRECTED THEME SYSTEM - Blue stays blue, white stays white */
+      :root {
+        /* RGB Variables (primary system) */
+${rgbVars}
+        
+        /* HSL Variables (shadcn compatibility) */
+        ${hslVars}
+      }
+
+      /* Force correct body styling */
+      body {
+        background-color: rgb(${colors.background[actualTheme]}) !important;
+        color: rgb(${colors.foreground[actualTheme]}) !important;
+        transition: background-color 0.3s ease, color 0.3s ease !important;
+      }
+
+      /* Essential utility class overrides */
+      .bg-background { background-color: rgb(${colors.background[actualTheme]}) !important; }
+      .bg-card { background-color: rgb(${colors.card[actualTheme]}) !important; }
+      .bg-primary { background-color: rgb(${colors.primary[actualTheme]}) !important; }
+      .bg-secondary { background-color: rgb(${colors.secondary[actualTheme]}) !important; }
+      .bg-muted { background-color: rgb(${colors.muted[actualTheme]}) !important; }
+      .bg-accent { background-color: rgb(${colors.accent[actualTheme]}) !important; }
+      
+      .text-foreground { color: rgb(${colors.foreground[actualTheme]}) !important; }
+      .text-card-foreground { color: rgb(${colors['card-foreground'][actualTheme]}) !important; }
+      .text-primary { color: rgb(${colors.primary[actualTheme]}) !important; }
+      .text-primary-foreground { color: rgb(${colors['primary-foreground'][actualTheme]}) !important; }
+      .text-secondary-foreground { color: rgb(${colors['secondary-foreground'][actualTheme]}) !important; }
+      .text-muted-foreground { color: rgb(${colors['muted-foreground'][actualTheme]}) !important; }
+      .text-accent-foreground { color: rgb(${colors['accent-foreground'][actualTheme]}) !important; }
+      
+      .border-border { border-color: rgb(${colors.border[actualTheme]}) !important; }
+      .border-input { border-color: rgb(${colors.input[actualTheme]}) !important; }
+
+      /* Ensure theme transitions */
+      * {
+        transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+      }
+    `;
+
+    document.head.appendChild(style);
+    console.log('✅ Corrected theme system applied successfully');
+
+  }, [colors, actualTheme, themeMode]);
 
   const value: GlobalThemeContextType = {
     themeMode,

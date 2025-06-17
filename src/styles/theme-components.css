@@ -1,0 +1,337 @@
+/* Complete Theme System - Implementation Guide Styles */
+/* This file provides enhanced component styles that use the CSS custom properties */
+
+/* === BASE RESET === */
+* {
+  border-color: rgb(var(--border-primary, var(--border)));
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+/* === NAVIGATION COMPONENTS === */
+
+/* Sidebar Navigation Items */
+.nav-item,
+.sidebar-nav-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  color: rgb(var(--text-secondary));
+  background: transparent;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.nav-item:hover,
+.sidebar-nav-item:hover {
+  background: rgb(var(--bg-hover));
+  color: rgb(var(--text-primary));
+  text-decoration: none;
+}
+
+.nav-item.active,
+.nav-item[aria-current="page"],
+.sidebar-nav-item.active,
+.sidebar-nav-item[aria-current="page"] {
+  background: rgb(var(--bg-selected));
+  color: rgb(var(--accent-primary));
+  border-left: 3px solid rgb(var(--accent-primary));
+}
+
+.nav-item:focus,
+.sidebar-nav-item:focus {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+.nav-item:disabled,
+.sidebar-nav-item:disabled {
+  color: rgb(var(--text-tertiary));
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Top Navigation Tabs */
+.nav-tab {
+  padding: 12px 24px;
+  color: rgb(var(--text-secondary));
+  background: transparent;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.nav-tab:hover {
+  color: rgb(var(--text-primary));
+  background: rgb(var(--bg-hover));
+  text-decoration: none;
+}
+
+.nav-tab.active {
+  color: rgb(var(--accent-primary));
+  border-bottom-color: rgb(var(--accent-primary));
+}
+
+/* === BUTTON COMPONENTS === */
+
+/* Enhanced Primary Button */
+.btn-primary-enhanced,
+button[data-variant="primary"] {
+  background: rgb(var(--accent-primary));
+  color: rgb(var(--text-inverse));
+  border: 1px solid rgb(var(--accent-primary));
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.btn-primary-enhanced:hover,
+button[data-variant="primary"]:hover {
+  background: rgb(var(--accent-primary-hover));
+  border-color: rgb(var(--accent-primary-hover));
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-primary-enhanced:active,
+button[data-variant="primary"]:active {
+  background: rgb(var(--accent-primary-active));
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-primary-enhanced:focus,
+button[data-variant="primary"]:focus {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+/* Enhanced Secondary Button */
+.btn-secondary-enhanced,
+button[data-variant="secondary"] {
+  background: transparent;
+  color: rgb(var(--text-primary));
+  border: 1px solid rgb(var(--border-primary));
+  padding: 12px 24px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.btn-secondary-enhanced:hover,
+button[data-variant="secondary"]:hover {
+  background: rgb(var(--bg-hover));
+  border-color: rgb(var(--accent-primary));
+  color: rgb(var(--accent-primary));
+}
+
+.btn-secondary-enhanced:active,
+button[data-variant="secondary"]:active {
+  background: rgb(var(--bg-active));
+}
+
+/* === CARD COMPONENTS === */
+
+/* Enhanced Interactive Cards */
+.card-interactive {
+  background: rgb(var(--bg-secondary));
+  border: 1px solid rgb(var(--border-secondary));
+  border-radius: 12px;
+  padding: 24px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.card-interactive:hover {
+  border-color: rgb(var(--border-primary));
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.card-interactive.selected {
+  border-color: rgb(var(--accent-primary));
+  box-shadow: var(--shadow-focus);
+}
+
+/* Standard Enhanced Card */
+.card-enhanced {
+  background: rgb(var(--bg-secondary));
+  border: 1px solid rgb(var(--border-secondary));
+  border-radius: 12px;
+  padding: 24px;
+  transition: all 0.2s ease;
+}
+
+.card-enhanced:hover {
+  border-color: rgb(var(--border-primary));
+  box-shadow: var(--shadow-md);
+}
+
+/* === FORM COMPONENTS === */
+
+/* Enhanced Input Fields */
+.input-enhanced {
+  background: rgb(var(--bg-primary));
+  color: rgb(var(--text-primary));
+  border: 1px solid rgb(var(--border-primary));
+  padding: 12px 16px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.input-enhanced:hover {
+  border-color: rgb(var(--accent-primary));
+}
+
+.input-enhanced:focus {
+  outline: none;
+  border-color: rgb(var(--accent-primary));
+  box-shadow: var(--shadow-focus);
+}
+
+.input-enhanced:disabled {
+  background: rgb(var(--bg-tertiary));
+  color: rgb(var(--text-tertiary));
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.input-enhanced.error {
+  border-color: rgb(var(--error));
+  box-shadow: 0 0 0 3px rgba(248, 81, 73, 0.1);
+}
+
+.input-enhanced::placeholder {
+  color: rgb(var(--text-tertiary));
+}
+
+/* Enhanced Toggle Switch */
+.toggle-enhanced {
+  position: relative;
+  width: 48px;
+  height: 24px;
+  background: rgb(var(--border-primary));
+  border-radius: 12px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: none;
+  outline: none;
+}
+
+.toggle-enhanced:hover {
+  background: rgb(var(--bg-hover));
+}
+
+.toggle-enhanced.active {
+  background: rgb(var(--accent-primary));
+}
+
+.toggle-enhanced::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background: rgb(var(--text-inverse));
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+}
+
+.toggle-enhanced.active::after {
+  transform: translateX(24px);
+}
+
+/* === STATUS & FEEDBACK COMPONENTS === */
+
+/* Enhanced Alert Components */
+.alert-enhanced {
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.alert-enhanced.success {
+  background: rgb(var(--success-bg));
+  color: rgb(var(--success));
+  border-color: rgb(var(--success-border));
+}
+
+.alert-enhanced.warning {
+  background: rgb(var(--warning-bg));
+  color: rgb(var(--warning));
+  border-color: rgb(var(--warning-border));
+}
+
+.alert-enhanced.error {
+  background: rgb(var(--error-bg));
+  color: rgb(var(--error));
+  border-color: rgb(var(--error-border));
+}
+
+/* === UTILITY CLASSES === */
+
+/* Enhanced Background Utilities */
+.bg-primary-enhanced { background: rgb(var(--bg-primary)) !important; }
+.bg-secondary-enhanced { background: rgb(var(--bg-secondary)) !important; }
+.bg-tertiary-enhanced { background: rgb(var(--bg-tertiary)) !important; }
+.bg-hover-enhanced { background: rgb(var(--bg-hover)) !important; }
+.bg-active-enhanced { background: rgb(var(--bg-active)) !important; }
+.bg-selected-enhanced { background: rgb(var(--bg-selected)) !important; }
+
+/* Enhanced Text Utilities */
+.text-primary-enhanced { color: rgb(var(--text-primary)) !important; }
+.text-secondary-enhanced { color: rgb(var(--text-secondary)) !important; }
+.text-tertiary-enhanced { color: rgb(var(--text-tertiary)) !important; }
+.text-inverse-enhanced { color: rgb(var(--text-inverse)) !important; }
+
+/* Enhanced Border Utilities */
+.border-primary-enhanced { border-color: rgb(var(--border-primary)) !important; }
+.border-secondary-enhanced { border-color: rgb(var(--border-secondary)) !important; }
+.border-focus-enhanced { border-color: rgb(var(--border-focus)) !important; }
+
+/* === RESPONSIVE BEHAVIOR === */
+@media (prefers-reduced-motion: reduce) {
+  .nav-item,
+  .btn-primary-enhanced,
+  .btn-secondary-enhanced,
+  .card-interactive,
+  .card-enhanced,
+  .input-enhanced,
+  .toggle-enhanced,
+  .alert-enhanced {
+    transition: none;
+  }
+}
+
+/* === ACCESSIBILITY ENHANCEMENTS === */
+.nav-item:focus-visible,
+.btn-primary-enhanced:focus-visible,
+.btn-secondary-enhanced:focus-visible,
+.input-enhanced:focus-visible,
+.toggle-enhanced:focus-visible {
+  outline: 2px solid rgb(var(--accent-primary));
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .nav-item,
+  .btn-primary-enhanced,
+  .btn-secondary-enhanced,
+  .card-interactive,
+  .card-enhanced,
+  .input-enhanced,
+  .alert-enhanced {
+    border-width: 2px;
+  }
+}

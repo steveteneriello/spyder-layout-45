@@ -218,13 +218,13 @@ const CountyLocationResults: React.FC<CountyLocationResultsProps> = ({
   return (
     <div className="h-full flex flex-col bg-white rounded-lg overflow-hidden">
       {/* Modernized header with gradient */}
-      <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-slate-50 to-white border-b border-slate-200">
+      <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-background to-card border-b border-border">
         <div className="flex items-center space-x-3">
-          <MapPin className="w-5 h-5 mr-2 inline-block text-slate-500" />
-          <h2 className="text-xl font-semibold tracking-wide text-slate-900">
+          <MapPin className="w-5 h-5 mr-2 inline-block text-muted-foreground" />
+          <h2 className="text-xl font-semibold tracking-wide text-foreground">
             Counties
           </h2>
-          <span className="text-sm text-slate-500 bg-slate-100 px-3 py-1 rounded-full font-medium">
+          <span className="text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full font-medium">
             {searchResults.length}
           </span>
         </div>
@@ -242,10 +242,10 @@ const CountyLocationResults: React.FC<CountyLocationResultsProps> = ({
 
       <ScrollArea className="flex-1 px-4 py-4">
         {searchResults.length === 0 ? (
-          <div className="text-center text-slate-500 py-12">
-            <MapPin className="mx-auto w-8 h-8 mb-2 text-slate-300" />
+          <div className="text-center text-muted-foreground py-12">
+            <MapPin className="mx-auto w-8 h-8 mb-2 text-muted-foreground/50" />
             <p className="font-medium">No counties to display</p>
-            <p className="text-sm text-slate-400">Search for a location to see counties</p>
+            <p className="text-sm text-muted-foreground/60">Search for a location to see counties</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -258,8 +258,8 @@ const CountyLocationResults: React.FC<CountyLocationResultsProps> = ({
                   key={countyId} 
                   className={`relative transition-all duration-200 hover:shadow-md cursor-pointer hover:scale-[1.01] mx-1 ${
                     isSelected 
-                      ? 'ring-2 ring-blue-500 ring-inset bg-blue-50 border-blue-200' 
-                      : 'border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50'
+                      ? 'ring-2 ring-primary ring-inset bg-accent/10 border-primary' 
+                      : 'border-border hover:border-border/80 bg-card hover:bg-accent/5'
                   }`}
                   onClick={() => handleCheckboxChange(countyId, !isSelected)}
                 >
@@ -273,11 +273,11 @@ const CountyLocationResults: React.FC<CountyLocationResultsProps> = ({
                           className="mt-0.5"
                         />
                         <div className="flex-1 min-w-0">
-                          <CardTitle className="text-base font-semibold text-slate-900 leading-tight mb-1">
+                          <CardTitle className="text-base font-semibold text-foreground leading-tight mb-1">
                             {county.county_name} County
                           </CardTitle>
-                          <div className="flex items-center text-sm text-slate-600">
-                            <MapPin className="h-3 w-3 mr-1 text-slate-400" />
+                          <div className="flex items-center text-sm text-muted-foreground">
+                            <MapPin className="h-3 w-3 mr-1 text-muted-foreground/60" />
                             {county.state_name} • {county.distance_miles} miles
                           </div>
                         </div>
@@ -285,7 +285,7 @@ const CountyLocationResults: React.FC<CountyLocationResultsProps> = ({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-7 w-7 p-0 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+                        className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-accent rounded-full transition-colors"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleCountyClick(county);
@@ -299,20 +299,20 @@ const CountyLocationResults: React.FC<CountyLocationResultsProps> = ({
                   <CardContent className="pt-0 pb-4 px-5">
                     <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-600 font-medium">Population</span>
-                        <span className="font-semibold text-slate-900">{formatNumber(county.total_population)}</span>
+                        <span className="text-muted-foreground font-medium">Population</span>
+                        <span className="font-semibold text-foreground">{formatNumber(county.total_population)}</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-600 font-medium">Cities</span>
-                        <span className="font-semibold text-slate-900">{county.city_count || 'N/A'}</span>
+                        <span className="text-muted-foreground font-medium">Cities</span>
+                        <span className="font-semibold text-foreground">{county.city_count || 'N/A'}</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-600 font-medium">Med. Income</span>
-                        <span className="font-semibold text-slate-900">{formatCurrency(county.avg_income_household_median)}</span>
+                        <span className="text-muted-foreground font-medium">Med. Income</span>
+                        <span className="font-semibold text-foreground">{formatCurrency(county.avg_income_household_median)}</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-600 font-medium">Home Value</span>
-                        <span className="font-semibold text-slate-900">{formatCurrency(county.avg_home_value)}</span>
+                        <span className="text-muted-foreground font-medium">Home Value</span>
+                        <span className="font-semibold text-foreground">{formatCurrency(county.avg_home_value)}</span>
                       </div>
                     </div>
                   </CardContent>

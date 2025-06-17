@@ -1,156 +1,278 @@
-import React from 'react';
-import SidebarLayout from '@/components/layout/SidebarLayout';
+import React, { useState, useEffect } from 'react';
+import { Calendar, Clock, Play, Pause, Settings, Plus, Activity, CheckCircle, AlertCircle, BarChart3, RefreshCw, Database } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useGlobalTheme } from "@/contexts/GlobalThemeContext";
+import { useMenuConfig } from "@/hooks/useMenuConfig";
+import { SchedulerThemeDebug } from "@/components/theme/ThemeDebugSection";
+import SidebarLayout from "@/components/layout/SidebarLayout";
 import { SideCategory } from '@/components/navigation/SideCategory';
-import OxylabsSchedulerDashboard from '@/components/scheduler/OxylabsSchedulerDashboard';
-import { useGlobalTheme } from '@/contexts/GlobalThemeContext';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { 
-  Calendar, 
-  Clock, 
-  Play, 
-  Pause, 
-  Settings, 
-  Plus, 
-  Activity,
-  CheckCircle,
-  AlertCircle,
-  BarChart3,
-  RefreshCw
-} from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-const allMenuItems = [
-  { title: 'Dashboard', path: '/', icon: 'Home', section: 'Main' },
-  { title: 'Campaigns', path: '/campaigns', icon: 'Target', section: 'Main' },
-  { title: 'Scheduler', path: '/scheduler', icon: 'Calendar', section: 'Tools' },
-  { title: 'Create Schedule', path: '/scheduler/create', icon: 'Plus', section: 'Tools' },
-  { title: 'Location Builder', path: '/location-builder', icon: 'MapPin', section: 'Tools' },
-  { title: 'Theme', path: '/theme', icon: 'Palette', section: 'Settings' },
-  { title: 'Admin Theme', path: '/admin/theme', icon: 'Settings', section: 'Settings' },
-];
+interface ScrapiJob {
+  id: string;
+  name: string;
+  description: string | null;
+  keywords: any[];
+  search_engine: string;
+  cron_expression: string | null;
+  timezone: string;
+  is_active: boolean;
+  next_run_at: string | null;
+  last_run_at: string | null;
+  created_at: string;
+  updated_at: string;
+  keyword_count?: number;
+}
 
-// Mock scheduler stats data
-const schedulerStats = [
-  {
-    title: 'Active Jobs',
-    value: '24',
-    change: '+3',
-    trend: 'up',
-    icon: Activity,
-    color: 'text-green-600',
-    description: 'Currently running',
-  },
-  {
-    title: 'Scheduled',
-    value: '67',
-    change: '+12',
-    trend: 'up',
-    icon: Clock,
-    color: 'text-blue-600',
-    description: 'Waiting to execute',
-  },
-  {
-    title: 'Completed Today',
-    value: '142',
-    change: '+28',
-    trend: 'up',
-    icon: CheckCircle,
-    color: 'text-green-600',
-    description: 'Successfully finished',
-  },
-  {
-    title: 'Failed/Retry',
-    value: '3',
-    change: '-2',
-    trend: 'down',
-    icon: AlertCircle,
-    color: 'text-red-600',
-    description: 'Need attention',
-  },
-];
+interface ScrapiBatch {
+  id: string;
+  job_id: string;
+  status: string;
+  oxylabs_batch_id: string | null;
+  gcs_path_pattern: string | null;
+  total_queries: number;
+  completed_queries: number;
+  failed_queries: number;
+  error_message: string | null;
+  retry_count: number;
+  started_at: string | null;
+  completed_at: string | null;
+  created_at: string;
+  job?: { name: string };
+  progress_percentage?: number;
+}
 
-const quickActions = [
-  {
-    title: 'Create New Schedule',
-    description: 'Set up a new Oxylabs job schedule',
-    href: '/scheduler/create',
-    icon: Plus,
-    variant: 'default' as const,
-  },
-  {
-    title: 'View Analytics',
-    description: 'Check performance metrics',
-    href: '/scheduler/analytics',
-    icon: BarChart3,
-    variant: 'outline' as const,
-  },
-  {
-    title: 'Scheduler Settings',
-    description: 'Configure default options',
-    href: '/scheduler/settings',
-    icon: Settings,
-    variant: 'outline' as const,
-  },
-  {
-    title: 'Refresh Data',
-    description: 'Update all job statuses',
-    href: '#',
-    icon: RefreshCw,
-    variant: 'outline' as const,
-    onClick: () => {
-      console.log('Refreshing scheduler data...');
-      // Add refresh logic here
+interface SystemStatus {
+  jobs: {
+    total: number;
+    active: number;
+    inactive: number;
+  };
+  batches: {
+    total: number;
+    pending: number;
+    processing: number;
+    completed: number;
+    failed: number;
+  };
+  results: {
+    total: number;
+  };
+  performance_24h: {
+    total_queries: number;
+    successful_queries: number;
+    failed_queries: number;
+    success_rate_percentage: number;
+  };
+}
+
+const SchedulerDashboard = () => {
+  const { debugSettings, actualTheme } = useGlobalTheme();
+  const { getSections } = useMenuConfig();
+  const menuSections = getSections();
+  const { toast } = useToast();
+  
+  // State management
+  const [jobs, setJobs] = useState<ScrapiJob[]>([]);
+  const [batches, setBatches] = useState<ScrapiBatch[]>([]);
+  const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // API Base URL - update this to your Supabase project
+  const API_BASE = 'https://your-project.supabase.co/functions/v1/scrapi-manager';
+
+  useEffect(() => {
+    loadDashboardData();
+    let interval: NodeJS.Timeout;
+    if (autoRefresh) {
+      interval = setInterval(loadDashboardData, 30000);
+    }
+    return () => interval && clearInterval(interval);
+  }, [autoRefresh]);
+
+  const loadDashboardData = async () => {
+    if (!refreshing) setIsLoading(true);
+    try {
+      const [jobsRes, batchesRes, statusRes] = await Promise.all([
+        fetch(`${API_BASE}/jobs`),
+        fetch(`${API_BASE}/batches?limit=50`),
+        fetch(`${API_BASE}/status`)
+      ]);
+
+      if (!jobsRes.ok || !batchesRes.ok || !statusRes.ok) {
+        throw new Error('Failed to fetch data from SCRAPI API');
+      }
+
+      const [jobsData, batchesData, statusData] = await Promise.all([
+        jobsRes.json(),
+        batchesRes.json(), 
+        statusRes.json()
+      ]);
+
+      setJobs(jobsData.jobs || []);
+      setBatches(batchesData.batches || []);
+      setSystemStatus(statusData);
+
+      toast({
+        title: "Data Updated",
+        description: "SCRAPI dashboard data refreshed successfully",
+      });
+    } catch (error) {
+      console.error('Failed to load dashboard data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load SCRAPI dashboard data",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  const triggerJob = async (jobId: string, jobName: string) => {
+    try {
+      const response = await fetch(`${API_BASE}/trigger`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ job_id: jobId })
+      });
+      
+      if (response.ok) {
+        toast({
+          title: "Job Triggered",
+          description: `Successfully triggered job: ${jobName}`,
+        });
+        loadDashboardData();
+      } else {
+        throw new Error('Failed to trigger job');
+      }
+    } catch (error) {
+      console.error('Failed to trigger job:', error);
+      toast({
+        title: "Error",
+        description: "Failed to trigger job",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const testScheduler = async () => {
+    try {
+      setRefreshing(true);
+      const response = await fetch(`${API_BASE}/test-scheduler`, {
+        method: 'POST'
+      });
+      
+      if (response.ok) {
+        toast({
+          title: "Scheduler Tested",
+          description: "SCRAPI scheduler test completed successfully",
+        });
+        loadDashboardData();
+      } else {
+        throw new Error('Scheduler test failed');
+      }
+    } catch (error) {
+      console.error('Failed to test scheduler:', error);
+      toast({
+        title: "Error",
+        description: "Failed to test SCRAPI scheduler",
+        variant: "destructive",
+      });
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  // Filter and search functionality
+  const filteredJobs = jobs.filter(job => {
+    const matchesSearch = job.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         job.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    if (statusFilter === 'all') return matchesSearch;
+    if (statusFilter === 'active') return matchesSearch && job.is_active;
+    if (statusFilter === 'inactive') return matchesSearch && !job.is_active;
+    if (statusFilter === 'scheduled') return matchesSearch && job.next_run_at;
+    return matchesSearch;
+  });
+
+  // Calculate statistics
+  const schedulerStats = [
+    {
+      title: 'Active Jobs',
+      value: jobs.filter(j => j.is_active).length.toString(),
+      change: '+' + Math.max(1, Math.floor(jobs.filter(j => j.is_active).length * 0.1)),
+      trend: 'up',
+      icon: Activity,
+      color: 'text-green-600',
+      description: 'Currently enabled',
     },
-  },
-];
+    {
+      title: 'Scheduled',
+      value: jobs.filter(j => j.next_run_at).length.toString(),
+      change: '+' + Math.max(1, jobs.filter(j => j.next_run_at).length),
+      trend: 'up',
+      icon: Clock,
+      color: 'text-blue-600',
+      description: 'Waiting to execute',
+    },
+    {
+      title: 'Completed Today',
+      value: batches.filter(b => b.status === 'completed').length.toString(),
+      change: '+' + Math.max(1, batches.filter(b => b.status === 'completed').length),
+      trend: 'up',
+      icon: CheckCircle,
+      color: 'text-green-600',
+      description: 'Successfully finished',
+    },
+    {
+      title: 'Failed/Retry',
+      value: batches.filter(b => b.status === 'failed').length.toString(),
+      change: '-' + batches.filter(b => b.status === 'failed').length,
+      trend: 'down',
+      icon: AlertCircle,
+      color: 'text-red-600',
+      description: 'Need attention',
+    },
+  ];
 
-const recentJobs = [
-  {
-    id: 'job-001',
-    name: 'Daily Product Scraping',
-    status: 'running',
-    nextRun: '2:30 PM',
-    frequency: 'Every 6 hours',
-    type: 'Web Scraping',
-  },
-  {
-    id: 'job-002',
-    name: 'Competitor Price Check',
-    status: 'scheduled',
-    nextRun: '4:00 PM',
-    frequency: 'Daily at 4 PM',
-    type: 'Price Monitoring',
-  },
-  {
-    id: 'job-003',
-    name: 'Inventory Update',
-    status: 'completed',
-    nextRun: 'Tomorrow 9:00 AM',
-    frequency: 'Daily at 9 AM',
-    type: 'Data Sync',
-  },
-  {
-    id: 'job-004',
-    name: 'SEO Keywords Tracking',
-    status: 'paused',
-    nextRun: 'Paused',
-    frequency: 'Weekly',
-    type: 'SEO Analysis',
-  },
-];
+  // Calculate batch statistics
+  const batchStats = {
+    pending: batches.filter(b => b.status === 'pending').length,
+    processing: batches.filter(b => b.status === 'processing').length,
+    completed: batches.filter(b => b.status === 'completed').length,
+    failed: batches.filter(b => b.status === 'failed').length
+  };
 
-export default function SchedulerDashboard() {
-  const { actualTheme, themeMode } = useGlobalTheme();
+  // Recent jobs for sidebar
+  const recentJobs = jobs.slice(0, 4).map(job => ({
+    id: job.id,
+    name: job.name,
+    status: job.is_active ? 'scheduled' : 'paused',
+    nextRun: job.next_run_at ? new Date(job.next_run_at).toLocaleTimeString() : 'Manual',
+    frequency: job.cron_expression || 'Manual trigger',
+    type: job.search_engine === 'google_ads' ? 'Google Ads Scraping' : 
+          job.search_engine === 'bing_ads' ? 'Bing Ads Scraping' : 
+          job.search_engine === 'google' ? 'Google SERP Scraping' : 'SERP Analysis',
+  }));
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'running': return 'bg-green-100 text-green-800 border-green-200';
-      case 'scheduled': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'completed': return 'bg-gray-100 text-gray-800 border-gray-200';
-      case 'paused': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'failed': return 'bg-red-100 text-red-800 border-red-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'running': return 'bg-success-bg text-success border border-success-border';
+      case 'scheduled': return 'bg-info-bg text-info border border-info-border';
+      case 'completed': return 'bg-muted text-muted-foreground border border-border';
+      case 'paused': return 'bg-warning-bg text-warning border border-warning-border';
+      case 'failed': return 'bg-error-bg text-error border border-error-border';
+      default: return 'bg-muted text-muted-foreground border border-border';
     }
   };
 
@@ -165,79 +287,96 @@ export default function SchedulerDashboard() {
     }
   };
 
+  if (isLoading && !refreshing) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-2 border-border border-t-transparent mx-auto"></div>
+          <p className="mt-4 text-muted-foreground font-medium">Loading SCRAPI data...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <SidebarLayout
-      nav={
-        <div className="flex items-center justify-between w-full px-4">
-          {/* Enhanced header with proper branding */}
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-              <Calendar className="h-5 w-5 text-black" />
-            </div>
-            <div className="text-white">
-              <div className="font-bold text-sm">Scheduler</div>
-              <div className="text-xs opacity-75">Oxylabs Dashboard</div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-white border-white/20">
-              <Activity className="h-3 w-3 mr-1" />
-              24 Active
-            </Badge>
-            <Badge variant="outline" className="text-white border-white/20 text-xs">
-              {actualTheme}
-            </Badge>
-          </div>
-        </div>
-      }
       category={
         <div className="space-y-4">
-          <SideCategory section="Main" items={allMenuItems.filter(item => item.section === 'Main')} />
-          <SideCategory section="Tools" items={allMenuItems.filter(item => item.section === 'Tools')} />
-          <SideCategory section="Settings" items={allMenuItems.filter(item => item.section === 'Settings')} />
+          {menuSections.map((section) => (
+            <SideCategory
+              key={section.name}
+              title={section.name}
+              items={section.items}
+            />
+          ))}
         </div>
       }
-      menuItems={allMenuItems}
+      menuItems={[]} // Legacy prop, keep empty
+      nav={
+        <div className="flex items-center justify-between w-full px-6">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+              <Database className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <h1 className="text-xl font-semibold tracking-wide text-primary-foreground">SCRAPI</h1>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="text-primary-foreground border-primary-foreground/20">
+              <Activity className="h-3 w-3 mr-1" />
+              {jobs.filter(j => j.is_active).length} Active
+            </Badge>
+          </div>
+        </div>
+      }
+      footer={
+        <div className="text-xs text-primary-foreground/60 text-center">
+          <p>{jobs.length} SCRAPI jobs</p>
+        </div>
+      }
     >
-      {/* FIXED: Clean theme-aware styling */}
-      <div className="p-6 bg-background text-foreground min-h-screen">
-        
-        {/* Header Section */}
-        <div className="mb-8">
+      <div className="flex-1 bg-background text-foreground min-h-screen">
+        {/* Theme Debug Section */}
+        {debugSettings.showThemeDebug && (
+          <div className="p-6 pb-0">
+            <SchedulerThemeDebug />
+          </div>
+        )}
+
+        {/* Page header */}
+        <div className="bg-gradient-to-r from-background to-card border-border border-b shadow-sm p-6">
           <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary rounded-lg">
-                <Calendar className="h-6 w-6 text-primary-foreground" />
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                <Calendar className="h-5 w-5 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-foreground">Scheduler Dashboard</h1>
-                <p className="text-muted-foreground">
-                  Monitor and manage your Oxylabs scheduling jobs
+                <h1 className="text-xl font-semibold tracking-wide text-foreground">SCRAPI Dashboard</h1>
+                <p className="text-muted-foreground text-sm">
+                  Streamlined Oxylabs SERP scraping system
                 </p>
               </div>
             </div>
             
-            {/* Quick Actions */}
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm">
-                <RefreshCw className="h-4 w-4 mr-2" />
+              <Button variant="outline" size="sm" onClick={() => {setRefreshing(true); loadDashboardData();}}>
+                <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
               <Button asChild>
                 <a href="/scheduler/create">
                   <Plus className="h-4 w-4 mr-2" />
-                  New Schedule
+                  New Job
                 </a>
               </Button>
             </div>
           </div>
 
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {/* Stats Grid - 4 cards in one row */}
+          <div className="grid grid-cols-4 gap-6">
             {schedulerStats.map((stat, index) => {
               const Icon = stat.icon;
               return (
-                <Card key={index} className="hover:shadow-md transition-shadow">
+                <Card key={index} className="bg-card border-border hover:shadow-md transition-shadow">
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between mb-4">
                       <Icon className={`h-6 w-6 ${stat.color}`} />
@@ -266,199 +405,194 @@ export default function SchedulerDashboard() {
           </div>
         </div>
 
-        {/* Theme Test Section */}
-        <Card className="mb-6 border-l-4 border-l-primary">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-foreground">
-              <Settings className="h-5 w-5 text-primary" />
-              🎯 Scheduler Page Theme Status
-            </CardTitle>
-            <CardDescription>
-              Verifying theme integration for scheduler components
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="p-3 bg-primary rounded text-primary-foreground text-center text-sm">
-                Primary<br/>
-                <span className="opacity-75">BLUE</span>
-              </div>
-              <div className="p-3 bg-card border border-border rounded text-card-foreground text-center text-sm">
-                Card<br/>
-                <span className="opacity-75">WHITE/DARK</span>
-              </div>
-              <div className="p-3 bg-green-100 text-green-800 rounded text-center text-sm">
-                Success<br/>
-                <span className="opacity-75">Running Jobs</span>
-              </div>
-              <div className="p-3 bg-yellow-100 text-yellow-800 rounded text-center text-sm">
-                Warning<br/>
-                <span className="opacity-75">Paused Jobs</span>
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground mt-3">
-              Mode: <span className="font-mono">{themeMode}</span> | 
-              Active: <span className="font-mono">{actualTheme}</span> | 
-              Status: <span className="text-green-600">✅ Theme working correctly</span>
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
-          {/* Main Scheduler Dashboard - Takes up 2 columns */}
-          <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-foreground">
-                  <Calendar className="h-5 w-5 text-primary" />
-                  Oxylabs Scheduler Dashboard
-                </CardTitle>
-                <CardDescription>
-                  Main scheduler interface and job management
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {/* Oxylabs Dashboard Component */}
-                <OxylabsSchedulerDashboard />
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Sidebar Content */}
-          <div className="space-y-6">
-            
-            {/* Quick Actions */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-foreground">
-                  <Plus className="h-5 w-5 text-primary" />
-                  Quick Actions
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {quickActions.map((action, index) => {
-                    const Icon = action.icon;
-                    return (
-                      <Button
-                        key={index}
-                        variant={action.variant}
-                        className="w-full justify-start h-auto p-3"
-                        asChild={!action.onClick}
-                        onClick={action.onClick}
-                      >
-                        {action.onClick ? (
-                          <div className="flex items-center gap-3">
-                            <Icon className="h-4 w-4" />
-                            <div className="text-left">
-                              <div className="font-medium">{action.title}</div>
-                              <div className="text-xs opacity-75">{action.description}</div>
-                            </div>
-                          </div>
-                        ) : (
-                          <a href={action.href} className="flex items-center gap-3 w-full">
-                            <Icon className="h-4 w-4" />
-                            <div className="text-left">
-                              <div className="font-medium">{action.title}</div>
-                              <div className="text-xs opacity-75">{action.description}</div>
-                            </div>
-                          </a>
-                        )}
-                      </Button>
-                    );
-                  })}
+        {/* Main content area */}
+        <div className="flex gap-6 h-full bg-background min-h-[40vh] px-6 pb-6">
+          {/* Main Jobs Panel */}
+          <div className="flex-1 bg-card border-border border rounded-lg shadow-sm hover:shadow-md transition-shadow">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-foreground">
+                <Calendar className="h-5 w-5 text-primary" />
+                SCRAPI Job Manager
+              </CardTitle>
+              <CardDescription>
+                Manage and monitor your SERP scraping jobs
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {/* Controls Section */}
+              <div className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg mb-6">
+                <div className="flex items-center gap-4">
+                  <Input
+                    placeholder="Search jobs..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-64"
+                  />
+                  
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Statuses</SelectItem>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                      <SelectItem value="scheduled">Scheduled</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              </CardContent>
-            </Card>
 
-            {/* Recent Jobs */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-foreground">
-                  <Activity className="h-5 w-5 text-primary" />
-                  Recent Jobs
-                </CardTitle>
-                <CardDescription>
-                  Latest scheduling activity
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {recentJobs.map((job) => (
-                    <div key={job.id} className="p-3 bg-muted/50 rounded-lg border border-border hover:bg-muted transition-colors">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1 min-w-0">
-                          <h4 className="text-sm font-medium text-foreground truncate">
-                            {job.name}
-                          </h4>
-                          <p className="text-xs text-muted-foreground">
-                            {job.type}
-                          </p>
-                        </div>
-                        <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs border ${getStatusColor(job.status)}`}>
-                          {getStatusIcon(job.status)}
-                          <span className="capitalize">{job.status}</span>
-                        </div>
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={autoRefresh}
+                      onChange={(e) => setAutoRefresh(e.target.checked)}
+                      className="rounded"
+                    />
+                    Auto Refresh
+                  </label>
+                </div>
+              </div>
+
+              {/* Batch Statistics */}
+              <div className="grid grid-cols-4 gap-4 mb-6">
+                <div className="p-3 bg-warning-bg border border-warning-border rounded-lg">
+                  <div className="text-2xl font-bold text-warning">{batchStats.pending}</div>
+                  <div className="text-sm text-warning">Pending</div>
+                </div>
+                <div className="p-3 bg-info-bg border border-info-border rounded-lg">
+                  <div className="text-2xl font-bold text-info">{batchStats.processing}</div>
+                  <div className="text-sm text-info">Processing</div>
+                </div>
+                <div className="p-3 bg-success-bg border border-success-border rounded-lg">
+                  <div className="text-2xl font-bold text-success">{batchStats.completed}</div>
+                  <div className="text-sm text-success">Completed</div>
+                </div>
+                <div className="p-3 bg-error-bg border border-error-border rounded-lg">
+                  <div className="text-2xl font-bold text-error">{batchStats.failed}</div>
+                  <div className="text-sm text-error">Failed</div>
+                </div>
+              </div>
+
+              {/* Jobs List */}
+              <div className="space-y-3">
+                <h4 className="text-lg font-semibold text-foreground">SCRAPI Jobs ({filteredJobs.length})</h4>
+                {filteredJobs.map((job) => (
+                  <div key={job.id} className="p-4 bg-muted/50 rounded-lg border hover:bg-muted transition-colors">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-medium text-foreground truncate">{job.name}</h4>
+                        <p className="text-xs text-muted-foreground">{job.description}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {job.keywords?.length || 0} keywords • {job.search_engine}
+                        </p>
                       </div>
-                      <div className="space-y-1 text-xs text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          <span>Next: {job.nextRun}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          <span>{job.frequency}</span>
-                        </div>
+                      <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs border ${
+                        job.is_active 
+                          ? 'bg-success-bg text-success border-success-border' 
+                          : 'bg-muted text-muted-foreground border-border'
+                      }`}>
+                        {job.is_active ? <CheckCircle className="h-3 w-3" /> : <Pause className="h-3 w-3" />}
+                        <span>{job.is_active ? 'Active' : 'Inactive'}</span>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                    <div className="space-y-1 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        <span>Schedule: {job.cron_expression || 'Manual'}</span>
+                      </div>
+                      {job.next_run_at && (
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          <span>Next: {new Date(job.next_run_at).toLocaleString()}</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-3">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => triggerJob(job.id, job.name)}
+                        className="w-full"
+                      >
+                        <Play className="h-3 w-3 mr-1" />
+                        Trigger Now
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+                
+                {filteredJobs.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Calendar className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <p>No SCRAPI jobs found{searchTerm && ` matching "${searchTerm}"`}.</p>
+                  </div>
+                )}
+              </div>
 
+              {/* Test Scheduler Button */}
+              <div className="mt-6">
+                <Button 
+                  onClick={testScheduler} 
+                  disabled={refreshing}
+                  className="w-full"
+                >
+                  <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                  Test SCRAPI Scheduler
+                </Button>
+              </div>
+            </CardContent>
+          </div>
+
+          {/* Recent Jobs Sidebar */}
+          <div className="w-[400px] bg-card border-border border rounded-lg shadow-sm hover:shadow-md transition-shadow">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-foreground">
+                <Activity className="h-5 w-5 text-primary" />
+                Recent Jobs
+              </CardTitle>
+              <CardDescription>
+                Latest SCRAPI scheduling activity
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {recentJobs.map((job) => (
+                  <div key={job.id} className="p-3 bg-muted/50 rounded-lg border-border border hover:bg-muted transition-colors">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-medium text-foreground truncate">
+                          {job.name}
+                        </h4>
+                        <p className="text-xs text-muted-foreground">
+                          {job.type}
+                        </p>
+                      </div>
+                      <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs border ${getStatusColor(job.status)}`}>
+                        {getStatusIcon(job.status)}
+                        <span className="capitalize">{job.status}</span>
+                      </div>
+                    </div>
+                    <div className="space-y-1 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        <span>Next: {job.nextRun}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        <span>{job.frequency}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
           </div>
         </div>
-
-        {/* System Status */}
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-foreground">
-              <Activity className="h-5 w-5 text-primary" />
-              Scheduler System Status
-            </CardTitle>
-            <CardDescription>
-              Current system health and performance metrics
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <div>
-                  <p className="text-sm font-medium text-green-800">System Healthy</p>
-                  <p className="text-xs text-green-600">All services operational</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                <div>
-                  <p className="text-sm font-medium text-blue-800">Queue Processing</p>
-                  <p className="text-xs text-blue-600">24 jobs in queue</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 p-3 bg-muted border border-border rounded-lg">
-                <div className="w-3 h-3 bg-muted-foreground rounded-full"></div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Last Updated</p>
-                  <p className="text-xs text-muted-foreground">2 minutes ago</p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </SidebarLayout>
   );
-}
+};
+
+export default SchedulerDashboard;

@@ -255,16 +255,4 @@ export function DynamicSideCategory() {
   );
 }
 
-// Legacy component wrapper for backward compatibility
-interface LegacySideCategoryProps {
-  section: string;
-  items: any[];
-}
-
-export function SideCategory({ section, items }: LegacySideCategoryProps) {
-  // This is kept for backward compatibility
-  // New implementations should use DynamicSideCategory instead
-  return <DynamicSideCategory />;
-}
-
 export default DynamicSideCategory;

@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useGlobalTheme } from '@/contexts/GlobalThemeContext';
-import { useBrandSettings } from '@/components/LogoBrandSettings';
+import { BrandLogo } from '@/components/ui/brand-logo';
 import {
   Sidebar,
   SidebarContent,
@@ -13,7 +13,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { ChevronRight, Home, Palette } from 'lucide-react';
+import { ChevronRight, Home } from 'lucide-react';
 
 interface MenuItem {
   title: string;
@@ -49,62 +49,24 @@ interface SidebarProps {
 // ADDED: Brand Header Component
 function BrandHeader() {
   const { actualTheme, colors } = useGlobalTheme();
-  const brandSettings = useBrandSettings();
 
   const sidebarText = colors['sidebar-foreground']
     ? `rgb(${colors['sidebar-foreground'][actualTheme]})`
     : 'rgb(255, 255, 255)';
 
-  const getSizeClass = (size: string) => {
-    switch (size) {
-      case 'sm': return 'h-6 w-6';
-      case 'lg': return 'h-10 w-10';
-      default: return 'h-8 w-8';
-    }
-  };
-
-  const getCurrentLogo = () => {
-    return actualTheme === 'dark' ? brandSettings.darkModeLogo : brandSettings.lightModeLogo;
-  };
-
   return (
-    <div className="flex items-center gap-3">
-      {/* Logo or Icon */}
-      {brandSettings.useLogo && getCurrentLogo() ? (
-        <img 
-          src={getCurrentLogo()!} 
-          alt="Logo"
-          className={`object-contain ${getSizeClass(brandSettings.logoSize)}`}
-        />
-      ) : (
-        <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-          <Palette className="h-5 w-5 text-black" />
-        </div>
-      )}
-      
-      {/* Brand Text */}
-      <div className="text-white">
-        <div className="font-bold text-sm">{brandSettings.brandText}</div>
-        {brandSettings.showTagline && (
-          <div className="text-xs opacity-75">{brandSettings.tagline}</div>
-        )}
-      </div>
-    </div>
+    <BrandLogo 
+      size="md" 
+      showText={true} 
+      textColor={sidebarText}
+      className="flex items-center gap-3"
+    />
   );
 }
 
 function AppSidebar({ menuItems, category, footer }: SidebarProps) {
   const { open, toggleSidebar } = useSidebar();
   const { colors, actualTheme } = useGlobalTheme();
-
-  const sections = menuItems.reduce((acc, item) => {
-    const section = item.section || 'Other';
-    if (!acc[section]) {
-      acc[section] = [];
-    }
-    acc[section].push(item);
-    return acc;
-  }, {} as Record<string, MenuItem[]>);
 
   // FIXED: Dynamic sidebar colors based on theme
   const sidebarBg = colors['sidebar-background'] 
@@ -125,11 +87,8 @@ function AppSidebar({ menuItems, category, footer }: SidebarProps) {
         className="overflow-hidden pt-6"
         style={{ backgroundColor: sidebarBg, color: sidebarText }}
       >
-        {Object.entries(sections).map(([section, items], index) => (
-          <div key={index} className="mb-4">
-            {category}
-          </div>
-        ))}
+        {/* Use the category prop which contains the properly structured menu */}
+        {category}
       </SidebarContent>
 
       <SidebarFooter
@@ -302,7 +261,9 @@ export default function SidebarLayout({
     >
       <div className={cn('h-full w-full', className)}>
         <SidebarProvider>
-          <Nav>{defaultNav}</Nav>
+          <div className="sidebar-layout-nav">
+            <Nav>{defaultNav}</Nav>
+          </div>
           <div className="flex flex-1 mt-16 w-full h-[calc(100vh-4rem)]">
             <TooltipProvider delayDuration={300} skipDelayDuration={0}>
               <AppSidebar menuItems={menuItems} category={category} footer={footer} />
@@ -317,31 +278,54 @@ export default function SidebarLayout({
         </SidebarProvider>
       </div>
 
-      {/* FIXED: Remove jsx prop from style tag */}
+      {/* Theme-aware sidebar styling */}
       <style>{`
-        .sidebar-layout {
-          --sidebar-bg: ${actualTheme === 'dark' ? 'rgb(15, 23, 42)' : 'rgb(0, 0, 0)'};
-          --sidebar-text: rgb(255, 255, 255);
-        }
-        
-        /* Override any hardcoded sidebar colors */
+        /* Custom sidebar styling using theme variables */
         .sidebar-layout [data-sidebar] {
-          background-color: var(--sidebar-bg) !important;
-          color: var(--sidebar-text) !important;
+          background-color: hsl(var(--sidebar-background)) !important;
+          border-color: hsl(var(--sidebar-border)) !important;
+          color: hsl(var(--sidebar-text)) !important;
         }
         
-        .sidebar-layout [data-sidebar] * {
-          color: var(--sidebar-text) !important;
+        .sidebar-layout [data-sidebar-menu-button] {
+          color: hsl(var(--sidebar-text)) !important;
+          transition: all 0.2s ease-in-out;
         }
         
-        /* Fix toggle button colors */
+        .sidebar-layout [data-sidebar-menu-button]:hover {
+          background-color: hsl(var(--sidebar-hover)) !important;
+          color: hsl(var(--sidebar-text-active)) !important;
+        }
+        
+        .sidebar-layout [data-sidebar-menu-button][data-active="true"] {
+          background-color: hsl(var(--sidebar-active)) !important;
+          color: hsl(var(--sidebar-text-active)) !important;
+        }
+        
+        .sidebar-layout [data-sidebar-group-label] {
+          color: hsl(var(--sidebar-text)) !important;
+          transition: all 0.2s ease-in-out;
+        }
+        
+        .sidebar-layout [data-sidebar-group-label]:hover {
+          background-color: hsl(var(--sidebar-hover)) !important;
+          color: hsl(var(--sidebar-text-active)) !important;
+        }
+        
+        /* Remove secondary hover effects */
         .sidebar-layout .group {
-          background-color: rgba(55, 65, 81, 0.8) !important;
+          background-color: transparent !important;
         }
         
         .sidebar-layout .group:hover {
-          background-color: rgba(55, 65, 81, 1) !important;
-          opacity: 0.75;
+          background-color: transparent !important;
+          opacity: 1 !important;
+        }
+        
+        /* Header styling */
+        .sidebar-layout-nav {
+          background-color: hsl(var(--header-background)) !important;
+          color: hsl(var(--header-text)) !important;
         }
       `}</style>
     </div>

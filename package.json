@@ -8,7 +8,10 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "check-compliance": "node compliance-checker.js",
+    "analyze-code": "node advanced-code-checker.js ./src",
+    "debug-single": "node compliance-checker.js"
   },
   "dependencies": {
     "@googlemaps/react-wrapper": "^1.2.0",

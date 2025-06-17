@@ -1,0 +1,511 @@
+import { useState, useEffect, useCallback } from 'react';
+import { useDebugLogger } from '@/components/debug/DebugPanel';
+
+// Types
+export interface Campaign {
+  id: string;
+  name: string;
+  category_id: string;
+  description?: string;
+  status: 'active' | 'paused' | 'draft' | 'archived';
+  created_at?: string;
+  updated_at?: string;
+  archived_at?: string;
+  template_id?: string;
+  settings?: CampaignSettings;
+  locationTargeting?: LocationTargeting;
+  keywordTargeting?: KeywordTargeting;
+  scheduleConfig?: ScheduleConfig;
+  budgetConfig?: BudgetConfig;
+}
+
+export interface CampaignSettings {
+  bidStrategy: 'manual' | 'automated';
+  maxCpc?: number;
+  dailyBudget?: number;
+  targetCpa?: number;
+  targetRoas?: number;
+  adRotation: 'optimize' | 'rotate';
+  deliveryMethod: 'standard' | 'accelerated';
+}
+
+export interface KeywordTargeting {
+  keywords: string[];
+  negativeKeywords: string[];
+  matchTypes: Record<string, 'broad' | 'phrase' | 'exact'>;
+}
+
+export interface ScheduleConfig {
+  startDate: string;
+  endDate?: string;
+  timezone: string;
+  dayParting?: {
+    [key: string]: { start: string; end: string; }[];
+  };
+  frequency: 'continuous' | 'daily' | 'weekly' | 'monthly';
+}
+
+export interface BudgetConfig {
+  totalBudget?: number;
+  dailyBudget: number;
+  bidStrategy: 'cpc' | 'cpm' | 'cpa' | 'auto';
+  maxCpc?: number;
+  targetCpa?: number;
+}
+
+export interface LocationTargeting {
+  included: string[];
+  excluded: string[];
+  radius?: number;
+  radiusUnit: 'miles' | 'km';
+}
+
+export interface CampaignFilters {
+  search: string;
+  status: Campaign['status'][];
+  categories: string[];
+  createdDateRange: [Date, Date] | null;
+  lastModifiedRange: [Date, Date] | null;
+  assignedTo: string[];
+  keywordCount: { min: number; max: number } | null;
+  sortBy: 'name' | 'created_at' | 'updated_at' | 'status';
+  sortOrder: 'asc' | 'desc';
+}
+
+export interface CampaignTemplate {
+  id: string;
+  name: string;
+  description: string;
+  category_id: string;
+  settings: CampaignSettings;
+  keywords: string[];
+  negativeKeywords: string[];
+  locationTargeting: LocationTargeting;
+  isPublic: boolean;
+  createdBy: string;
+  tags: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+// Enhanced Campaign Management Hook
+export const useCampaigns = () => {
+  const debugLogger = useDebugLogger('useCampaigns');
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Sample data for development (replace with real API calls)
+  const SAMPLE_CAMPAIGNS: Campaign[] = [
+    {
+      id: 'e0eebc99-9c0b-4ef8-bb6d-6bb9bd380a15',
+      name: 'Drain Cleaning Campaign',
+      category_id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+      description: 'Targeted drain cleaning services campaign',
+      status: 'active',
+      created_at: '2024-01-15T10:00:00Z',
+      updated_at: '2024-01-15T10:00:00Z',
+      settings: {
+        bidStrategy: 'manual',
+        maxCpc: 15.00,
+        dailyBudget: 200,
+        adRotation: 'optimize',
+        deliveryMethod: 'standard'
+      },
+      locationTargeting: {
+        included: ['us-ca-la', 'us-ca-sf'],
+        excluded: [],
+        radius: 25,
+        radiusUnit: 'miles'
+      }
+    },
+    {
+      id: 'f0eebc99-9c0b-4ef8-bb6d-6bb9bd380a16',
+      name: 'Emergency Plumbing',
+      category_id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+      description: 'Campaign for emergency plumbing services',
+      status: 'draft',
+      created_at: '2024-01-16T10:00:00Z',
+      updated_at: '2024-01-16T10:00:00Z'
+    },
+    {
+      id: 'g0eebc99-9c0b-4ef8-bb6d-6bb9bd380a17',
+      name: 'Summer AC Maintenance',
+      category_id: 'b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12',
+      description: 'Seasonal campaign for AC maintenance services',
+      status: 'paused',
+      created_at: '2024-01-17T10:00:00Z',
+      updated_at: '2024-01-17T10:00:00Z'
+    },
+    {
+      id: 'h0eebc99-9c0b-4ef8-bb6d-6bb9bd380a18',
+      name: 'Archived Electrical Campaign',
+      category_id: 'c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13',
+      description: 'Old electrical services campaign',
+      status: 'archived',
+      created_at: '2024-01-10T10:00:00Z',
+      updated_at: '2024-01-18T10:00:00Z',
+      archived_at: '2024-01-18T10:00:00Z'
+    }
+  ];
+
+  // Load campaigns
+  const loadCampaigns = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      debugLogger.log('Loading campaigns');
+      
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // In real implementation, this would be:
+      // const { data, error } = await supabase
+      //   .from('campaign_manager_campaigns')
+      //   .select('*')
+      //   .order('updated_at', { ascending: false });
+      
+      setCampaigns(SAMPLE_CAMPAIGNS);
+      debugLogger.log('Campaigns loaded successfully', { count: SAMPLE_CAMPAIGNS.length });
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load campaigns';
+      setError(errorMessage);
+      debugLogger.error('Failed to load campaigns', { error: err });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [debugLogger]);
+
+  // Create campaign
+  const createCampaign = useCallback(async (campaignData: Partial<Campaign>): Promise<Campaign> => {
+    debugLogger.log('Creating campaign', { data: campaignData });
+    
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const newCampaign: Campaign = {
+        id: `campaign_${Date.now()}`,
+        name: campaignData.name || 'Untitled Campaign',
+        category_id: campaignData.category_id || '',
+        description: campaignData.description,
+        status: campaignData.status || 'draft',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        ...campaignData
+      };
+
+      // In real implementation:
+      // const { data, error } = await supabase
+      //   .from('campaign_manager_campaigns')
+      //   .insert(newCampaign)
+      //   .select()
+      //   .single();
+
+      setCampaigns(prev => [newCampaign, ...prev]);
+      debugLogger.log('Campaign created successfully', { id: newCampaign.id });
+      
+      return newCampaign;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create campaign';
+      debugLogger.error('Failed to create campaign', { error: err });
+      throw new Error(errorMessage);
+    }
+  }, [debugLogger]);
+
+  // Update campaign
+  const updateCampaign = useCallback(async (id: string, updates: Partial<Campaign>): Promise<Campaign> => {
+    debugLogger.log('Updating campaign', { id, updates });
+    
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      const updatedCampaign = {
+        ...campaigns.find(c => c.id === id),
+        ...updates,
+        updated_at: new Date().toISOString()
+      } as Campaign;
+
+      // In real implementation:
+      // const { data, error } = await supabase
+      //   .from('campaign_manager_campaigns')
+      //   .update(updates)
+      //   .eq('id', id)
+      //   .select()
+      //   .single();
+
+      setCampaigns(prev => prev.map(c => c.id === id ? updatedCampaign : c));
+      debugLogger.log('Campaign updated successfully', { id });
+      
+      return updatedCampaign;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update campaign';
+      debugLogger.error('Failed to update campaign', { error: err, id });
+      throw new Error(errorMessage);
+    }
+  }, [campaigns, debugLogger]);
+
+  // Duplicate campaign
+  const duplicateCampaign = useCallback(async (id: string, newName: string): Promise<Campaign> => {
+    debugLogger.log('Duplicating campaign', { id, newName });
+    
+    try {
+      const originalCampaign = campaigns.find(c => c.id === id);
+      if (!originalCampaign) {
+        throw new Error('Campaign not found');
+      }
+
+      const duplicatedCampaign: Campaign = {
+        ...originalCampaign,
+        id: `campaign_${Date.now()}`,
+        name: newName,
+        status: 'draft',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        archived_at: undefined
+      };
+
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      setCampaigns(prev => [duplicatedCampaign, ...prev]);
+      debugLogger.log('Campaign duplicated successfully', { originalId: id, newId: duplicatedCampaign.id });
+      
+      return duplicatedCampaign;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to duplicate campaign';
+      debugLogger.error('Failed to duplicate campaign', { error: err, id });
+      throw new Error(errorMessage);
+    }
+  }, [campaigns, debugLogger]);
+
+  // Archive campaign (soft delete)
+  const archiveCampaign = useCallback(async (id: string): Promise<void> => {
+    debugLogger.log('Archiving campaign', { id });
+    
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const archivedAt = new Date().toISOString();
+      
+      // In real implementation:
+      // const { error } = await supabase
+      //   .from('campaign_manager_campaigns')
+      //   .update({ 
+      //     status: 'archived', 
+      //     archived_at: archivedAt,
+      //     updated_at: archivedAt 
+      //   })
+      //   .eq('id', id);
+
+      setCampaigns(prev => prev.map(c => 
+        c.id === id 
+          ? { ...c, status: 'archived' as const, archived_at: archivedAt, updated_at: archivedAt }
+          : c
+      ));
+      
+      debugLogger.log('Campaign archived successfully', { id });
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to archive campaign';
+      debugLogger.error('Failed to archive campaign', { error: err, id });
+      throw new Error(errorMessage);
+    }
+  }, [debugLogger]);
+
+  // Restore campaign from archive
+  const restoreCampaign = useCallback(async (id: string): Promise<void> => {
+    debugLogger.log('Restoring campaign', { id });
+    
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const updatedAt = new Date().toISOString();
+      
+      setCampaigns(prev => prev.map(c => 
+        c.id === id 
+          ? { ...c, status: 'draft' as const, archived_at: undefined, updated_at: updatedAt }
+          : c
+      ));
+      
+      debugLogger.log('Campaign restored successfully', { id });
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to restore campaign';
+      debugLogger.error('Failed to restore campaign', { error: err, id });
+      throw new Error(errorMessage);
+    }
+  }, [debugLogger]);
+
+  // Delete campaign (hard delete - drafts only)
+  const deleteCampaign = useCallback(async (id: string): Promise<void> => {
+    debugLogger.log('Deleting campaign', { id });
+    
+    try {
+      const campaign = campaigns.find(c => c.id === id);
+      if (!campaign) {
+        throw new Error('Campaign not found');
+      }
+      
+      if (campaign.status !== 'draft') {
+        throw new Error('Only draft campaigns can be permanently deleted');
+      }
+
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // In real implementation:
+      // const { error } = await supabase
+      //   .from('campaign_manager_campaigns')
+      //   .delete()
+      //   .eq('id', id);
+
+      setCampaigns(prev => prev.filter(c => c.id !== id));
+      debugLogger.log('Campaign deleted successfully', { id });
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete campaign';
+      debugLogger.error('Failed to delete campaign', { error: err, id });
+      throw new Error(errorMessage);
+    }
+  }, [campaigns, debugLogger]);
+
+  // Bulk update campaigns
+  const bulkUpdateCampaigns = useCallback(async (ids: string[], updates: Partial<Campaign>): Promise<void> => {
+    debugLogger.log('Bulk updating campaigns', { ids, updates });
+    
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const updatedAt = new Date().toISOString();
+      
+      setCampaigns(prev => prev.map(c => 
+        ids.includes(c.id) 
+          ? { ...c, ...updates, updated_at: updatedAt }
+          : c
+      ));
+      
+      debugLogger.log('Campaigns bulk updated successfully', { count: ids.length });
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to bulk update campaigns';
+      debugLogger.error('Failed to bulk update campaigns', { error: err, ids });
+      throw new Error(errorMessage);
+    }
+  }, [debugLogger]);
+
+  // Load campaigns on mount
+  useEffect(() => {
+    loadCampaigns();
+  }, [loadCampaigns]);
+
+  return {
+    campaigns,
+    isLoading,
+    error,
+    loadCampaigns,
+    createCampaign,
+    updateCampaign,
+    duplicateCampaign,
+    archiveCampaign,
+    restoreCampaign,
+    deleteCampaign,
+    bulkUpdateCampaigns
+  };
+};
+
+// Campaign Filters Hook
+export const useCampaignFilters = () => {
+  const [filters, setFilters] = useState<CampaignFilters>({
+    search: '',
+    status: [],
+    categories: [],
+    createdDateRange: null,
+    lastModifiedRange: null,
+    assignedTo: [],
+    keywordCount: null,
+    sortBy: 'updated_at',
+    sortOrder: 'desc'
+  });
+
+  const updateFilter = useCallback((key: keyof CampaignFilters, value: any) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+  }, []);
+
+  const resetFilters = useCallback(() => {
+    setFilters({
+      search: '',
+      status: [],
+      categories: [],
+      createdDateRange: null,
+      lastModifiedRange: null,
+      assignedTo: [],
+      keywordCount: null,
+      sortBy: 'updated_at',
+      sortOrder: 'desc'
+    });
+  }, []);
+
+  // Filter campaigns based on current filters
+  const filterCampaigns = useCallback((campaigns: Campaign[]) => {
+    let filtered = [...campaigns];
+
+    // Search filter
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      filtered = filtered.filter(campaign => 
+        campaign.name.toLowerCase().includes(searchLower) ||
+        campaign.description?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Status filter
+    if (filters.status.length > 0) {
+      filtered = filtered.filter(campaign => filters.status.includes(campaign.status));
+    }
+
+    // Category filter
+    if (filters.categories.length > 0) {
+      filtered = filtered.filter(campaign => filters.categories.includes(campaign.category_id));
+    }
+
+    // Date range filters
+    if (filters.createdDateRange) {
+      const [start, end] = filters.createdDateRange;
+      filtered = filtered.filter(campaign => {
+        const createdDate = new Date(campaign.created_at || '');
+        return createdDate >= start && createdDate <= end;
+      });
+    }
+
+    if (filters.lastModifiedRange) {
+      const [start, end] = filters.lastModifiedRange;
+      filtered = filtered.filter(campaign => {
+        const modifiedDate = new Date(campaign.updated_at || '');
+        return modifiedDate >= start && modifiedDate <= end;
+      });
+    }
+
+    // Sort campaigns
+    filtered.sort((a, b) => {
+      const aVal = a[filters.sortBy] || '';
+      const bVal = b[filters.sortBy] || '';
+      
+      if (filters.sortOrder === 'asc') {
+        return aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+      } else {
+        return aVal > bVal ? -1 : aVal < bVal ? 1 : 0;
+      }
+    });
+
+    return filtered;
+  }, [filters]);
+
+  return {
+    filters,
+    updateFilter,
+    resetFilters,
+    filterCampaigns
+  };
+};

@@ -248,7 +248,7 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-4">
+    <div className="bg-card rounded-lg border border-border shadow-sm p-4">
       <div className="flex items-center space-x-6">
         <div className="flex-1 max-w-4xl">
           <CityAutocomplete
@@ -259,7 +259,7 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
         </div>
         
         <div className="w-64">
-          <Label htmlFor="radius" className="text-sm font-medium text-slate-700 mb-3 block">
+          <Label htmlFor="radius" className="text-sm font-medium text-muted-foreground mb-3 block">
             Radius: {radiusMiles} miles
           </Label>
           <div className="flex items-center justify-center py-2">
@@ -278,10 +278,10 @@ const CountyLocationFilters: React.FC<CountyLocationFiltersProps> = ({
         <Button 
           onClick={handleSearch}
           disabled={isSearching}
-          className="bg-slate-900 hover:bg-slate-800 text-white px-6"
+          className="bg-primary hover:bg-primary/90 text-primary-foreground px-6"
         >
           {isSearching ? (
-            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+            <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary-foreground border-t-transparent" />
           ) : (
             <>
               <Search className="h-4 w-4 mr-2" />

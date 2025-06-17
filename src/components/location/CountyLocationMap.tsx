@@ -324,9 +324,9 @@ const MapComponent: React.FC<{
     <div className="relative h-full w-full">
       <div ref={mapRef} className="h-full w-full" />
       {isLoadingCities && (
-        <div className="absolute top-4 left-4 bg-white rounded-lg shadow-lg p-3 z-10">
+        <div className="absolute top-4 left-4 bg-card rounded-lg shadow-lg p-3 z-10">
           <div className="flex items-center gap-2 text-sm">
-            <div className="animate-spin rounded-full h-4 w-4 border-2 border-slate-900 border-t-transparent"></div>
+            <div className="animate-spin rounded-full h-4 w-4 border-2 border-foreground border-t-transparent"></div>
             <span>Loading cities...</span>
           </div>
         </div>
@@ -392,19 +392,19 @@ const CountyLocationMap: React.FC<CountyLocationMapProps> = ({
 
       {/* Map Legend */}
       {(showCounties || showCities) && (
-        <div className="absolute bottom-12 left-4 z-10 bg-white rounded-lg shadow-lg p-3">
-          <div className="text-xs font-semibold text-slate-800 mb-2">Map Legend</div>
+        <div className="absolute bottom-12 left-4 z-10 bg-card rounded-lg shadow-lg p-3">
+          <div className="text-xs font-semibold text-foreground mb-2">Map Legend</div>
           <div className="space-y-1 text-xs">
             {showCounties && (
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                <span className="text-slate-700">Counties ({searchResults.length})</span>
+                <span className="text-muted-foreground">Counties ({searchResults.length})</span>
               </div>
             )}
             {showCities && (
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                <span className="text-slate-700">Cities ({selectedCities.length})</span>
+                <span className="text-muted-foreground">Cities ({selectedCities.length})</span>
               </div>
             )}
           </div>

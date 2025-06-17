@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
+import SidebarLayout from '@/components/layout/SidebarLayout';
+import { SideCategory } from '@/components/navigation/SideCategory';
+import { useMenuConfig, type MenuItem, type MenuSection, type MenuConfig } from '@/hooks/useMenuConfig';
 import { 
   Plus, 
   Settings, 
@@ -102,36 +105,8 @@ const defaultMenuConfig = {
   ]
 };
 
-interface MenuItem {
-  id: string;
-  title: string;
-  path: string;
-  icon: string;
-  order: number;
-  isVisible: boolean;
-  isNew?: boolean;
-  isExternal?: boolean;
-  description?: string;
-  badge?: {
-    text: string;
-    color: string;
-  };
-}
-
-interface MenuSection {
-  id: string;
-  name: string;
-  order: number;
-  isVisible: boolean;
-  items: MenuItem[];
-}
-
-interface MenuConfig {
-  sections: MenuSection[];
-}
-
 export default function MenuManagement() {
-  const [menuConfig, setMenuConfig] = useState<MenuConfig>(defaultMenuConfig);
+  const { menuConfig, updateMenuConfig, getMenuItems, getSections } = useMenuConfig();
   const [selectedSection, setSelectedSection] = useState<string>('main');
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
@@ -143,21 +118,19 @@ export default function MenuManagement() {
   const [dragOverSection, setDragOverSection] = useState<string | null>(null);
   const [dragOverItem, setDragOverItem] = useState<{ sectionId: string; itemId: string } | null>(null);
 
+  // Get current menu items for sidebar
+  const allMenuItems = getMenuItems();
+  const sections = getSections();
+
   // Load saved configuration on mount
   useEffect(() => {
-    const savedConfig = localStorage.getItem('menu-config');
-    if (savedConfig) {
-      try {
-        setMenuConfig(JSON.parse(savedConfig));
-      } catch (error) {
-        console.error('Failed to load menu config:', error);
-      }
-    }
+    // Configuration loading is now handled by useMenuConfig hook
+    // This effect can be removed or used for other initialization
   }, []);
 
   // Save configuration
   const saveConfiguration = () => {
-    localStorage.setItem('menu-config', JSON.stringify(menuConfig));
+    updateMenuConfig(menuConfig);
     setHasUnsavedChanges(false);
     
     // Dispatch event for other components to update
@@ -168,7 +141,7 @@ export default function MenuManagement() {
 
   // Reset to default
   const resetToDefault = () => {
-    setMenuConfig(defaultMenuConfig);
+    updateMenuConfig(defaultMenuConfig);
     setHasUnsavedChanges(true);
   };
 
@@ -192,7 +165,7 @@ export default function MenuManagement() {
       reader.onload = (e) => {
         try {
           const config = JSON.parse(e.target?.result as string);
-          setMenuConfig(config);
+          updateMenuConfig(config);
           setHasUnsavedChanges(true);
         } catch (error) {
           alert('Invalid configuration file');
@@ -212,28 +185,31 @@ export default function MenuManagement() {
       items: []
     };
     
-    setMenuConfig(prev => ({
-      sections: [...prev.sections, newSection]
-    }));
+    const updatedConfig = {
+      sections: [...menuConfig.sections, newSection]
+    };
+    updateMenuConfig(updatedConfig);
     setHasUnsavedChanges(true);
     setEditingSection(newSection.id);
   };
 
   // Update section
   const updateSection = (sectionId: string, updates: Partial<MenuSection>) => {
-    setMenuConfig(prev => ({
-      sections: prev.sections.map(section => 
+    const updatedConfig = {
+      sections: menuConfig.sections.map(section => 
         section.id === sectionId ? { ...section, ...updates } : section
       )
-    }));
+    };
+    updateMenuConfig(updatedConfig);
     setHasUnsavedChanges(true);
   };
 
   // Delete section
   const deleteSection = (sectionId: string) => {
-    setMenuConfig(prev => ({
-      sections: prev.sections.filter(section => section.id !== sectionId)
-    }));
+    const updatedConfig = {
+      sections: menuConfig.sections.filter(section => section.id !== sectionId)
+    };
+    updateMenuConfig(updatedConfig);
     setHasUnsavedChanges(true);
     if (selectedSection === sectionId) {
       setSelectedSection(menuConfig.sections[0]?.id || '');
@@ -320,7 +296,7 @@ export default function MenuManagement() {
       section.order = index;
     });
 
-    setMenuConfig({ sections });
+    updateMenuConfig({ sections });
     setHasUnsavedChanges(true);
     setDraggedSection(null);
     setDragOverSection(null);
@@ -376,7 +352,7 @@ export default function MenuManagement() {
       item.order = index;
     });
 
-    setMenuConfig({ sections });
+    updateMenuConfig({ sections });
     setHasUnsavedChanges(true);
     setDraggedItem(null);
     setDragOverItem(null);
@@ -412,7 +388,7 @@ export default function MenuManagement() {
       item.order = index;
     });
 
-    setMenuConfig({ sections });
+    updateMenuConfig({ sections });
     setHasUnsavedChanges(true);
     setDraggedItem(null);
     setDragOverSection(null);
@@ -438,7 +414,36 @@ export default function MenuManagement() {
   const currentSection = menuConfig.sections.find(s => s.id === selectedSection);
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-6">
+    <SidebarLayout
+      menuItems={allMenuItems}
+      nav={
+        <div className="flex items-center justify-between w-full px-6">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+              <Settings className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <h1 className="text-xl font-semibold tracking-wide text-primary-foreground">Admin</h1>
+          </div>
+        </div>
+      }
+      category={
+        <div className="space-y-4">
+          {sections.map((section) => (
+            <SideCategory 
+              key={section.name}
+              section={section.name} 
+              items={section.items} 
+            />
+          ))}
+        </div>
+      }
+      footer={
+        <div className="text-xs text-primary-foreground/60 text-center">
+          <p>Menu Management</p>
+        </div>
+      }
+    >
+      <div className="h-full bg-background text-foreground p-6">
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center justify-between">
@@ -923,6 +928,7 @@ export default function MenuManagement() {
           </Card>
         </div>
       )}
-    </div>
+      </div>
+    </SidebarLayout>
   );
 }
