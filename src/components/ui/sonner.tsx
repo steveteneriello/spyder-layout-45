@@ -1,15 +1,14 @@
-
-import { useGlobalTheme } from "@/contexts/GlobalThemeContext"
+import { useTheme } from "next-themes"
 import { Toaster as Sonner, toast } from "sonner"
 
 type ToasterProps = React.ComponentProps<typeof Sonner>
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { actualTheme } = useGlobalTheme()
+  const { theme = "system" } = useTheme()
 
   return (
     <Sonner
-      theme={actualTheme as ToasterProps["theme"]}
+      theme={theme as ToasterProps["theme"]}
       className="toaster group"
       toastOptions={{
         classNames: {

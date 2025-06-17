@@ -1,29 +1,189 @@
-/* CLEANED INDEX.CSS - All color conflicts removed */
 
-/* 
-❌ REMOVED: All conflicting color variable definitions
-❌ REMOVED: All HSL color overrides  
-❌ REMOVED: All theme-specific variables that conflict with GlobalThemeContext
-❌ REMOVED: All sidebar, campaign, and custom color definitions
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-✅ The GlobalThemeContext now manages ALL colors centrally
-✅ This prevents blue→maroon and white→yellow mapping issues
-*/
+/* Import the global theme system */
+@import './styles/global-theme.css';
 
-/* Only keep essential structural CSS if needed */
-/* Let GlobalThemeProvider handle all color management */
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. */
 
-/* If you have any essential non-color styles, add them here */
-/* For example: */
-/*
-.custom-layout {
-  display: grid;
-  grid-template-columns: 1fr 3fr;
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 217 91% 60%; /* Changed to blue */
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 0%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 0 0% 0%;
+    --sidebar-accent: 0 0% 10%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 0 0% 0%; /* Remove border by making it transparent/same as background */
+    --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Campaign page specific background - Pure White Minimal */
+    --campaign-page-background: 0 0% 100%; /* #ffffff - white */
+    --campaign-secondary-background: 210 20% 98%; /* #f9fafb - gray-50 */
+    --campaign-card-background: 0 0% 100%; /* #ffffff - white */
+    --campaign-primary-text: 217 19% 9%; /* #111827 - gray-900 */
+    --campaign-secondary-text: 220 9% 46%; /* #6b7280 - gray-500 */
+    --campaign-border: 220 13% 91%; /* #e5e7eb - gray-200 */
+    --campaign-accent: 220 9% 68%; /* #9ca3af - gray-400 */
+    --campaign-button-blue: 217 91% 60%; /* #3b82f6 - blue-500 */
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 217 91% 60%; /* Changed to blue */
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    
+    --sidebar-background: 0 0% 0%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 0 0% 0%;
+    --sidebar-accent: 0 0% 10%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 0 0% 0%; /* Remove border by making it transparent/same as background */
+    --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Campaign page specific background - Pure Black */
+    --campaign-page-background: 0 0% 0%; /* #000000 - pure black */
+    --campaign-secondary-background: 0 0% 6.7%; /* #111111 - very dark gray */
+    --campaign-card-background: 0 0% 10.2%; /* #1a1a1a - dark gray */
+    --campaign-primary-text: 0 0% 100%; /* #ffffff - white */
+    --campaign-secondary-text: 0 0% 63.9%; /* #a3a3a3 - light gray */
+    --campaign-border: 0 0% 25.1%; /* #404040 - medium gray */
+    --campaign-accent: 217 91% 60%; /* #3b82f6 - blue-500 */
+    --campaign-button-blue: 217 91% 60%; /* #3b82f6 - blue-500 */
+  }
 }
-*/
 
-/* 
-🎯 CRITICAL: Do NOT add any color variables here!
-🎯 All colors are managed by GlobalThemeContext
-🎯 This file should only contain layout, positioning, or structural CSS
-*/
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    /* Use global theme variables for body background and text */
+    background-color: rgb(var(--bg-primary));
+    color: rgb(var(--text-primary));
+  }
+}
+
+/* Force sidebar styling */
+@layer components {
+  .sidebar-layout [data-sidebar] {
+    background-color: hsl(0 0% 0%) !important;
+    color: hsl(0 0% 100%) !important;
+    border: none !important; /* Remove all borders */
+  }
+  
+  .sidebar-layout [data-sidebar] * {
+    color: hsl(0 0% 100%) !important;
+  }
+  
+  .sidebar-layout .bg-sidebar {
+    background-color: hsl(0 0% 0%) !important;
+  }
+  
+  .sidebar-layout .text-sidebar-foreground {
+    color: hsl(0 0% 100%) !important;
+  }
+
+  /* Remove sidebar borders */
+  .sidebar-layout [data-sidebar] {
+    border-right: none !important;
+    border-left: none !important;
+  }
+
+  /* Campaign page background */
+  .campaign-page-bg {
+    background-color: hsl(var(--campaign-page-background));
+  }
+
+  /* Campaign component styles */
+  .campaign-secondary-bg {
+    background-color: hsl(var(--campaign-secondary-background));
+  }
+
+  .campaign-card-bg {
+    background-color: hsl(var(--campaign-card-background));
+  }
+
+  .campaign-primary-text {
+    color: hsl(var(--campaign-primary-text));
+  }
+
+  .campaign-secondary-text {
+    color: hsl(var(--campaign-secondary-text));
+  }
+
+  .campaign-border {
+    border-color: hsl(var(--campaign-border));
+  }
+
+  .campaign-accent {
+    color: hsl(var(--campaign-accent));
+  }
+
+  .campaign-button-blue {
+    background-color: hsl(var(--campaign-button-blue));
+  }
+
+  .campaign-button-blue:hover {
+    background-color: hsl(var(--campaign-button-blue) / 0.9);
+  }
+}

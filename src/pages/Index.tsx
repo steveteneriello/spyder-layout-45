@@ -1,25 +1,23 @@
-import React from 'react';
+
+import React, { useState } from 'react';
 import SidebarLayout from '@/components/layout/SidebarLayout';
+import { CompanySelector } from '@/components/navigation/CompanySelector';
+import { ProfileDropdown } from '@/components/navigation/ProfileDropdown';
 import { SideCategory } from '@/components/navigation/SideCategory';
-import { useGlobalTheme } from '@/contexts/GlobalThemeContext';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Home, 
-  Target, 
-  Calendar, 
-  Plus, 
-  MapPin, 
-  Palette, 
-  Settings,
-  Activity,
-  Users,
-  TrendingUp,
-  Clock,
-  CheckCircle,
-  AlertCircle
-} from 'lucide-react';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
+
+// Mock data
+const mockUser = {
+  name: 'John Doe',
+  email: 'john@example.com',
+  image: 'https://github.com/shadcn.png',
+};
+
+const mockCompanies = [
+  { company_id: '1', name: 'Acme Corp', domain: 'acme.com' },
+  { company_id: '2', name: 'Tech Solutions Inc', domain: 'techsolutions.com' },
+  { company_id: '3', name: 'Digital Innovations', domain: 'digitalinnov.com' },
+];
 
 const allMenuItems = [
   { title: 'Dashboard', path: '/', icon: 'Home', section: 'Main' },
@@ -31,352 +29,86 @@ const allMenuItems = [
   { title: 'Admin Theme', path: '/admin/theme', icon: 'Settings', section: 'Settings' },
 ];
 
-// Dashboard Cards Data
-const dashboardStats = [
-  {
-    title: 'Active Campaigns',
-    value: '12',
-    change: '+2',
-    trend: 'up',
-    icon: Target,
-    description: 'Currently running campaigns',
-  },
-  {
-    title: 'Scheduled Jobs',
-    value: '48',
-    change: '+8',
-    trend: 'up',
-    icon: Calendar,
-    description: 'Jobs in the queue',
-  },
-  {
-    title: 'Success Rate',
-    value: '94.2%',
-    change: '+1.2%',
-    trend: 'up',
-    icon: TrendingUp,
-    description: 'Last 30 days',
-  },
-  {
-    title: 'Active Users',
-    value: '156',
-    change: '+12',
-    trend: 'up',
-    icon: Users,
-    description: 'Users this month',
-  },
-];
+const Index = () => {
+  const [selectedCompany, setSelectedCompany] = useState(mockCompanies[0]);
 
-const recentActivity = [
-  {
-    id: 1,
-    type: 'campaign',
-    title: 'New campaign "Summer Sale" created',
-    time: '2 minutes ago',
-    status: 'success',
-    icon: Target,
-  },
-  {
-    id: 2,
-    type: 'schedule',
-    title: 'Daily scraping job completed',
-    time: '15 minutes ago',
-    status: 'success',
-    icon: CheckCircle,
-  },
-  {
-    id: 3,
-    type: 'warning',
-    title: 'Rate limit approaching for API',
-    time: '1 hour ago',
-    status: 'warning',
-    icon: AlertCircle,
-  },
-  {
-    id: 4,
-    type: 'schedule',
-    title: 'Location data updated for 5 campaigns',
-    time: '2 hours ago',
-    status: 'success',
-    icon: MapPin,
-  },
-];
+  const handleSelectCompany = (companyId: string) => {
+    const company = mockCompanies.find((c) => c.company_id === companyId);
+    if (company) setSelectedCompany(company);
+  };
 
-const quickActions = [
-  {
-    title: 'Create New Campaign',
-    description: 'Set up a new marketing campaign',
-    href: '/campaigns',
-    icon: Target,
-    color: 'primary',
-  },
-  {
-    title: 'Schedule Job',
-    description: 'Create a new Oxylabs schedule',
-    href: '/scheduler/create',
-    icon: Calendar,
-    color: 'secondary',
-  },
-  {
-    title: 'Build Locations',
-    description: 'Create location-based targeting',
-    href: '/location-builder',
-    icon: MapPin,
-    color: 'secondary',
-  },
-  {
-    title: 'View Analytics',
-    description: 'Check campaign performance',
-    href: '/analytics',
-    icon: Activity,
-    color: 'secondary',
-  },
-];
+  const handleLogout = () => {
+    console.log('Logging out...');
+  };
 
-export default function Index() {
-  const { actualTheme, themeMode } = useGlobalTheme();
+  const nav = (
+    <div className="flex items-center justify-between w-full px-6">
+      <div className="flex items-center gap-4">
+        <h1 className="text-xl font-bold">Your App</h1>
+      </div>
+      <div className="flex items-center gap-4">
+        <span className="text-sm text-muted-foreground">Welcome back!</span>
+        <ThemeToggle />
+      </div>
+    </div>
+  );
+
+  const footer = (
+    <div className="space-y-4">
+      <CompanySelector
+        companies={mockCompanies}
+        selectedCompany={selectedCompany}
+        onSelectCompany={handleSelectCompany}
+        isExpanded={true}
+      />
+      <ProfileDropdown
+        user={mockUser}
+        sidebarOpen={true}
+        onLogout={handleLogout}
+      />
+    </div>
+  );
+
+  const category = (
+    <div className="space-y-4">
+      <SideCategory section="Main" items={allMenuItems.filter(item => item.section === 'Main')} />
+      <SideCategory section="Tools" items={allMenuItems.filter(item => item.section === 'Tools')} />
+      <SideCategory section="Settings" items={allMenuItems.filter(item => item.section === 'Settings')} />
+    </div>
+  );
 
   return (
     <SidebarLayout
-      nav={
-        <div className="flex items-center justify-between w-full px-4">
-          <h1 className="text-lg font-semibold text-white">Dashboard</h1>
-          <Badge variant="outline" className="text-white border-white/20">
-            {actualTheme} mode
-          </Badge>
-        </div>
-      }
-      category={
-        <div className="space-y-4">
-          <SideCategory section="Main" items={allMenuItems.filter(item => item.section === 'Main')} />
-          <SideCategory section="Tools" items={allMenuItems.filter(item => item.section === 'Tools')} />
-          <SideCategory section="Settings" items={allMenuItems.filter(item => item.section === 'Settings')} />
-        </div>
-      }
+      user={mockUser}
+      nav={nav}
+      category={category}
+      footer={footer}
       menuItems={allMenuItems}
     >
-      {/* FIXED: Use proper theme-aware classes */}
-      <div className="p-6 bg-background text-foreground min-h-screen">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <Home className="h-6 w-6 text-primary" />
-            <h1 className="text-3xl font-bold text-foreground">
-              Dashboard
-            </h1>
-          </div>
-          <p className="text-muted-foreground">
-            Welcome back! Here's what's happening with your campaigns and schedules.
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-6">
+          <h1 className="text-4xl font-bold">Welcome to Your Dashboard</h1>
+          <p className="text-xl text-muted-foreground max-w-2xl">
+            This is a modern sidebar layout with company selection, user profiles, and collapsible navigation.
           </p>
-        </div>
-
-        {/* Theme Status Debug Card */}
-        <Card className="mb-6 border-2 border-primary/20">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-foreground">
-              <Palette className="h-5 w-5 text-primary" />
-              🎯 Theme Status (Fixed)
-            </CardTitle>
-            <CardDescription>
-              Verifying that colors are correctly applied
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="p-3 bg-muted rounded-lg">
-                <div className="text-sm font-medium text-muted-foreground">Theme Mode</div>
-                <div className="text-lg font-semibold text-foreground capitalize">
-                  {themeMode}
-                </div>
-              </div>
-              <div className="p-3 bg-muted rounded-lg">
-                <div className="text-sm font-medium text-muted-foreground">Active Theme</div>
-                <div className="text-lg font-semibold text-foreground capitalize">
-                  {actualTheme}
-                </div>
-              </div>
-              <div className="p-3 bg-primary rounded-lg">
-                <div className="text-sm font-medium text-primary-foreground">Primary Color</div>
-                <div className="text-lg font-semibold text-primary-foreground">
-                  Should be BLUE
-                </div>
-              </div>
-              <div className="p-3 bg-card border border-border rounded-lg">
-                <div className="text-sm font-medium text-muted-foreground">Background</div>
-                <div className="text-lg font-semibold text-card-foreground">
-                  Should be WHITE/DARK
-                </div>
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+            <div className="p-6 bg-card rounded-lg border">
+              <h3 className="text-lg font-semibold mb-2">Dashboard</h3>
+              <p className="text-muted-foreground">View your analytics and key metrics</p>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {dashboardStats.map((stat, index) => {
-            const Icon = stat.icon;
-            return (
-              <Card key={index} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <Icon className="h-6 w-6 text-primary" />
-                    <Badge 
-                      variant={stat.trend === 'up' ? 'default' : 'secondary'}
-                      className="text-xs"
-                    >
-                      {stat.change}
-                    </Badge>
-                  </div>
-                  <div className="space-y-1">
-                    <h3 className="text-2xl font-bold text-foreground">
-                      {stat.value}
-                    </h3>
-                    <p className="text-sm font-medium text-foreground">
-                      {stat.title}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {stat.description}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Quick Actions */}
-          <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-foreground">
-                  <Settings className="h-5 w-5 text-primary" />
-                  Quick Actions
-                </CardTitle>
-                <CardDescription>
-                  Common tasks and shortcuts
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {quickActions.map((action, index) => {
-                    const Icon = action.icon;
-                    return (
-                      <Button
-                        key={index}
-                        variant={action.color === 'primary' ? 'default' : 'outline'}
-                        className="h-auto p-4 flex flex-col items-start space-y-2 hover:scale-105 transition-transform"
-                        asChild
-                      >
-                        <a href={action.href}>
-                          <Icon className="h-5 w-5" />
-                          <div className="text-left">
-                            <div className="font-semibold">{action.title}</div>
-                            <div className="text-xs opacity-80">{action.description}</div>
-                          </div>
-                        </a>
-                      </Button>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Recent Activity */}
-          <div>
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-foreground">
-                  <Activity className="h-5 w-5 text-primary" />
-                  Recent Activity
-                </CardTitle>
-                <CardDescription>
-                  Latest updates and events
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {recentActivity.map((activity) => {
-                    const Icon = activity.icon;
-                    return (
-                      <div key={activity.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
-                        <div className={`p-2 rounded-full ${
-                          activity.status === 'success' ? 'bg-green-100 text-green-600' :
-                          activity.status === 'warning' ? 'bg-yellow-100 text-yellow-600' :
-                          'bg-gray-100 text-gray-600'
-                        }`}>
-                          <Icon className="h-4 w-4" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-foreground">
-                            {activity.title}
-                          </p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Clock className="h-3 w-3 text-muted-foreground" />
-                            <p className="text-xs text-muted-foreground">
-                              {activity.time}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
+            <div className="p-6 bg-card rounded-lg border">
+              <h3 className="text-lg font-semibold mb-2">Campaigns</h3>
+              <p className="text-muted-foreground">Manage your campaign strategies</p>
+            </div>
+            <div className="p-6 bg-card rounded-lg border">
+              <h3 className="text-lg font-semibold mb-2">Tools</h3>
+              <p className="text-muted-foreground">Access scheduler and location builder</p>
+            </div>
           </div>
         </div>
-
-        {/* Color Test Section */}
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle className="text-foreground">🧪 Color Test Section</CardTitle>
-            <CardDescription>
-              Visual confirmation that theme colors are working correctly
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="space-y-2">
-                <div className="w-full h-16 bg-primary rounded flex items-center justify-center">
-                  <span className="text-primary-foreground font-semibold">Primary (Blue)</span>
-                </div>
-                <p className="text-xs text-center text-muted-foreground">Should be blue, not maroon</p>
-              </div>
-              
-              <div className="space-y-2">
-                <div className="w-full h-16 bg-secondary rounded flex items-center justify-center border border-border">
-                  <span className="text-secondary-foreground font-semibold">Secondary</span>
-                </div>
-                <p className="text-xs text-center text-muted-foreground">Light gray / dark gray</p>
-              </div>
-              
-              <div className="space-y-2">
-                <div className="w-full h-16 bg-background border-2 border-border rounded flex items-center justify-center">
-                  <span className="text-foreground font-semibold">Background</span>
-                </div>
-                <p className="text-xs text-center text-muted-foreground">Should be white/dark, not yellow</p>
-              </div>
-              
-              <div className="space-y-2">
-                <div className="w-full h-16 bg-card border border-border rounded flex items-center justify-center">
-                  <span className="text-card-foreground font-semibold">Card</span>
-                </div>
-                <p className="text-xs text-center text-muted-foreground">Card background</p>
-              </div>
-            </div>
-            
-            <div className="mt-4 p-3 bg-muted rounded-lg">
-              <p className="text-sm text-muted-foreground">
-                <strong>✅ If you see:</strong> Blue primary colors, white/dark backgrounds, proper contrast<br/>
-                <strong>❌ If you still see:</strong> Maroon instead of blue, yellow instead of white - check for conflicting CSS files
-              </p>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </SidebarLayout>
   );
-}
+};
+
+export default Index;

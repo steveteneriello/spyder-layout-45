@@ -83,134 +83,134 @@
 
 /* Utility classes for theme-aware styling */
 .theme-bg-primary {
-  background-color: rgb(var(--bg-primary)) !important;
+  background-color: rgb(var(--bg-primary));
 }
 
 .theme-bg-secondary {
-  background-color: rgb(var(--bg-secondary)) !important;
+  background-color: rgb(var(--bg-secondary));
 }
 
 .theme-bg-tertiary {
-  background-color: rgb(var(--bg-tertiary)) !important;
+  background-color: rgb(var(--bg-tertiary));
 }
 
 .theme-bg-hover {
-  background-color: rgb(var(--bg-hover)) !important;
+  background-color: rgb(var(--bg-hover));
 }
 
 .theme-bg-selected {
-  background-color: rgb(var(--bg-selected)) !important;
+  background-color: rgb(var(--bg-selected));
 }
 
 .theme-text-primary {
-  color: rgb(var(--text-primary)) !important;
+  color: rgb(var(--text-primary));
 }
 
 .theme-text-secondary {
-  color: rgb(var(--text-secondary)) !important;
+  color: rgb(var(--text-secondary));
 }
 
 .theme-text-tertiary {
-  color: rgb(var(--text-tertiary)) !important;
+  color: rgb(var(--text-tertiary));
 }
 
 .theme-text-inverse {
-  color: rgb(var(--text-inverse)) !important;
+  color: rgb(var(--text-inverse));
 }
 
 .theme-accent-primary {
-  color: rgb(var(--accent-primary)) !important;
+  color: rgb(var(--accent-primary));
 }
 
 .theme-accent-bg {
-  background-color: rgb(var(--accent-primary)) !important;
+  background-color: rgb(var(--accent-primary));
 }
 
 .theme-border-primary {
-  border-color: rgb(var(--border-primary)) !important;
+  border-color: rgb(var(--border-primary));
 }
 
 .theme-border-secondary {
-  border-color: rgb(var(--border-secondary)) !important;
+  border-color: rgb(var(--border-secondary));
 }
 
 .theme-border-focus {
-  border-color: rgb(var(--border-focus)) !important;
+  border-color: rgb(var(--border-focus));
 }
 
 /* Success state utilities */
 .theme-success {
-  color: rgb(var(--success)) !important;
+  color: rgb(var(--success));
 }
 
 .theme-success-bg {
-  background-color: rgb(var(--success-bg)) !important;
+  background-color: rgb(var(--success-bg));
 }
 
 .theme-success-border {
-  border-color: rgb(var(--success-border)) !important;
+  border-color: rgb(var(--success-border));
 }
 
 /* Warning state utilities */
 .theme-warning {
-  color: rgb(var(--warning)) !important;
+  color: rgb(var(--warning));
 }
 
 .theme-warning-bg {
-  background-color: rgb(var(--warning-bg)) !important;
+  background-color: rgb(var(--warning-bg));
 }
 
 .theme-warning-border {
-  border-color: rgb(var(--warning-border)) !important;
+  border-color: rgb(var(--warning-border));
 }
 
 /* Error state utilities */
 .theme-error {
-  color: rgb(var(--error)) !important;
+  color: rgb(var(--error));
 }
 
 .theme-error-bg {
-  background-color: rgb(var(--error-bg)) !important;
+  background-color: rgb(var(--error-bg));
 }
 
 .theme-error-border {
-  border-color: rgb(var(--error-border)) !important;
+  border-color: rgb(var(--error-border));
 }
 
 /* Shadow utilities */
 .theme-shadow-sm {
-  box-shadow: var(--shadow-sm) !important;
+  box-shadow: var(--shadow-sm);
 }
 
 .theme-shadow-md {
-  box-shadow: var(--shadow-md) !important;
+  box-shadow: var(--shadow-md);
 }
 
 .theme-shadow-lg {
-  box-shadow: var(--shadow-lg) !important;
+  box-shadow: var(--shadow-lg);
 }
 
 .theme-shadow-focus {
-  box-shadow: var(--shadow-focus) !important;
+  box-shadow: var(--shadow-focus);
 }
 
 /* Interactive component patterns */
 .theme-button-primary {
-  background-color: rgb(var(--accent-primary)) !important;
-  color: rgb(var(--text-inverse)) !important;
-  border: 1px solid rgb(var(--accent-primary)) !important;
+  background-color: rgb(var(--accent-primary));
+  color: rgb(var(--text-inverse));
+  border: 1px solid rgb(var(--accent-primary));
   transition: all 0.2s ease;
 }
 
 .theme-button-primary:hover {
-  background-color: rgb(var(--accent-primary-hover)) !important;
-  border-color: rgb(var(--accent-primary-hover)) !important;
+  background-color: rgb(var(--accent-primary-hover));
+  border-color: rgb(var(--accent-primary-hover));
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }
 
 .theme-button-primary:active {
-  background-color: rgb(var(--accent-primary-active)) !important;
+  background-color: rgb(var(--accent-primary-active));
   transform: translateY(0);
   box-shadow: var(--shadow-sm);
 }
@@ -220,54 +220,54 @@
 }
 
 .theme-button-secondary {
-  background-color: transparent !important;
-  color: rgb(var(--text-primary)) !important;
-  border: 1px solid rgb(var(--border-primary)) !important;
+  background-color: transparent;
+  color: rgb(var(--text-primary));
+  border: 1px solid rgb(var(--border-primary));
   transition: all 0.2s ease;
 }
 
 .theme-button-secondary:hover {
-  background-color: rgb(var(--bg-hover)) !important;
-  border-color: rgb(var(--accent-primary)) !important;
-  color: rgb(var(--accent-primary)) !important;
+  background-color: rgb(var(--bg-hover));
+  border-color: rgb(var(--accent-primary));
+  color: rgb(var(--accent-primary));
 }
 
 .theme-card {
-  background-color: rgb(var(--bg-secondary)) !important;
-  border: 1px solid rgb(var(--border-secondary)) !important;
+  background-color: rgb(var(--bg-secondary));
+  border: 1px solid rgb(var(--border-secondary));
   transition: all 0.2s ease;
 }
 
 .theme-card:hover {
-  border-color: rgb(var(--border-primary)) !important;
+  border-color: rgb(var(--border-primary));
   box-shadow: var(--shadow-md);
   transform: translateY(-2px);
 }
 
 .theme-card.interactive:hover {
   cursor: pointer;
-  border-color: rgb(var(--accent-primary)) !important;
+  border-color: rgb(var(--accent-primary));
 }
 
 .theme-input {
-  background-color: rgb(var(--bg-primary)) !important;
-  color: rgb(var(--text-primary)) !important;
-  border: 1px solid rgb(var(--border-primary)) !important;
+  background-color: rgb(var(--bg-primary));
+  color: rgb(var(--text-primary));
+  border: 1px solid rgb(var(--border-primary));
   transition: all 0.2s ease;
 }
 
 .theme-input:hover {
-  border-color: rgb(var(--accent-primary)) !important;
+  border-color: rgb(var(--accent-primary));
 }
 
 .theme-input:focus {
   outline: none;
-  border-color: rgb(var(--accent-primary)) !important;
+  border-color: rgb(var(--accent-primary));
   box-shadow: var(--shadow-focus);
 }
 
 .theme-input::placeholder {
-  color: rgb(var(--text-tertiary)) !important;
+  color: rgb(var(--text-tertiary));
 }
 
 /* Smooth transitions for theme changes */
