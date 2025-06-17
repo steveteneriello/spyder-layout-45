@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Monitor, 
@@ -106,17 +105,33 @@ export default function AdminThemeSettings() {
   };
 
   const saveAllSettings = () => {
+    // Save debug settings
     localStorage.setItem('theme-debug-settings', JSON.stringify(debugSettings));
     window.dispatchEvent(new CustomEvent('themeDebugSettingsChanged', { 
       detail: debugSettings 
     }));
 
+    // Save brand settings
     localStorage.setItem('brand-settings', JSON.stringify(brandSettings));
     window.dispatchEvent(new CustomEvent('brandSettingsChanged', { 
       detail: brandSettings 
     }));
 
+    // Save color settings to localStorage
+    localStorage.setItem('theme-colors', JSON.stringify(colors));
+    
+    // Apply colors immediately to CSS
+    applyColorsToCSS(colors, actualTheme);
+    
+    // Force update theme context
+    window.dispatchEvent(new CustomEvent('themeColorsChanged', { 
+      detail: colors 
+    }));
+
     setUnsavedChanges(false);
+    
+    // Show visual feedback
+    alert('Settings saved successfully! Changes applied immediately.');
   };
 
   const handleLogoUpload = (file: File, mode: 'light' | 'dark') => {
@@ -188,7 +203,8 @@ export default function AdminThemeSettings() {
     };
     
     updateColors(defaultColors);
-    setUnsavedChanges(false);
+    applyColorsToCSS(defaultColors, actualTheme);
+    setUnsavedChanges(true);
   };
 
   const updateColor = (colorKey: string, theme: 'light' | 'dark', value: string) => {
@@ -199,7 +215,32 @@ export default function AdminThemeSettings() {
     currentColors[colorKey][theme] = value;
     updateColors(currentColors);
     setUnsavedChanges(true);
+    
+    // Apply colors immediately to CSS custom properties
+    applyColorsToCSS(currentColors, actualTheme);
   };
+
+  // Apply colors immediately to CSS custom properties
+  const applyColorsToCSS = (colorData: any, currentTheme: string) => {
+    const root = document.documentElement;
+    
+    Object.entries(colorData).forEach(([colorKey, themeValues]: [string, any]) => {
+      if (themeValues && themeValues[currentTheme]) {
+        const cssVarName = `--${colorKey}`;
+        root.style.setProperty(cssVarName, themeValues[currentTheme]);
+        
+        // Also set RGB format for Tailwind
+        root.style.setProperty(`${cssVarName}-rgb`, themeValues[currentTheme]);
+      }
+    });
+  };
+
+  // Apply changes immediately when theme mode changes
+  React.useEffect(() => {
+    if (colors && Object.keys(colors).length > 0) {
+      applyColorsToCSS(colors, actualTheme);
+    }
+  }, [actualTheme, colors]);
 
   const rgbToHex = (rgb: string) => {
     const values = rgb.split(' ').map(v => parseInt(v.trim()));
@@ -268,6 +309,23 @@ export default function AdminThemeSettings() {
             >
               <Save className="h-4 w-4 mr-2" />
               Save All Settings
+            </Button>
+            {/* Test Button for immediate feedback */}
+            <Button
+              onClick={() => {
+                // Test color change for immediate feedback
+                const testColors = {
+                  'accent-primary': { light: '255 0 0', dark: '0 255 0' }
+                };
+                applyColorsToCSS({ ...colors, ...testColors }, actualTheme);
+                setTimeout(() => {
+                  applyColorsToCSS(colors, actualTheme);
+                }, 2000);
+              }}
+              variant="outline"
+              size="sm"
+            >
+              Test Colors
             </Button>
           </div>
         </div>
