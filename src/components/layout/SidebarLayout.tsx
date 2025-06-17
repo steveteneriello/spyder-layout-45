@@ -1,8 +1,5 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { useGlobalTheme } from '@/contexts/GlobalThemeContext';
-import { useBrandSettings } from '@/components/LogoBrandSettings';
 import {
   Sidebar,
   SidebarContent,
@@ -13,337 +10,132 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { ChevronRight, Home, Palette } from 'lucide-react';
-
-interface MenuItem {
-  title: string;
-  path: string;
-  icon?: string;
-  section?: string;
-}
+import { useGlobalTheme } from '@/contexts/GlobalThemeContext';
+import BrandHeader from '@/components/BrandHeader';
 
 interface SidebarLayoutProps {
+  children: React.ReactNode;
   nav?: React.ReactNode;
   category?: React.ReactNode;
-  children?: React.ReactNode;
   footer?: React.ReactNode;
-  className?: string;
-  menuItems: MenuItem[];
-  user?: any;
-  navColor?: string;
-  sideColor?: string;
+  menuItems?: any[];
 }
 
-interface NavProps {
-  children: React.ReactNode;
-  color?: string;
-}
-
-interface SidebarProps {
-  menuItems: MenuItem[];
-  category?: React.ReactNode;
-  footer?: React.ReactNode;
-  color?: string;
-}
-
-// ADDED: Brand Header Component
-function BrandHeader() {
-  const { actualTheme, colors } = useGlobalTheme();
-  const brandSettings = useBrandSettings();
-
-  const sidebarText = colors['sidebar-foreground']
-    ? `rgb(${colors['sidebar-foreground'][actualTheme]})`
-    : 'rgb(255, 255, 255)';
-
-  const getSizeClass = (size: string) => {
-    switch (size) {
-      case 'sm': return 'h-6 w-6';
-      case 'lg': return 'h-10 w-10';
-      default: return 'h-8 w-8';
-    }
-  };
-
-  const getCurrentLogo = () => {
-    return actualTheme === 'dark' ? brandSettings.darkModeLogo : brandSettings.lightModeLogo;
-  };
-
-  return (
-    <div className="flex items-center gap-3">
-      {/* Logo or Icon */}
-      {brandSettings.useLogo && getCurrentLogo() ? (
-        <img 
-          src={getCurrentLogo()!} 
-          alt="Logo"
-          className={`object-contain ${getSizeClass(brandSettings.logoSize)}`}
-        />
-      ) : (
-        <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-          <Palette className="h-5 w-5 text-black" />
-        </div>
-      )}
-      
-      {/* Brand Text */}
-      <div className="text-white">
-        <div className="font-bold text-sm">{brandSettings.brandText}</div>
-        {brandSettings.showTagline && (
-          <div className="text-xs opacity-75">{brandSettings.tagline}</div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function AppSidebar({ menuItems, category, footer }: SidebarProps) {
-  const { open, toggleSidebar } = useSidebar();
+function SidebarLayoutInner({ children, nav, category, footer }: SidebarLayoutProps) {
+  const { sidebarOpen } = useSidebar();
   const { colors, actualTheme } = useGlobalTheme();
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const cursorRef = useRef<HTMLDivElement>(null);
 
-  const sections = menuItems.reduce((acc, item) => {
-    const section = item.section || 'Other';
-    if (!acc[section]) {
-      acc[section] = [];
-    }
-    acc[section].push(item);
-    return acc;
-  }, {} as Record<string, MenuItem[]>);
-
-  // FIXED: Dynamic sidebar colors based on theme
-  const sidebarBg = colors['sidebar-background'] 
-    ? `rgb(${colors['sidebar-background'][actualTheme]})` 
-    : actualTheme === 'dark' ? 'rgb(15, 23, 42)' : 'rgb(0, 0, 0)';
-
-  const sidebarText = colors['sidebar-foreground']
-    ? `rgb(${colors['sidebar-foreground'][actualTheme]})`
-    : 'rgb(255, 255, 255)';
-
-  return (
-    <Sidebar 
-      side="left" 
-      className="h-[calc(100vh-4rem)] mt-[4rem]"
-      style={{ backgroundColor: sidebarBg }}
-    >
-      <SidebarContent 
-        className="overflow-hidden pt-6"
-        style={{ backgroundColor: sidebarBg, color: sidebarText }}
-      >
-        {Object.entries(sections).map(([section, items], index) => (
-          <div key={index} className="mb-4">
-            {category}
-          </div>
-        ))}
-      </SidebarContent>
-
-      <SidebarFooter
-        className={`transition-all duration-200 ease-in-out overflow-hidden ${
-          open ? 'items-start' : 'items-center'
-        }`}
-        style={{ backgroundColor: sidebarBg }}
-      >
-        <SidebarMenu className="w-full">
-          <SidebarMenuItem>
-            <div
-              className={`flex pb-0 items-center ${
-                open ? 'justify-end' : 'justify-center'
-              }`}
-            >
-              <div
-                className="group p-2 rounded transition-all duration-200 ease-in-out cursor-pointer"
-                style={{ 
-                  backgroundColor: `rgb(${colors['sidebar-accent']?.[actualTheme] || '55, 65, 81'})`,
-                  color: sidebarText
-                }}
-                onClick={toggleSidebar}
-              >
-                <ChevronRight
-                  size={15}
-                  className={`transition-all duration-200 ease-in-out ${
-                    open ? 'rotate-180' : 'rotate-0'
-                  }`}
-                  style={{ color: sidebarText }}
-                />
-              </div>
-            </div>
-          </SidebarMenuItem>
-          <SidebarMenuItem className="overflow-hidden mb-3">
-            {footer}
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
-    </Sidebar>
-  );
-}
-
-function Nav({ children }: NavProps) {
-  const { open } = useSidebar();
-  const { colors, actualTheme } = useGlobalTheme();
-  
-  // FIXED: Dynamic header colors based on theme
-  const headerBg = colors['sidebar-background'] 
-    ? `rgb(${colors['sidebar-background'][actualTheme]})` 
-    : actualTheme === 'dark' ? 'rgb(15, 23, 42)' : 'rgb(0, 0, 0)';
-
-  const headerText = colors['sidebar-foreground']
-    ? `rgb(${colors['sidebar-foreground'][actualTheme]})`
-    : 'rgb(255, 255, 255)';
-  
-  return (
-    <div 
-      className="flex top-0 w-full min-h-[4rem] z-20 items-center fixed"
-      style={{ backgroundColor: headerBg, color: headerText }}
-    >
-      {children}
-    </div>
-  );
-}
-
-export default function SidebarLayout({
-  user,
-  children,
-  nav,
-  category,
-  footer,
-  className,
-  menuItems,
-}: SidebarLayoutProps) {
-  const btnRef = useRef<HTMLDivElement>(null);
-  const [isActive, setIsActive] = useState(false);
-  const [isPulsing, setIsPulsing] = useState(false);
-  const animationRef = useRef<number | null>(null);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const { actualTheme } = useGlobalTheme();
-
+  // Apply sidebar colors from theme
   useEffect(() => {
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
+    const sidebarBg = colors['sidebar-background'] 
+      ? `rgb(${colors['sidebar-background'][actualTheme]})` 
+      : (actualTheme === 'dark' ? 'rgb(15, 23, 42)' : 'rgb(0, 0, 0)');
+    
+    const sidebarFg = colors['sidebar-foreground']
+      ? `rgb(${colors['sidebar-foreground'][actualTheme]})`
+      : (actualTheme === 'dark' ? 'rgb(240, 246, 252)' : 'rgb(255, 255, 255)');
+
+    // Apply colors to sidebar
+    const sidebarElements = document.querySelectorAll('[data-sidebar="sidebar"]');
+    sidebarElements.forEach((element: Element) => {
+      const htmlElement = element as HTMLElement;
+      htmlElement.style.backgroundColor = sidebarBg;
+      htmlElement.style.color = sidebarFg;
+    });
+  }, [colors, actualTheme]);
+
+  // Mouse tracking for animations
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePosition({ x: e.clientX, y: e.clientY });
     };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (btnRef.current && isActive) {
-      const rect = btnRef.current.getBoundingClientRect();
-      const targetX = e.clientX - rect.left;
-      const targetY = e.clientY - rect.top;
+  // Dynamic sidebar background color
+  const sidebarBg = colors['sidebar-background'] 
+    ? `rgb(${colors['sidebar-background'][actualTheme]})` 
+    : (actualTheme === 'dark' ? 'rgb(15, 23, 42)' : 'rgb(0, 0, 0)');
 
-      let currentX = parseFloat(btnRef.current.style.getPropertyValue('--x') || '50%');
-      let currentY = parseFloat(btnRef.current.style.getPropertyValue('--y') || '50%');
-
-      const animate = () => {
-        if (btnRef.current) {
-          currentX += (targetX - currentX) * 0.03;
-          currentY += (targetY - currentY) * 0.03;
-
-          btnRef.current.style.setProperty('--x', `${currentX}px`);
-          btnRef.current.style.setProperty('--y', `${currentY}px`);
-
-          if (isActive && (Math.abs(targetX - currentX) > 0.1 || Math.abs(targetY - currentY) > 0.1)) {
-            animationRef.current = requestAnimationFrame(animate);
-          }
-        }
-      };
-      
-      setTimeout(() => {
-        if (animationRef.current) {
-          cancelAnimationFrame(animationRef.current);
-        }
-        animationRef.current = requestAnimationFrame(animate);
-      }, 5);
-    }
-  };
-
-  const handleMouseEnter = () => {
-    setIsActive(true);
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-    timeoutRef.current = setTimeout(() => {
-      setIsPulsing(true);
-    }, 0);
-  };
-
-  const handleMouseLeave = () => {
-    setIsPulsing(false);
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-    if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current);
-    }
-    timeoutRef.current = setTimeout(() => {
-      setIsActive(false);
-    }, 30);
-  };
-
-  // ENHANCED: Default nav with brand settings integration
-  const defaultNav = nav || (
-    <div className="flex items-center justify-between w-full px-4">
-      <BrandHeader />
-      <div className="text-white text-sm">
-        Theme: {actualTheme}
-      </div>
-    </div>
-  );
+  const sidebarFg = colors['sidebar-foreground']
+    ? `rgb(${colors['sidebar-foreground'][actualTheme]})`
+    : (actualTheme === 'dark' ? 'rgb(240, 246, 252)' : 'rgb(255, 255, 255)');
 
   return (
-    <div
-      ref={btnRef}
-      className={cn(
-        'sidebar-layout flex flex-col h-screen w-full bg-background',
-        'mouse-cursor-gradient-tracking',
-        isActive && 'active',
-        isPulsing && 'pulse-effect'
-      )}
-      onMouseMove={handleMouseMove}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
-      <div className={cn('h-full w-full', className)}>
-        <SidebarProvider>
-          <Nav>{defaultNav}</Nav>
-          <div className="flex flex-1 mt-16 w-full h-[calc(100vh-4rem)]">
-            <TooltipProvider delayDuration={300} skipDelayDuration={0}>
-              <AppSidebar menuItems={menuItems} category={category} footer={footer} />
-              <div className="flex flex-col flex-1 overflow-hidden relative h-full">
-                {/* FIXED: Use proper theme-aware background */}
-                <main className="flex-1 overflow-y-auto p-0 h-full bg-background">
-                  <div className="main-body w-full h-full">{children}</div>
-                </main>
-              </div>
-            </TooltipProvider>
-          </div>
-        </SidebarProvider>
-      </div>
+    <div className="flex min-h-screen">
+      {/* Custom Cursor */}
+      <div
+        ref={cursorRef}
+        className="fixed pointer-events-none z-50 w-4 h-4 rounded-full bg-white/20 backdrop-blur-sm transition-all duration-150 ease-out"
+        style={{
+          left: mousePosition.x - 8,
+          top: mousePosition.y - 8,
+        }}
+      />
 
-      {/* FIXED: Remove jsx prop from style tag */}
-      <style>{`
-        .sidebar-layout {
-          --sidebar-bg: ${actualTheme === 'dark' ? 'rgb(15, 23, 42)' : 'rgb(0, 0, 0)'};
-          --sidebar-text: rgb(255, 255, 255);
-        }
-        
-        /* Override any hardcoded sidebar colors */
-        .sidebar-layout [data-sidebar] {
-          background-color: var(--sidebar-bg) !important;
-          color: var(--sidebar-text) !important;
-        }
-        
-        .sidebar-layout [data-sidebar] * {
-          color: var(--sidebar-text) !important;
-        }
-        
-        /* Fix toggle button colors */
-        .sidebar-layout .group {
-          background-color: rgba(55, 65, 81, 0.8) !important;
-        }
-        
-        .sidebar-layout .group:hover {
-          background-color: rgba(55, 65, 81, 1) !important;
-          opacity: 0.75;
-        }
-      `}</style>
+      <Sidebar 
+        className="border-r-0"
+        style={{ backgroundColor: sidebarBg, color: sidebarFg }}
+      >
+        <SidebarContent 
+          className="relative overflow-hidden"
+          style={{ backgroundColor: sidebarBg, color: sidebarFg }}
+        >
+          {/* Header */}
+          <div className="p-4 border-b border-white/10">
+            {nav || <BrandHeader />}
+          </div>
+
+          {/* Category Navigation */}
+          <div className="flex-1 overflow-y-auto p-4">
+            {category}
+          </div>
+
+          {/* Sidebar Footer */}
+          {footer && (
+            <div className="mt-auto p-4 border-t border-white/10">
+              {footer}
+            </div>
+          )}
+        </SidebarContent>
+
+        <SidebarFooter style={{ backgroundColor: sidebarBg }}>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <div className="px-4 py-2 text-center">
+                <div className="text-xs text-white/60">
+                  Powered by{' '}
+                  <span className="text-white/80 font-medium">Oxylabs</span>
+                </div>
+              </div>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarFooter>
+      </Sidebar>
+
+      {/* Main Content */}
+      <main 
+        className={cn(
+          "flex-1 transition-all duration-300 ease-in-out relative",
+          "bg-background text-foreground"
+        )}
+      >
+        {children}
+      </main>
     </div>
+  );
+}
+
+export default function SidebarLayout(props: SidebarLayoutProps) {
+  return (
+    <TooltipProvider>
+      <SidebarProvider>
+        <SidebarLayoutInner {...props} />
+      </SidebarProvider>
+    </TooltipProvider>
   );
 }
