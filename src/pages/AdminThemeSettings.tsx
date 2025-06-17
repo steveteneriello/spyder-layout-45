@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Monitor, 
@@ -82,6 +81,9 @@ export default function AdminThemeSettings() {
   });
 
   const [activeSection, setActiveSection] = useState('theme');
+  
+  // Debug: Log current active section
+  console.log('Current active section:', activeSection);
   const [unsavedChanges, setUnsavedChanges] = useState(false);
 
   // Load settings on mount
@@ -199,6 +201,9 @@ export default function AdminThemeSettings() {
     { id: 'preview', label: 'Live Preview', icon: Eye },
   ];
 
+  // Debug: Log sections array
+  console.log('Sections defined:', sections.length, sections.map(s => s.id));
+
   const resetColors = () => {
     // Reset to default colors for current theme
     const defaultColors = {
@@ -276,8 +281,13 @@ export default function AdminThemeSettings() {
             </CardHeader>
             <CardContent>
               <nav className="space-y-2">
+                {/* Debug: Show all sections */}
+                <div className="text-xs text-gray-500 mb-2">
+                  Sections ({sections.length}): {sections.map(s => s.id).join(', ')}
+                </div>
                 {sections.map((section) => {
                   const Icon = section.icon;
+                  console.log('Rendering section:', section.id, section.label);
                   return (
                     <Button
                       key={section.id}
@@ -297,6 +307,10 @@ export default function AdminThemeSettings() {
 
         {/* Main Content */}
         <div className="lg:col-span-3">
+          {/* Debug: Show current section */}
+          <div className="mb-4 p-2 bg-yellow-100 border border-yellow-300 rounded text-sm">
+            <strong>Debug:</strong> Current section = "{activeSection}" | Available sections: {sections.map(s => s.id).join(', ')}
+          </div>
           {/* Theme Mode Section */}
           {activeSection === 'theme' && (
             <Card>
@@ -693,6 +707,244 @@ export default function AdminThemeSettings() {
             </Card>
           )}
 
+          {/* Logo & Branding Section */}
+          {activeSection === 'branding' && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Logo & Branding</CardTitle>
+                <CardDescription>Upload logos and customize branding text</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  {/* Logo Toggle */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-base font-medium">Use Logo Instead of Text</Label>
+                      <p className="text-sm text-muted-foreground">Replace text branding with uploaded logos</p>
+                    </div>
+                    <Switch
+                      checked={brandSettings.useLogo}
+                      onCheckedChange={(checked) => updateBrandSettings({ useLogo: checked })}
+                    />
+                  </div>
+
+                  {/* Logo Upload Section */}
+                  {brandSettings.useLogo && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Light Mode Logo */}
+                      <div className="space-y-3">
+                        <Label className="text-sm font-medium">Light Mode Logo</Label>
+                        <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+                          {brandSettings.lightModeLogo ? (
+                            <div className="space-y-3">
+                              <img 
+                                src={brandSettings.lightModeLogo} 
+                                alt="Light mode logo" 
+                                className="mx-auto max-h-16 max-w-full object-contain"
+                              />
+                              <div className="flex gap-2 justify-center">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => document.getElementById('light-logo-upload')?.click()}
+                                >
+                                  Replace
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => removeLogo('light')}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="space-y-3">
+                              <Upload className="h-12 w-12 mx-auto text-muted-foreground" />
+                              <div>
+                                <Button
+                                  variant="outline"
+                                  onClick={() => document.getElementById('light-logo-upload')?.click()}
+                                >
+                                  Upload Light Logo
+                                </Button>
+                                <p className="text-xs text-muted-foreground mt-2">
+                                  PNG, JPG, SVG up to 2MB
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                          <input
+                            id="light-logo-upload"
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => e.target.files?.[0] && handleLogoUpload(e.target.files[0], 'light')}
+                            className="hidden"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Dark Mode Logo */}
+                      <div className="space-y-3">
+                        <Label className="text-sm font-medium">Dark Mode Logo</Label>
+                        <div className="border-2 border-dashed border-border rounded-lg p-6 text-center bg-muted/50">
+                          {brandSettings.darkModeLogo ? (
+                            <div className="space-y-3">
+                              <img 
+                                src={brandSettings.darkModeLogo} 
+                                alt="Dark mode logo" 
+                                className="mx-auto max-h-16 max-w-full object-contain"
+                              />
+                              <div className="flex gap-2 justify-center">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => document.getElementById('dark-logo-upload')?.click()}
+                                >
+                                  Replace
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => removeLogo('dark')}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="space-y-3">
+                              <Upload className="h-12 w-12 mx-auto text-muted-foreground" />
+                              <div>
+                                <Button
+                                  variant="outline"
+                                  onClick={() => document.getElementById('dark-logo-upload')?.click()}
+                                >
+                                  Upload Dark Logo
+                                </Button>
+                                <p className="text-xs text-muted-foreground mt-2">
+                                  PNG, JPG, SVG up to 2MB
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                          <input
+                            id="dark-logo-upload"
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => e.target.files?.[0] && handleLogoUpload(e.target.files[0], 'dark')}
+                            className="hidden"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Logo Settings */}
+                  {brandSettings.useLogo && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-sm font-medium">Logo Size</Label>
+                        <Select
+                          value={brandSettings.logoSize}
+                          onValueChange={(value: 'sm' | 'md' | 'lg') => updateBrandSettings({ logoSize: value })}
+                        >
+                          <SelectTrigger className="mt-1">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="sm">Small (24px)</SelectItem>
+                            <SelectItem value="md">Medium (32px)</SelectItem>
+                            <SelectItem value="lg">Large (40px)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium">Logo Position</Label>
+                        <Select
+                          value={brandSettings.logoPosition}
+                          onValueChange={(value: 'left' | 'center') => updateBrandSettings({ logoPosition: value })}
+                        >
+                          <SelectTrigger className="mt-1">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="left">Left Aligned</SelectItem>
+                            <SelectItem value="center">Centered</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Text Branding */}
+                  <div className="space-y-4">
+                    <h3 className="font-semibold">Text Branding</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="brand-text" className="text-sm font-medium">Brand Name</Label>
+                        <Input
+                          id="brand-text"
+                          value={brandSettings.brandText}
+                          onChange={(e) => updateBrandSettings({ brandText: e.target.value })}
+                          placeholder="Your App Name"
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="tagline" className="text-sm font-medium">Tagline</Label>
+                        <Input
+                          id="tagline"
+                          value={brandSettings.tagline}
+                          onChange={(e) => updateBrandSettings({ tagline: e.target.value })}
+                          placeholder="Your app description"
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-sm font-medium">Show Tagline</Label>
+                        <p className="text-xs text-muted-foreground">Display tagline below brand name</p>
+                      </div>
+                      <Switch
+                        checked={brandSettings.showTagline}
+                        onCheckedChange={(checked) => updateBrandSettings({ showTagline: checked })}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Brand Preview */}
+                  <div className="border border-border rounded-lg p-4 bg-muted/30">
+                    <Label className="text-sm font-medium mb-2 block">Preview</Label>
+                    <div className={`flex items-center gap-3 ${brandSettings.logoPosition === 'center' ? 'justify-center' : ''}`}>
+                      {brandSettings.useLogo && (brandSettings.lightModeLogo || brandSettings.darkModeLogo) ? (
+                        <div className={`${brandSettings.logoSize === 'sm' ? 'w-6 h-6' : brandSettings.logoSize === 'md' ? 'w-8 h-8' : 'w-10 h-10'}`}>
+                          <img 
+                            src={actualTheme === 'light' ? brandSettings.lightModeLogo || brandSettings.darkModeLogo : brandSettings.darkModeLogo || brandSettings.lightModeLogo} 
+                            alt="Logo preview" 
+                            className="w-full h-full object-contain"
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                          <Settings className="h-5 w-5 text-primary-foreground" />
+                        </div>
+                      )}
+                      <div>
+                        <div className="font-bold text-sm">{brandSettings.brandText}</div>
+                        {brandSettings.showTagline && (
+                          <div className="text-xs opacity-75">{brandSettings.tagline}</div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Debug Settings Section */}
           {activeSection === 'debug' && (
             <Card>
@@ -782,7 +1034,95 @@ export default function AdminThemeSettings() {
           )}
 
           {/* Live Preview Section */}
-          {activeSection === 'preview' && (
+          {activeSection === 'preview' && (ThemeDebug}
+                      onCheckedChange={(checked) => updateDebugSettings({ showThemeDebug: checked })}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-base font-medium">Show Color Preview</Label>
+                      <p className="text-sm text-muted-foreground">Display color swatches in debug sections</p>
+                    </div>
+                    <Switch
+                      checked={debugSettings.showColorPreview}
+                      onCheckedChange={(checked) => updateDebugSettings({ showColorPreview: checked })}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-base font-medium">Show Theme Information</Label>
+                      <p className="text-sm text-muted-foreground">Display current theme mode and status information</p>
+                    </div>
+                    <Switch
+                      checked={debugSettings.showThemeInfo}
+                      onCheckedChange={(checked) => updateDebugSettings({ showThemeInfo: checked })}
+                    />
+                  </div>
+
+                  {/* Debug Status */}
+                  <div className="border border-border rounded-lg p-4 bg-muted/30">
+                    <h3 className="font-semibold mb-3">Current Debug Status</h3>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div className="flex items-center gap-2">
+                        {debugSettings.showThemeDebug ? (
+                          <Check className="h-4 w-4 text-green-600" />
+                        ) : (
+                          <X className="h-4 w-4 text-red-600" />
+                        )}
+                        Theme Debug Sections
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {debugSettings.showColorPreview ? (
+                          <Check className="h-4 w-4 text-green-600" />
+                        ) : (
+                          <X className="h-4 w-4 text-red-600" />
+                        )}
+                        Color Previews
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {debugSettings.showThemeInfo ? (
+                          <Check className="h-4 w-4 text-green-600" />
+                        ) : (
+                          <X className="h-4 w-4 text-red-600" />
+                        )}
+                        Theme Information
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Instructions */}
+                  <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                    <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">How it Works</h4>
+                    <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                      <li>• Toggle "Show Theme Debug Sections" to show/hide debug panels on all pages</li>
+                      <li>• Changes apply immediately across your entire application</li>
+                      <li>• Debug sections help verify colors are working correctly</li>
+                      <li>• Turn off debug sections for production use</li>
+                    </ul>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Debug Settings Section */}
+          {activeSection === 'debug' && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Debug Settings</CardTitle>
+                <CardDescription>Control theme debugging features across all pages</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-base font-medium">Show Theme Debug Sections</Label>
+                      <p className="text-sm text-muted-foreground">Display theme status sections on all pages for debugging</p>
+                    </div>
+                    <Switch
+                      checked={debugSettings.show
             <Card>
               <CardHeader>
                 <CardTitle>Live Preview</CardTitle>
