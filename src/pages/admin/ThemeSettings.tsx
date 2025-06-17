@@ -72,11 +72,17 @@ export default function AdminThemeSettings() {
   const [activeSection, setActiveSection] = useState('theme');
   const [unsavedChanges, setUnsavedChanges] = useState(false);
 
+  // Load settings and apply them immediately on mount
   useEffect(() => {
     const savedDebugSettings = localStorage.getItem('theme-debug-settings');
     if (savedDebugSettings) {
       try {
-        setDebugSettings(JSON.parse(savedDebugSettings));
+        const parsedDebugSettings = JSON.parse(savedDebugSettings);
+        setDebugSettings(parsedDebugSettings);
+        // Immediately dispatch debug settings
+        window.dispatchEvent(new CustomEvent('themeDebugSettingsChanged', { 
+          detail: parsedDebugSettings 
+        }));
       } catch (error) {
         console.error('Failed to load debug settings:', error);
       }
@@ -85,9 +91,26 @@ export default function AdminThemeSettings() {
     const savedBrandSettings = localStorage.getItem('brand-settings');
     if (savedBrandSettings) {
       try {
-        setBrandSettings(JSON.parse(savedBrandSettings));
+        const parsedBrandSettings = JSON.parse(savedBrandSettings);
+        setBrandSettings(parsedBrandSettings);
+        // Immediately dispatch brand settings
+        window.dispatchEvent(new CustomEvent('brandSettingsChanged', { 
+          detail: parsedBrandSettings 
+        }));
       } catch (error) {
         console.error('Failed to load brand settings:', error);
+      }
+    }
+
+    // Load and apply saved colors
+    const savedColors = localStorage.getItem('theme-colors');
+    if (savedColors) {
+      try {
+        const parsedColors = JSON.parse(savedColors);
+        updateColors(parsedColors);
+        applyColorsToCSS(parsedColors, actualTheme);
+      } catch (error) {
+        console.error('Failed to load colors:', error);
       }
     }
   }, []);
@@ -96,12 +119,24 @@ export default function AdminThemeSettings() {
     const newSettings = { ...debugSettings, ...updates };
     setDebugSettings(newSettings);
     setUnsavedChanges(true);
+    
+    // Apply debug settings immediately
+    localStorage.setItem('theme-debug-settings', JSON.stringify(newSettings));
+    window.dispatchEvent(new CustomEvent('themeDebugSettingsChanged', { 
+      detail: newSettings 
+    }));
   };
 
   const updateBrandSettings = (updates: Partial<BrandSettings>) => {
     const newSettings = { ...brandSettings, ...updates };
     setBrandSettings(newSettings);
     setUnsavedChanges(true);
+    
+    // Apply brand settings immediately
+    localStorage.setItem('brand-settings', JSON.stringify(newSettings));
+    window.dispatchEvent(new CustomEvent('brandSettingsChanged', { 
+      detail: newSettings 
+    }));
   };
 
   const saveAllSettings = () => {
@@ -259,152 +294,173 @@ export default function AdminThemeSettings() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-6">
-      <div className="mb-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => window.history.back()}
-              className="mr-2"
-            >
-              ← Back
-            </Button>
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <Palette className="h-5 w-5 text-primary-foreground" />
+    <div className="min-h-screen bg-background text-foreground p-6 relative z-10">
+      {/* Fixed positioning to prevent overlap */}
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-6">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.history.back()}
+                className="mr-2"
+              >
+                ← Back
+              </Button>
+              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                <Palette className="h-5 w-5 text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-foreground">Advanced Theme Settings</h1>
+                <p className="text-muted-foreground">Complete theme customization and debugging tools</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Advanced Theme Settings</h1>
-              <p className="text-muted-foreground">Complete theme customization and debugging tools</p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => window.location.href = '/'}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Dashboard
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => window.location.href = '/admin/menu'}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Menu Management
+              </Button>
+              <Badge variant="outline" className="text-foreground border-border">
+                {actualTheme} mode
+              </Badge>
+              {unsavedChanges && (
+                <Badge variant="destructive">Unsaved Changes</Badge>
+              )}
+              <Button
+                onClick={saveAllSettings}
+                className="bg-primary text-primary-foreground"
+                disabled={!unsavedChanges}
+              >
+                <Save className="h-4 w-4 mr-2" />
+                Save All Settings
+              </Button>
+              {/* Test Button for immediate feedback */}
+              <Button
+                onClick={() => {
+                  // Test color change for immediate feedback
+                  const testColors = {
+                    'accent-primary': { light: '255 0 0', dark: '0 255 0' }
+                  };
+                  applyColorsToCSS({ ...colors, ...testColors }, actualTheme);
+                  setTimeout(() => {
+                    applyColorsToCSS(colors, actualTheme);
+                  }, 2000);
+                }}
+                variant="outline"
+                size="sm"
+              >
+                Test Colors
+              </Button>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => window.location.href = '/'}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              Dashboard
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => window.location.href = '/admin/menu'}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              Menu Management
-            </Button>
-            <Badge variant="outline" className="text-foreground border-border">
-              {actualTheme} mode
-            </Badge>
-            {unsavedChanges && (
-              <Badge variant="destructive">Unsaved Changes</Badge>
-            )}
-            <Button
-              onClick={saveAllSettings}
-              className="bg-primary text-primary-foreground"
-              disabled={!unsavedChanges}
-            >
-              <Save className="h-4 w-4 mr-2" />
-              Save All Settings
-            </Button>
-            {/* Test Button for immediate feedback */}
-            <Button
-              onClick={() => {
-                // Test color change for immediate feedback
-                const testColors = {
-                  'accent-primary': { light: '255 0 0', dark: '0 255 0' }
-                };
-                applyColorsToCSS({ ...colors, ...testColors }, actualTheme);
-                setTimeout(() => {
-                  applyColorsToCSS(colors, actualTheme);
-                }, 2000);
-              }}
-              variant="outline"
-              size="sm"
-            >
-              Test Colors
-            </Button>
           </div>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="lg:col-span-1">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Settings</CardTitle>
-              <CardDescription>Choose a category to customize</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <nav className="space-y-2">
-                {sections.map((section) => {
-                  const Icon = section.icon;
-                  return (
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="lg:col-span-1">
+            <Card className="sticky top-6">
+              <CardHeader>
+                <CardTitle className="text-lg">Settings</CardTitle>
+                <CardDescription>Choose a category to customize</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <nav className="space-y-2">
+                  {sections.map((section) => {
+                    const Icon = section.icon;
+                    return (
+                      <Button
+                        key={section.id}
+                        variant={activeSection === section.id ? 'default' : 'ghost'}
+                        className="w-full justify-start"
+                        onClick={() => setActiveSection(section.id)}
+                      >
+                        <Icon className="h-4 w-4 mr-2" />
+                        {section.label}
+                      </Button>
+                    );
+                  })}
+                </nav>
+                
+                <div className="mt-6 pt-4 border-t border-border">
+                  <h4 className="text-sm font-medium mb-2 text-muted-foreground">Quick Navigation</h4>
+                  <div className="space-y-2">
                     <Button
-                      key={section.id}
-                      variant={activeSection === section.id ? 'default' : 'ghost'}
-                      className="w-full justify-start"
-                      onClick={() => setActiveSection(section.id)}
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-start text-sm"
+                      onClick={() => window.location.href = '/'}
                     >
-                      <Icon className="h-4 w-4 mr-2" />
-                      {section.label}
+                      <Home className="h-4 w-4 mr-2" />
+                      Dashboard
                     </Button>
-                  );
-                })}
-              </nav>
-              
-              <div className="mt-6 pt-4 border-t border-border">
-                <h4 className="text-sm font-medium mb-2 text-muted-foreground">Quick Navigation</h4>
-                <div className="space-y-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full justify-start text-sm"
-                    onClick={() => window.location.href = '/'}
-                  >
-                    <Home className="h-4 w-4 mr-2" />
-                    Dashboard
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full justify-start text-sm"
-                    onClick={() => window.location.href = '/admin/menu'}
-                  >
-                    <Layout className="h-4 w-4 mr-2" />
-                    Menu Management
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full justify-start text-sm"
-                    onClick={() => window.location.href = '/campaigns'}
-                  >
-                    <Target className="h-4 w-4 mr-2" />
-                    Campaigns
-                  </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-start text-sm"
+                      onClick={() => window.location.href = '/admin/menu'}
+                    >
+                      <Layout className="h-4 w-4 mr-2" />
+                      Menu Management
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-start text-sm"
+                      onClick={() => window.location.href = '/campaigns'}
+                    >
+                      <Target className="h-4 w-4 mr-2" />
+                      Campaigns
+                    </Button>
+                  </div>
                 </div>
-              </div>
-              
-              <div className="mt-4 pt-4 border-t border-border">
-                <div className="text-xs text-muted-foreground text-center">
-                  {unsavedChanges ? (
-                    <div className="text-orange-600 dark:text-orange-400">
-                      ⚠️ You have unsaved changes
-                    </div>
-                  ) : (
-                    <div className="text-green-600 dark:text-green-400">
-                      ✅ All settings saved
-                    </div>
-                  )}
+                
+                <div className="mt-4 pt-4 border-t border-border">
+                  <div className="text-xs text-muted-foreground text-center">
+                    {unsavedChanges ? (
+                      <div className="text-orange-600 dark:text-orange-400">
+                        ⚠️ You have unsaved changes
+                      </div>
+                    ) : (
+                      <div className="text-green-600 dark:text-green-400">
+                        ✅ All settings saved
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+
+                {/* Real-time debug status */}
+                <div className="mt-4 pt-4 border-t border-border">
+                  <h4 className="text-xs font-medium mb-2 text-muted-foreground">Debug Status</h4>
+                  <div className="text-xs space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span>Debug Sections:</span>
+                      <span className={debugSettings.showThemeDebug ? 'text-green-600' : 'text-red-600'}>
+                        {debugSettings.showThemeDebug ? 'ON' : 'OFF'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Brand Logo:</span>
+                      <span className={brandSettings.useLogo ? 'text-blue-600' : 'text-gray-600'}>
+                        {brandSettings.useLogo ? 'ENABLED' : 'TEXT'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
         <div className="lg:col-span-3">
           {activeSection === 'theme' && (
@@ -810,10 +866,33 @@ export default function AdminThemeSettings() {
                   </div>
 
                   <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                    <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">🎯 Debug Settings Status</h4>
+                    <div className="text-sm text-blue-800 dark:text-blue-200 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span>Debug Sections:</span>
+                        <Badge className={debugSettings.showThemeDebug ? 'bg-green-600' : 'bg-red-600'}>
+                          {debugSettings.showThemeDebug ? 'ACTIVE' : 'DISABLED'}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Color Previews:</span>
+                        <Badge className={debugSettings.showColorPreview ? 'bg-green-600' : 'bg-red-600'}>
+                          {debugSettings.showColorPreview ? 'ENABLED' : 'DISABLED'}
+                        </Badge>
+                      </div>
+                      <p className="text-xs mt-2">
+                        {debugSettings.showThemeDebug ? 
+                          '✅ Debug sections are now visible across all pages!' : 
+                          '❌ Debug sections are hidden. Toggle above to enable.'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                     <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">How it Works</h4>
                     <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
                       <li>• Toggle "Show Theme Debug Sections" to show/hide debug panels on all pages</li>
-                      <li>• Changes are staged until you click "Save All Settings"</li>
+                      <li>• Changes apply instantly - no need to save</li>
                       <li>• Debug sections help verify colors are working correctly</li>
                       <li>• Turn off debug sections for production use</li>
                     </ul>
@@ -890,6 +969,7 @@ export default function AdminThemeSettings() {
               </CardContent>
             </Card>
           )}
+          </div>
         </div>
       </div>
     </div>
