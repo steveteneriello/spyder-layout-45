@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 export type ThemeMode = 'light' | 'dark' | 'auto';
@@ -32,8 +33,10 @@ interface GlobalThemeContextType {
   themeMode: ThemeMode;
   setThemeMode: (mode: ThemeMode) => void;
   actualTheme: 'light' | 'dark';
+  isSystemDark: boolean;
   colors: Colors;
   updateColors: (newColors: Colors) => void;
+  resetColors: () => void;
   debugSettings: DebugSettings;
   brandSettings: BrandSettings;
 }
@@ -81,6 +84,7 @@ const GlobalThemeContext = createContext<GlobalThemeContextType | undefined>(und
 export function GlobalThemeProvider({ children }: { children: React.ReactNode }) {
   const [themeMode, setThemeModeState] = useState<ThemeMode>('auto');
   const [actualTheme, setActualTheme] = useState<'light' | 'dark'>('light');
+  const [isSystemDark, setIsSystemDark] = useState<boolean>(false);
   const [colors, setColors] = useState<Colors>(defaultColors);
   const [debugSettings, setDebugSettings] = useState<DebugSettings>(defaultDebugSettings);
   const [brandSettings, setBrandSettings] = useState<BrandSettings>(defaultBrandSettings);
@@ -101,25 +105,25 @@ export function GlobalThemeProvider({ children }: { children: React.ReactNode })
 
     // Set theme-aware CSS variables for shadcn/ui compatibility
     if (currentTheme === 'light') {
-      root.style.setProperty('--background', themeValues['bg-primary']?.light || '255 255 255');
-      root.style.setProperty('--foreground', themeValues['text-primary']?.light || '26 32 44');
-      root.style.setProperty('--card', themeValues['bg-secondary']?.light || '251 252 253');
-      root.style.setProperty('--card-foreground', themeValues['text-primary']?.light || '26 32 44');
-      root.style.setProperty('--primary', themeValues['accent-primary']?.light || '49 130 206');
+      root.style.setProperty('--background', colorData['bg-primary']?.light || '255 255 255');
+      root.style.setProperty('--foreground', colorData['text-primary']?.light || '26 32 44');
+      root.style.setProperty('--card', colorData['bg-secondary']?.light || '251 252 253');
+      root.style.setProperty('--card-foreground', colorData['text-primary']?.light || '26 32 44');
+      root.style.setProperty('--primary', colorData['accent-primary']?.light || '49 130 206');
       root.style.setProperty('--primary-foreground', '255 255 255');
-      root.style.setProperty('--muted', themeValues['bg-tertiary']?.light || '248 249 250');
-      root.style.setProperty('--muted-foreground', themeValues['text-secondary']?.light || '74 85 104');
-      root.style.setProperty('--border', themeValues['border-primary']?.light || '226 232 240');
+      root.style.setProperty('--muted', colorData['bg-tertiary']?.light || '248 249 250');
+      root.style.setProperty('--muted-foreground', colorData['text-secondary']?.light || '74 85 104');
+      root.style.setProperty('--border', colorData['border-primary']?.light || '226 232 240');
     } else {
-      root.style.setProperty('--background', themeValues['bg-primary']?.dark || '14 17 23');
-      root.style.setProperty('--foreground', themeValues['text-primary']?.dark || '240 246 252');
-      root.style.setProperty('--card', themeValues['bg-secondary']?.dark || '22 27 34');
-      root.style.setProperty('--card-foreground', themeValues['text-primary']?.dark || '240 246 252');
-      root.style.setProperty('--primary', themeValues['accent-primary']?.dark || '56 189 248');
+      root.style.setProperty('--background', colorData['bg-primary']?.dark || '14 17 23');
+      root.style.setProperty('--foreground', colorData['text-primary']?.dark || '240 246 252');
+      root.style.setProperty('--card', colorData['bg-secondary']?.dark || '22 27 34');
+      root.style.setProperty('--card-foreground', colorData['text-primary']?.dark || '240 246 252');
+      root.style.setProperty('--primary', colorData['accent-primary']?.dark || '56 189 248');
       root.style.setProperty('--primary-foreground', '14 17 23');
-      root.style.setProperty('--muted', themeValues['bg-tertiary']?.dark || '30 35 42');
-      root.style.setProperty('--muted-foreground', themeValues['text-secondary']?.dark || '125 133 144');
-      root.style.setProperty('--border', themeValues['border-primary']?.dark || '52 64 84');
+      root.style.setProperty('--muted', colorData['bg-tertiary']?.dark || '30 35 42');
+      root.style.setProperty('--muted-foreground', colorData['text-secondary']?.dark || '125 133 144');
+      root.style.setProperty('--border', colorData['border-primary']?.dark || '52 64 84');
     }
   };
 
@@ -163,15 +167,20 @@ export function GlobalThemeProvider({ children }: { children: React.ReactNode })
     }
   }, []);
 
-  // Determine actual theme based on mode
+  // Determine actual theme based on mode and track system preference
   useEffect(() => {
     const updateActualTheme = () => {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const systemDark = mediaQuery.matches;
+      setIsSystemDark(systemDark);
+      
       if (themeMode === 'auto') {
-        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-        setActualTheme(mediaQuery.matches ? 'dark' : 'light');
+        setActualTheme(systemDark ? 'dark' : 'light');
         
         const handleChange = () => {
-          setActualTheme(mediaQuery.matches ? 'dark' : 'light');
+          const newSystemDark = mediaQuery.matches;
+          setIsSystemDark(newSystemDark);
+          setActualTheme(newSystemDark ? 'dark' : 'light');
         };
         
         mediaQuery.addEventListener('change', handleChange);
@@ -231,12 +240,20 @@ export function GlobalThemeProvider({ children }: { children: React.ReactNode })
     applyColorsToCSS(mergedColors, actualTheme);
   };
 
+  const resetColors = () => {
+    setColors(defaultColors);
+    localStorage.setItem('theme-colors', JSON.stringify(defaultColors));
+    applyColorsToCSS(defaultColors, actualTheme);
+  };
+
   const value: GlobalThemeContextType = {
     themeMode,
     setThemeMode,
     actualTheme,
+    isSystemDark,
     colors,
     updateColors,
+    resetColors,
     debugSettings,
     brandSettings,
   };

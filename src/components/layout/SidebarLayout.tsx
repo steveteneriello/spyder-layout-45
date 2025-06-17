@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import {
@@ -22,7 +23,7 @@ interface SidebarLayoutProps {
 }
 
 function SidebarLayoutInner({ children, nav, category, footer }: SidebarLayoutProps) {
-  const { sidebarOpen } = useSidebar();
+  const { open } = useSidebar();
   const { colors, actualTheme } = useGlobalTheme();
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const cursorRef = useRef<HTMLDivElement>(null);
